@@ -8,7 +8,7 @@ vm.runInNewContext(source, sandbox);
 const sections = sandbox.window.vocabularySections || [];
 const tables = sections.length;
 const rows = sections.reduce((total, section) => total + ((section.match(/<tr>/g) || []).length - 1), 0);
-const expectedTables = 10;
+const expectedTables = 13
 const expectedRows = 346;
 if (tables !== expectedTables || rows !== expectedRows) {
   console.error("Vocabulary validation failed: found " + rows + " rows across " + tables + " tables; expected " + expectedRows + " rows across " + expectedTables + " tables.");
@@ -26,8 +26,8 @@ for (const section of sections) {
   const body = section.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
   for (const row of body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
     const cells = [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(match => stripTags(match[1]));
-    if (cells.length < 3 || cells.length > 4) {
-      console.error("Vocabulary quality validation failed: every body row must have three or four cells.");
+    if (cells.length !== 3) {
+      console.error("Vocabulary quality validation failed: every body row must have exactly three cells.");
       process.exit(1);
     }
     const japaneseCell = cells.find(cell => japanesePattern.test(cell));

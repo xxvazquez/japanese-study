@@ -284,4 +284,17 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelector(".toolbar button:not(.primary)")?.addEventListener("click", printAll);
   document.querySelector(".nav-actions button:first-child")?.addEventListener("click", expandAll);
   document.querySelector(".nav-actions button:last-child")?.addEventListener("click", collapseAll);
+});document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".hide-section").forEach(function (button) {
+    button.addEventListener("click", function (event) {
+      event.stopPropagation();
+      button.closest(".table-section").classList.add("section-hidden");
+    });
+  });
+  document.querySelectorAll(".category-dropdown a[data-target]").forEach(function (link) {
+    link.addEventListener("click", function () {
+      var section = document.querySelector('.table-section[data-table="' + link.dataset.target + '"]');
+      if (section) section.classList.remove("section-hidden");
+    }, true);
+  });
 });
