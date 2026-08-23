@@ -16,18 +16,22 @@
 }
 
 :root {
+  /* Figma "Blue Gray" family (base #6a89a7) plus a soft, restrained rose
+     pulled from the logo. Kept intentionally desaturated -- no beige/cream,
+     no near-black borders. */
   --ink: #2d3d4c;
-  --muted: #4f6b85;
-  --soft: #f1f5f8;
+  --muted: #5c7288;
   --paper: #ffffff;
-  --line: #d1dbe4;
-  --line-strong: #96acc1;
+  --surface: #eef2f6;
+  --page-bg: #e6ecf1;
+  --line: #dbe3ea;
   --accent: #6a89a7;
-  --accent-soft: #d1dbe4;
-  --accent-dark: #384c5f;
-  --particle: #384c5f;
-  --irregular: #a76a6a;
-  --page-bg: #dbe5ee;
+  --accent-dark: #4c637a;
+  --accent-soft: #dde6ee;
+  --rose: #b97e91;
+  --rose-soft: #f3e6ea;
+  --particle: #435a70;
+  --irregular: var(--rose);
 }
 
 * { box-sizing: border-box; }
@@ -46,72 +50,81 @@ html, body {
   padding: 30px 42px 70px;
 }
 
+/* Brand mark */
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  margin-bottom: 18px;
+}
+
+.brand-mark {
+  align-self: center;
+  border-radius: 50%;
+  display: block;
+}
+
+.brand-title {
+  margin: 0;
+  font-family: Georgia, "Iowan Old Style", ui-serif, serif;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  color: var(--ink);
+}
+
+.brand-sub {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 /* Top controls */
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-bottom: 48px;
+  gap: 8px;
+  margin-bottom: 30px;
 }
 
 .toolbar button,
 .print-one {
   appearance: none;
-  border: 1px solid var(--line-strong);
-  background: var(--paper);
+  border: 1px solid transparent;
+  background: var(--surface);
   color: var(--ink);
-  border-radius: 9px;
+  border-radius: 8px;
   padding: 8px 13px;
   font-size: 12px;
   line-height: 1;
   cursor: pointer;
-  transition: .15s ease;
+  transition: background .15s ease, color .15s ease;
+}
+
+.toolbar button {
+  background: var(--paper);
 }
 
 .toolbar button:hover,
 .print-one:hover {
-  border-color: var(--accent);
   background: var(--accent-soft);
+  color: var(--accent-dark);
 }
 
 .toolbar .primary {
   background: var(--accent);
   color: #fff;
-  border-color: var(--accent);
   font-weight: 700;
 }
 
 .toolbar .primary:hover {
   background: var(--accent-dark);
-  border-color: var(--accent-dark);
+  color: #fff;
 }
 
 .toolbar .hint {
   margin-left: auto;
   color: var(--muted);
   font-size: 12px;
-}
-
-/* Document title */
-.document-title {
-  margin: 0 0 54px;
-  color: #2d3d4c;
-  font-size: 34px;
-  line-height: 1.08;
-  letter-spacing: -0.8px;
-  font-weight: 700;
-}
-
-.document-title.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 /* Each table becomes a clean paper card */
@@ -184,7 +197,7 @@ table {
 .vocab th {
   text-align: left;
   color: #4f6b85;
-  background: var(--soft);
+  background: var(--surface);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: .035em;
@@ -207,7 +220,7 @@ table {
 }
 
 .vocab tbody tr:hover td {
-  background: var(--soft);
+  background: var(--surface);
 }
 
 .vocab th:nth-child(1), .vocab td:nth-child(1) { width: 38%; }
@@ -222,22 +235,24 @@ table {
 }
 
 .jpword {
-  display: inline-ruby;
-  ruby-position: over;
-  ruby-align: center;
   vertical-align: middle;
   white-space: nowrap;
+}
+
+.jpword ruby {
+  ruby-position: over;
 }
 
 .jpword .jpmain { font-size: 1em; }
 
 .furigana {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
-  font-size: .43em;
-  line-height: 1.05;
-  font-weight: 400;
+  font-size: .58em;
+  line-height: 1.1;
+  font-weight: 500;
+  color: var(--ink);
   min-height: 0;
-  margin-bottom: 0;
+  margin-bottom: 1px;
   ruby-align: center;
 }
 
@@ -250,7 +265,7 @@ table {
 
 .irregular-row td {
   color: var(--irregular);
-  background: #fff8f7;
+  background: var(--rose-soft);
 }
 
 .irregular-row td:first-child {
@@ -295,7 +310,7 @@ table {
   background: #f7fafc;
 }
 .verbs-table .verb-pair-row:hover td {
-  background: var(--soft);
+  background: var(--surface);
 }
 
 .verbs-table .verb-pair-cell {
@@ -388,8 +403,8 @@ table {
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--soft);
-  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
   margin: -30px -42px 30px;
   padding: 16px 42px;
 }
@@ -397,9 +412,11 @@ table {
 .header-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
 }
-.document-title { margin-top:0; }
+.nav-actions {
+  flex: 0 0 auto;
+}
 
 /* Collapsed tables */
 .table-section.collapsed .vocab,
@@ -442,7 +459,7 @@ table {
 }
 
 .table-section {
-  scroll-margin-top: 170px;
+  scroll-margin-top: 240px;
 }
 
 .nav-actions {
@@ -524,7 +541,7 @@ table {
   width:min(460px,100%);
   height:40px;
   background: var(--paper);
-  border:1px solid var(--line-strong);
+  border:1px solid var(--line);
   border-radius:10px;
   padding:0 10px;
 }
@@ -605,18 +622,18 @@ table {
 }
 .view-mode button:hover,
 .view-mode button.active { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
+/* Hide columns with visibility (not display) so the remaining column keeps its position instead of sliding into the gap. */
 body.mode-japanese .vocab th:nth-child(2),
 body.mode-japanese .vocab td:nth-child(2),
 body.mode-japanese .vocab th:nth-child(3),
-body.mode-japanese .vocab td:nth-child(3) { display: none; }
+body.mode-japanese .vocab td:nth-child(3),
 body.mode-english .vocab th:nth-child(1),
 body.mode-english .vocab td:nth-child(1),
 body.mode-english .vocab th:nth-child(2),
-body.mode-english .vocab td:nth-child(2) { display: none; }
-body.mode-japanese .vocab th:nth-child(1),
-body.mode-japanese .vocab td:nth-child(1) { width: 100%; }
-body.mode-english .vocab th:nth-child(3),
-body.mode-english .vocab td:nth-child(3) { width: 100%; }
+body.mode-english .vocab td:nth-child(2) {
+  visibility: hidden;
+  border-color: transparent;
+}
 @media print {
   .view-mode { display:none !important; }
   .vocab thead { display: table-header-group; }
@@ -632,6 +649,9 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
     margin-right:-18px;
     padding-left:18px;
     padding-right:18px;
+  }
+  .table-section {
+    scroll-margin-top: 360px;
   }
   .toolbar {
     flex-wrap: wrap;
@@ -689,38 +709,62 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
   .nav-actions { display:none !important; }
 }
 
-/* Category navigation */
+/* Category navigation -- a slim text strip, not a heavy button. */
 .category-nav {
   display:flex;
   align-items:center;
   gap:8px;
   position:relative;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .category-menu {
   position:relative;
+  min-width: 0;
+  max-width: 100%;
 }
 .category-button {
   appearance:none;
-  border:1px solid var(--line-strong);
-  background:#fff;
-  color:#4f6b85;
-  border-radius:8px;
-  padding:7px 11px;
-  font:600 11px/1 Arial, Helvetica, sans-serif;
+  border:none;
+  background:transparent;
+  color:var(--muted);
+  border-radius:6px;
+  padding:6px 4px;
+  font:400 12px/1.3 Arial, Helvetica, sans-serif;
   cursor:pointer;
   display:flex;
-  align-items:center;
-  gap:7px;
+  align-items:baseline;
+  gap:8px;
+  max-width: 100%;
+  min-width: 0;
 }
-.category-button:hover,
-.category-menu.open .category-button {
-  color:#fff;
-  background:var(--accent);
-  border-color:var(--accent);
+.browse-label {
+  flex: 0 0 auto;
+  color: var(--ink);
+  font-weight: 700;
+}
+.browse-preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  text-align: left;
+}
+.category-button:hover .browse-label,
+.category-menu.open .browse-label {
+  color: var(--accent-dark);
+}
+.category-button:hover .browse-preview,
+.category-menu.open .browse-preview {
+  color: var(--accent);
 }
 .category-chevron {
+  flex: 0 0 auto;
   font-size:12px;
   line-height:1;
+  color: var(--muted);
   transition:transform .15s ease;
 }
 .category-menu.open .category-chevron {
@@ -735,7 +779,7 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
   max-width:330px;
   padding:6px;
   background:#fff;
-  border:1px solid var(--line-strong);
+  border:1px solid var(--line);
   border-radius:10px;
   box-shadow:0 10px 24px rgba(45,61,76,.14);
   z-index:1100;
@@ -832,7 +876,7 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
 }
 
 :focus-visible { outline: 3px solid rgba(63,120,104,.55); outline-offset: 3px; }
-.section-head:focus-visible, .category-button:focus-visible, .table-nav a:focus-visible { outline-color: var(--accent); }
+.section-head:focus-visible, .category-button:focus-visible, .category-dropdown a:focus-visible { outline-color: var(--accent); }
 
 
 /* Desktop study typography: give Japanese and furigana room to breathe. */
@@ -840,7 +884,7 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
   .vocab th { font-size: 12px; padding-top: 11px; padding-bottom: 11px; }
   .vocab td { font-size: 14px; line-height: 1.5; padding-top: 11px; padding-bottom: 11px; }
   .vocab td.jp { font-size: 21px; line-height: 2.3; }
-  .furigana { font-size: .52em; line-height: 1.1; margin-bottom: 4px; }
+  .furigana { font-size: .56em; line-height: 1.1; margin-bottom: 3px; }
   .jpmain { line-height: 1.08; }
   .verbs-table .jpmain { font-size: 25px; }
   .verbs-table .furigana { font-size: 12px; margin-bottom: 4px; }
@@ -850,9 +894,9 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
 
 .number-value { display: inline-block; margin-left: .55em; color: var(--muted); font-size: .55em; font-family: Arial, Helvetica, sans-serif; vertical-align: middle; }
 
-/* Irregular entries use red text only, never a tinted row background. */
-.irregular-row td { background: #fff !important; color: var(--irregular) !important; }
-.irregular-row td:first-child { box-shadow: none !important; }
+/* Irregular entries get a whisper of the rose accent plus a left rule -- restrained, not loud. */
+.irregular-row td { color: var(--irregular) !important; }
+.irregular-row td:first-child { box-shadow: inset 3px 0 0 var(--irregular) !important; }
 
 .section-hidden { display: none !important; }
 .hide-section { border: 0; background: transparent; color: var(--muted); font-size: 11px; padding: 4px 6px; cursor: pointer; }

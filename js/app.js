@@ -29,61 +29,6 @@ window.addEventListener('afterprint',()=>{
   document.querySelectorAll('.table-section').forEach(s=>s.classList.remove('print-target'));
 });
 
-/* Final unified search and viewing controls. */
-(function () {
-  const input = document.getElementById('tableSearch');
-  if (!input) return;
-  const freshInput = input.cloneNode(true);
-  input.replaceWith(freshInput);
-  const count = document.getElementById('searchCount');
-  const box = freshInput.closest('.search-box');
-  const sections = [...document.querySelectorAll('.table-section')];
-  function runSearch() {
-    const q = freshInput.value.trim().toLocaleLowerCase();
-    box.classList.toggle('has-value', Boolean(q));
-    let rows = 0, tables = 0;
-    sections.forEach(section => {
-      let sectionRows = 0;
-      section.querySelectorAll('tbody tr').forEach(row => {
-        const match = !q || row.textContent.toLocaleLowerCase().includes(q);
-        row.classList.toggle('search-hidden', !match);
-        if (match) sectionRows++;
-      });
-      const visible = !q || sectionRows > 0;
-      section.classList.toggle('search-hidden', !visible);
-      if (q && sectionRows > 0) section.classList.remove('section-hidden');
-      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
-      if (visible && q) { tables++; rows += sectionRows; expandSection(section); }
-    });
-    count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
-  }
-  freshInput.addEventListener('input', runSearch);
-  document.getElementById('clearSearch').addEventListener('click', function () {
-    freshInput.value = ''; runSearch(); freshInput.focus();
-  });
-  freshInput.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter') {
-      const first = document.querySelector('.table-section:not(.search-hidden) tbody tr:not(.search-hidden)');
-      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
-  document.addEventListener('keydown', function (event) {
-    if (event.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) {
-      event.preventDefault(); freshInput.focus();
-    } else if (event.key === 'Escape' && document.activeElement === freshInput) {
-      freshInput.value = ''; runSearch(); freshInput.blur();
-    }
-  });
-  document.querySelectorAll('.view-mode button').forEach(button => button.addEventListener('click', function () {
-    const mode = button.dataset.mode;
-    document.body.classList.remove('mode-japanese', 'mode-english');
-    if (mode !== 'all') document.body.classList.add('mode-' + mode);
-    document.querySelectorAll('.view-mode button').forEach(b => b.classList.toggle('active', b === button));
-  }));
-})();
-
-
-
 function toggleSection(section) {
   section.classList.toggle('collapsed');
   const head=section.querySelector('.section-head');
@@ -114,7 +59,7 @@ function goToTable(i) {
 function updateNavOnScroll() {
   const sections=[...document.querySelectorAll('.table-section')];
   let current=sections[0];
-  const y=window.scrollY+170;
+  const y=window.scrollY+230;
   for(const sec of sections) if(sec.offsetTop<=y) current=sec;
   document.querySelectorAll('.category-dropdown a').forEach(a=>{
     a.classList.toggle('active', current && a.dataset.target===current.dataset.table);
@@ -122,27 +67,6 @@ function updateNavOnScroll() {
 }
 window.addEventListener('scroll',updateNavOnScroll,{passive:true});
 window.addEventListener('load',updateNavOnScroll);
-
-/* Search should open sections containing matches. */
-document.addEventListener('DOMContentLoaded',()=>{
-  const input=document.getElementById('tableSearch');
-  if(input){
-    input.addEventListener('input',()=>{
-      setTimeout(()=>{
-        const q=input.value.trim().toLowerCase();
-        if(q){
-          document.querySelectorAll('.table-section').forEach(sec=>{
-            const rows=sec.querySelectorAll('tbody tr');
-            const has=[...rows].some(r=>r.textContent.toLowerCase().includes(q));
-            if(has) expandSection(sec);
-          });
-        }
-      },0);
-    });
-  }
-});
-
-
 
 function toggleCategory(button) {
   const menu = button.closest('.category-menu');
@@ -164,6 +88,7 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.category-menu')) closeCategoryMenus();
 });
 
+/* Per-table sorting: numbers, weekdays, and months sort naturally; everything else falls back to locale order. */
 (function(){
   const DAYS = {
     monday:0,tuesday:1,wednesday:2,thursday:3,friday:4,saturday:5,sunday:6,
@@ -211,96 +136,105 @@ document.addEventListener('click', e => {
   };
 })();
 
-
-
-window.addEventListener('load', function () {
-  const input = document.getElementById('tableSearch');
-  if (!input) return;
-  const clean = input.cloneNode(true);
-  input.replaceWith(clean);
-  const count = document.getElementById('searchCount');
-  const box = clean.closest('.search-box');
-  const sections = [...document.querySelectorAll('.table-section')];
-  function search() {
-    const q = clean.value.trim().toLocaleLowerCase();
-    box.classList.toggle('has-value', !!q);
-    let rows = 0, tables = 0;
-    sections.forEach(section => {
-      let hits = 0;
-      section.querySelectorAll('tbody tr').forEach(row => {
-        const ok = !q || row.textContent.toLocaleLowerCase().includes(q);
-        row.classList.toggle('search-hidden', !ok);
-        if (ok) hits++;
-      });
-      section.classList.toggle('search-hidden', !!q && !hits);
-      if (q && hits) section.classList.remove('section-hidden');
-      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
-      if (q && hits) { rows += hits; tables++; expandSection(section); }
-    });
-    count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
-  }
-  clean.addEventListener('input', search);
-  document.getElementById('clearSearch').onclick = () => { clean.value = ''; search(); clean.focus(); };
-  clean.onkeydown = event => {
-    if (event.key === 'Enter') {
-      const first = document.querySelector('.table-section:not(.search-hidden) tbody tr:not(.search-hidden)');
-      if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
-    }
-  };
-  document.addEventListener('keydown', event => {
-    if (event.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) { event.preventDefault(); clean.focus(); }
-    if (event.key === 'Escape' && document.activeElement === clean) { clean.value = ''; search(); clean.blur(); }
-  });
-});
-
-
 // Render the vocabulary data after the page shell is ready.
 document.addEventListener('DOMContentLoaded', function () {
   var host=document.getElementById('vocabulary');
   if (host && window.vocabularySections) host.innerHTML=window.vocabularySections.join('\n');
 });
 
-// CSP-safe delegated event wiring for generated vocabulary controls.
-document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".section-head").forEach(function (head) {
-    head.addEventListener("click", function (event) {
-      if (!event.target.closest("button, input, label")) toggleSection(head.parentElement);
+/* Search across Japanese, furigana, romaji and English; matching tables expand, empty ones hide. */
+document.addEventListener('DOMContentLoaded', function () {
+  const input = document.getElementById('tableSearch');
+  if (!input) return;
+  const count = document.getElementById('searchCount');
+  const box = input.closest('.search-box');
+  const sections = [...document.querySelectorAll('.table-section')];
+
+  function runSearch() {
+    const q = input.value.trim().toLocaleLowerCase();
+    box.classList.toggle('has-value', Boolean(q));
+    let rows = 0, tables = 0;
+    sections.forEach(section => {
+      let sectionRows = 0;
+      section.querySelectorAll('tbody tr').forEach(row => {
+        const match = !q || row.textContent.toLocaleLowerCase().includes(q);
+        row.classList.toggle('search-hidden', !match);
+        if (match) sectionRows++;
+      });
+      const visible = !q || sectionRows > 0;
+      section.classList.toggle('search-hidden', !visible);
+      if (q && sectionRows > 0) section.classList.remove('section-hidden');
+      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
+      if (visible && q) { tables++; rows += sectionRows; expandSection(section); }
     });
-    head.addEventListener("keydown", function (event) {
-      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSection(head.parentElement); }
-    });
+    count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
+  }
+
+  input.addEventListener('input', runSearch);
+  document.getElementById('clearSearch').addEventListener('click', function () {
+    input.value = ''; runSearch(); input.focus();
   });
-  document.querySelectorAll(".print-one").forEach(function (button) {
-    button.addEventListener("click", function (event) { event.stopPropagation(); printOne(button.closest(".table-section").dataset.table); });
+  input.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') {
+      const first = document.querySelector('.table-section:not(.search-hidden) tbody tr:not(.search-hidden)');
+      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (event.key === 'Escape') {
+      input.value = ''; runSearch(); input.blur();
+    }
   });
-  document.querySelectorAll(".sort-button").forEach(function (button) {
-    button.addEventListener("click", function (event) { event.stopPropagation(); sortTableFromButton(button); });
+  document.addEventListener('keydown', function (event) {
+    if (event.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) {
+      event.preventDefault(); input.focus();
+    }
   });
-  document.querySelectorAll(".category-button").forEach(function (button) {
-    button.addEventListener("click", function () { toggleCategory(button); });
-  });
-  document.querySelectorAll(".category-dropdown a").forEach(function (link) {
-    link.addEventListener("click", function (event) { event.preventDefault(); goToTable(link.dataset.target); closeCategoryMenus(); });
-  });
+
+  document.querySelectorAll('.view-mode button').forEach(button => button.addEventListener('click', function () {
+    const mode = button.dataset.mode;
+    document.body.classList.remove('mode-japanese', 'mode-english');
+    if (mode !== 'all') document.body.classList.add('mode-' + mode);
+    document.querySelectorAll('.view-mode button').forEach(b => b.classList.toggle('active', b === button));
+  }));
 });
-document.addEventListener("DOMContentLoaded", function () {
-  document.querySelector(".toolbar .primary")?.addEventListener("click", printSelected);
-  document.querySelector(".toolbar button:not(.primary)")?.addEventListener("click", printAll);
-  document.querySelector(".nav-actions button:first-child")?.addEventListener("click", expandAll);
-  document.querySelector(".nav-actions button:last-child")?.addEventListener("click", collapseAll);
-});document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".hide-section").forEach(function (button) {
-      button.addEventListener("click", function (event) {
-      event.stopPropagation();
-      var section = button.closest(".table-section");
-      section.dataset.userHidden = "true";
-      section.classList.add("section-hidden");
+
+// CSP-safe delegated event wiring for generated vocabulary controls.
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('.section-head').forEach(function (head) {
+    head.addEventListener('click', function (event) {
+      if (!event.target.closest('button, input, label')) toggleSection(head.parentElement);
+    });
+    head.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggleSection(head.parentElement); }
     });
   });
-  document.querySelectorAll(".category-dropdown a[data-target]").forEach(function (link) {
-    link.addEventListener("click", function () {
-      var section = document.querySelector('.table-section[data-table="' + link.dataset.target + '"]');
-      if (section) { section.dataset.userHidden = "false"; section.classList.remove("section-hidden"); }
-    }, true);
+  document.querySelectorAll('.print-one').forEach(function (button) {
+    button.addEventListener('click', function (event) { event.stopPropagation(); printOne(button.closest('.table-section').dataset.table); });
   });
+  document.querySelectorAll('.sort-button').forEach(function (button) {
+    button.addEventListener('click', function (event) { event.stopPropagation(); sortTableFromButton(button); });
+  });
+  document.querySelectorAll('.hide-section').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      const section = button.closest('.table-section');
+      section.dataset.userHidden = 'true';
+      section.classList.add('section-hidden');
+    });
+  });
+  document.querySelectorAll('.category-button').forEach(function (button) {
+    button.addEventListener('click', function () { toggleCategory(button); });
+  });
+  document.querySelectorAll('.category-dropdown a').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      const section = document.querySelector('.table-section[data-table="' + link.dataset.target + '"]');
+      if (section) { section.dataset.userHidden = 'false'; section.classList.remove('section-hidden'); }
+      goToTable(link.dataset.target);
+      closeCategoryMenus();
+    });
+  });
+
+  document.querySelector('.toolbar .primary')?.addEventListener('click', printSelected);
+  document.querySelector('.toolbar button:not(.primary)')?.addEventListener('click', printAll);
+  document.querySelector('.nav-actions button:first-child')?.addEventListener('click', expandAll);
+  document.querySelector('.nav-actions button:last-child')?.addEventListener('click', collapseAll);
 });
