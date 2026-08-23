@@ -916,3 +916,104 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
   .category-dropdown a:hover, .category-dropdown a.active { background: #e3edf5; color: #384c5f; }
   .section-head h2::after { color: #6a89a7; }
 }
+
+/* Harmonized header: compact controls that belong to the same visual system as the cards. */
+@media screen {
+  .sticky-header {
+    margin-left: -42px;
+    margin-right: -42px;
+    margin-bottom: 30px;
+    padding: 16px 42px 18px;
+    background: rgba(238, 243, 247, .96) !important;
+    border-bottom: 1px solid #c3cfdb !important;
+    box-shadow: 0 8px 22px rgba(45, 61, 76, .08);
+  }
+
+  .sticky-header .toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 14px;
+  }
+
+  .sticky-header .toolbar .hint {
+    color: #4f6b85;
+    font-size: 11px;
+    letter-spacing: .01em;
+  }
+
+  .sticky-header .category-nav {
+    display: inline-flex;
+    vertical-align: middle;
+  }
+
+  .sticky-header .nav-actions {
+    display: inline-flex;
+    vertical-align: middle;
+    margin: 0 0 0 10px;
+    padding: 0;
+  }
+
+  .sticky-header .nav-actions button {
+    color: #4f6b85;
+    font-size: 11px;
+    padding: 7px 8px;
+    border-radius: 7px;
+  }
+
+  .sticky-header .nav-actions button:hover {
+    background: #e3edf5;
+    color: #384c5f;
+  }
+
+  .sticky-header .study-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 16px 0 0;
+    padding-top: 15px;
+    border-top: 1px solid rgba(195, 207, 219, .8);
+  }
+
+  .sticky-header .search-box {
+    width: min(560px, 100%);
+    background: rgba(255, 255, 255, .9);
+  }
+
+  .sticky-header .search-box input::placeholder {
+    color: #6f8290;
+  }
+
+  .sticky-header .view-mode {
+    background: rgba(255, 255, 255, .78);
+    color: #384c5f;
+  }
+
+  .sticky-header .view-mode button {
+    color: #4f6b85;
+  }
+
+  .sticky-header .view-mode button:hover,
+  .sticky-header .view-mode button.active {
+    color: #384c5f;
+    background: #d1dbe4;
+  }
+}
+
+@media screen and (max-width: 760px) {
+  .sticky-header {
+    margin-left: -18px;
+    margin-right: -18px;
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .sticky-header .toolbar .hint {
+    width: 100%;
+    margin: 0;
+  }
+
+  .sticky-header .study-toolbar {
+    align-items: stretch;
+  }
+}
