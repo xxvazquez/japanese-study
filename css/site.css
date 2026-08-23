@@ -1,3 +1,14 @@
+@media print {
+  /* Remove the screen-style card outline; keep the table grid itself. */
+  .table-section {
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
 
 @page {
   size: A4 portrait;
@@ -825,3 +836,31 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
 
 :focus-visible { outline: 3px solid rgba(63,120,104,.55); outline-offset: 3px; }
 .section-head:focus-visible, .category-button:focus-visible, .table-nav a:focus-visible { outline-color: var(--accent); }
+
+
+/* Desktop study typography: give Japanese and furigana room to breathe. */
+@media screen and (min-width: 761px) {
+  .vocab th { font-size: 12px; padding-top: 11px; padding-bottom: 11px; }
+  .vocab td { font-size: 14px; line-height: 1.5; padding-top: 11px; padding-bottom: 11px; }
+  .vocab td.jp { font-size: 21px; line-height: 2.3; }
+  .furigana { font-size: .52em; line-height: 1.1; margin-bottom: 4px; }
+  .jpmain { line-height: 1.08; }
+  .verbs-table .jpmain { font-size: 25px; }
+  .verbs-table .furigana { font-size: 12px; margin-bottom: 4px; }
+  .verbs-table .verb-romaji { font-size: 13px; }
+  .verbs-table .verb-pair-row td { padding-top: 16px !important; padding-bottom: 16px !important; }
+}
+
+
+/* Desktop study typography: give Japanese and furigana room to breathe. */
+@media screen and (min-width: 761px) {
+  .vocab th { font-size: 12px; padding-top: 11px; padding-bottom: 11px; }
+  .vocab td { font-size: 14px; line-height: 1.5; padding-top: 11px; padding-bottom: 11px; }
+  .vocab td.jp { font-size: 21px; line-height: 2.3; }
+  .furigana { font-size: .52em; line-height: 1.1; margin-bottom: 4px; }
+  .jpmain { line-height: 1.08; }
+  .verbs-table .jpmain { font-size: 25px; }
+  .verbs-table .furigana { font-size: 12px; margin-bottom: 4px; }
+  .verbs-table .verb-romaji { font-size: 13px; }
+  .verbs-table .verb-pair-row td { padding-top: 16px !important; padding-bottom: 16px !important; }
+}
