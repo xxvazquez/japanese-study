@@ -1,6 +1,6 @@
 # Japanese Study Reference
 
-A fast, searchable Japanese food, kitchen, and N5 reference tool designed for quick lookup and clean printing.
+A fast, searchable Japanese reference guide for food, kitchen, and N5 vocabulary designed for quick lookup and clean printing.
 
 ## Project structure
 
@@ -37,7 +37,7 @@ The current local refactor was checked for:
 - Table preservation
 - Whitespace and patch errors
 
-The vocabulary data currently contains 346 body rows across 10 tables.
+The vocabulary data currently contains 346 body rows across 14 tables.
 
 ## Validation and GitHub Pages
 
@@ -45,7 +45,7 @@ Run the local checks with:
 
     npm run validate
 
-The validation script checks that the vocabulary data still contains 10 tables and 346 body rows, then checks JavaScript syntax.
+The validation script checks that the vocabulary data still contains 14 tables and 346 body rows, then checks JavaScript syntax.
 
 The repository includes a GitHub Actions workflow at .github/workflows/pages.yml. It deploys the repository root as a static GitHub Pages site whenever changes are pushed to main. In the repository settings, set Pages to use GitHub Actions as the deployment source.
 

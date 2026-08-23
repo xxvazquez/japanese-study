@@ -51,6 +51,8 @@ window.addEventListener('afterprint',()=>{
       });
       const visible = !q || sectionRows > 0;
       section.classList.toggle('search-hidden', !visible);
+      if (q && sectionRows > 0) section.classList.remove('section-hidden');
+      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
       if (visible && q) { tables++; rows += sectionRows; expandSection(section); }
     });
     count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
@@ -231,6 +233,8 @@ window.addEventListener('load', function () {
         if (ok) hits++;
       });
       section.classList.toggle('search-hidden', !!q && !hits);
+      if (q && hits) section.classList.remove('section-hidden');
+      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
       if (q && hits) { rows += hits; tables++; expandSection(section); }
     });
     count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
@@ -286,15 +290,17 @@ document.addEventListener("DOMContentLoaded", function () {
   document.querySelector(".nav-actions button:last-child")?.addEventListener("click", collapseAll);
 });document.addEventListener("DOMContentLoaded", function () {
   document.querySelectorAll(".hide-section").forEach(function (button) {
-    button.addEventListener("click", function (event) {
+      button.addEventListener("click", function (event) {
       event.stopPropagation();
-      button.closest(".table-section").classList.add("section-hidden");
+      var section = button.closest(".table-section");
+      section.dataset.userHidden = "true";
+      section.classList.add("section-hidden");
     });
   });
   document.querySelectorAll(".category-dropdown a[data-target]").forEach(function (link) {
     link.addEventListener("click", function () {
       var section = document.querySelector('.table-section[data-table="' + link.dataset.target + '"]');
-      if (section) section.classList.remove("section-hidden");
+      if (section) { section.dataset.userHidden = "false"; section.classList.remove("section-hidden"); }
     }, true);
   });
 });

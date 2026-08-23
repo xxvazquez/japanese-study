@@ -8,7 +8,7 @@ vm.runInNewContext(source, sandbox);
 const sections = sandbox.window.vocabularySections || [];
 const tables = sections.length;
 const rows = sections.reduce((total, section) => total + ((section.match(/<tr>/g) || []).length - 1), 0);
-const expectedTables = 13
+const expectedTables = 14
 const expectedRows = 346;
 if (tables !== expectedTables || rows !== expectedRows) {
   console.error("Vocabulary validation failed: found " + rows + " rows across " + tables + " tables; expected " + expectedRows + " rows across " + expectedTables + " tables.");
