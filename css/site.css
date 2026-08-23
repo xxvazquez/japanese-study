@@ -822,3 +822,6 @@ body.mode-english .vocab td:nth-child(3) { width: 100%; }
     padding: 0 !important;
   }
 }
+
+:focus-visible { outline: 3px solid rgba(63,120,104,.55); outline-offset: 3px; }
+.section-head:focus-visible, .category-button:focus-visible, .table-nav a:focus-visible { outline-color: var(--accent); }

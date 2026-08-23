@@ -37,4 +37,16 @@ The current local refactor was checked for:
 - Table preservation
 - Whitespace and patch errors
 
-The vocabulary data currently contains 335 rows across 19 tables.
+The vocabulary data currently contains 316 body rows across 19 tables.
+
+## Validation and GitHub Pages
+
+Run the local checks with:
+
+    npm run validate
+
+The validation script checks that the vocabulary data still contains 19 tables and 316 body rows, then checks JavaScript syntax.
+
+The repository includes a GitHub Actions workflow at .github/workflows/pages.yml. It deploys the repository root as a static GitHub Pages site whenever changes are pushed to main. In the repository settings, set Pages to use GitHub Actions as the deployment source.
+
+The site includes a same-origin Content Security Policy, keyboard-focus styling, and an aria-live search result announcement.

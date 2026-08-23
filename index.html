@@ -1,29 +1,30 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Food, Kitchen &amp; Japanese</title><link rel="stylesheet" href="css/site.css"></head><body><div class="app">
-<div class="sticky-header"><div class="toolbar"><button class="primary" onclick="printSelected()">Print selected tables</button><button onclick="printAll()">Print all</button><span class="hint">A4 print layout · tables can continue across multiple sheets</span></div>
+<title>Food, Kitchen &amp; Japanese</title><link rel="stylesheet" href="css/site.css">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"></head><body><div class="app">
+<div class="sticky-header"><div class="toolbar"><button class="primary">Print selected tables</button><button>Print all</button><span class="hint">A4 print layout · tables can continue across multiple sheets</span></div>
 <div class="category-nav"><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">Food &amp; Ingredients<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-1" data-target="1" onclick="event.preventDefault();goToTable(1);closeCategoryMenus()">Common Fruits</a><a href="#table-2" data-target="2" onclick="event.preventDefault();goToTable(2);closeCategoryMenus()">Drinks &amp; Beverages</a><a href="#table-3" data-target="3" onclick="event.preventDefault();goToTable(3);closeCategoryMenus()">Eggs &amp; Dairy</a><a href="#table-4" data-target="4" onclick="event.preventDefault();goToTable(4);closeCategoryMenus()">Fish &amp; Seafood</a><a href="#table-6" data-target="6" onclick="event.preventDefault();goToTable(6);closeCategoryMenus()">Meat, Poultry &amp; Meat Cuts</a><a href="#table-8" data-target="8" onclick="event.preventDefault();goToTable(8);closeCategoryMenus()">Rice, Noodles &amp; Staples</a><a href="#table-13" data-target="13" onclick="event.preventDefault();goToTable(13);closeCategoryMenus()">Seasonings, Sauces &amp; Cooking Ingredients</a><a href="#table-10" data-target="10" onclick="event.preventDefault();goToTable(10);closeCategoryMenus()">Vegetables &amp; Produce</a></div></div><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">Dishes &amp; Meals<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-0" data-target="0" onclick="event.preventDefault();goToTable(0);closeCategoryMenus()">Basic Food &amp; Meal Terms</a><a href="#table-5" data-target="5" onclick="event.preventDefault();goToTable(5);closeCategoryMenus()">Japanese Foods &amp; Dishes</a><a href="#table-7" data-target="7" onclick="event.preventDefault();goToTable(7);closeCategoryMenus()">Ramen: Broths, Toppings &amp; Extras</a><a href="#table-9" data-target="9" onclick="event.preventDefault();goToTable(9);closeCategoryMenus()">Taste, Texture &amp; Temperature Descriptors</a></div></div><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">Kitchen &amp; Cooking<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-11" data-target="11" onclick="event.preventDefault();goToTable(11);closeCategoryMenus()">Cooking Tools &amp; Utensils</a><a href="#table-12" data-target="12" onclick="event.preventDefault();goToTable(12);closeCategoryMenus()">Kitchen Appliances</a><a href="#table-14" data-target="14" onclick="event.preventDefault();goToTable(14);closeCategoryMenus()">Tableware &amp; Cutlery</a></div></div><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">N5 Verbs<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-17" data-target="17" onclick="event.preventDefault();goToTable(17);closeCategoryMenus()">N5 Verbs — Plain Forms</a><a href="#table-18" data-target="18" onclick="event.preventDefault();goToTable(18);closeCategoryMenus()">N5 Verbs — Polite Forms</a></div></div><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">N5 Adjectives<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-15" data-target="15" onclick="event.preventDefault();goToTable(15);closeCategoryMenus()">Common N5 Adjectives</a></div></div><div class="category-menu">
-<button type="button" class="category-button" aria-expanded="false" onclick="toggleCategory(this)">Numbers &amp; Counters<span class="category-chevron">⌄</span></button>
-<div class="category-dropdown"><a href="#table-16" data-target="16" onclick="event.preventDefault();goToTable(16);closeCategoryMenus()">Counters for Food &amp; Drinks</a></div></div></div>
+<button type="button" class="category-button" aria-expanded="false">Food &amp; Ingredients<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-1" data-target="1">Common Fruits</a><a href="#table-2" data-target="2">Drinks &amp; Beverages</a><a href="#table-3" data-target="3">Eggs &amp; Dairy</a><a href="#table-4" data-target="4">Fish &amp; Seafood</a><a href="#table-6" data-target="6">Meat, Poultry &amp; Meat Cuts</a><a href="#table-8" data-target="8">Rice, Noodles &amp; Staples</a><a href="#table-13" data-target="13">Seasonings, Sauces &amp; Cooking Ingredients</a><a href="#table-10" data-target="10">Vegetables &amp; Produce</a></div></div><div class="category-menu">
+<button type="button" class="category-button" aria-expanded="false">Dishes &amp; Meals<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-0" data-target="0">Basic Food &amp; Meal Terms</a><a href="#table-5" data-target="5">Japanese Foods &amp; Dishes</a><a href="#table-7" data-target="7">Ramen: Broths, Toppings &amp; Extras</a><a href="#table-9" data-target="9">Taste, Texture &amp; Temperature Descriptors</a></div></div><div class="category-menu">
+<button type="button" class="category-button" aria-expanded="false">Kitchen &amp; Cooking<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-11" data-target="11">Cooking Tools &amp; Utensils</a><a href="#table-12" data-target="12">Kitchen Appliances</a><a href="#table-14" data-target="14">Tableware &amp; Cutlery</a></div></div><div class="category-menu">
+<button type="button" class="category-button" aria-expanded="false">N5 Verbs<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-17" data-target="17">N5 Verbs — Plain Forms</a><a href="#table-18" data-target="18">N5 Verbs — Polite Forms</a></div></div><div class="category-menu">
+<button type="button" class="category-button" aria-expanded="false">N5 Adjectives<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-15" data-target="15">Common N5 Adjectives</a></div></div><div class="category-menu">
+<button type="button" class="category-button" aria-expanded="false">Numbers &amp; Counters<span class="category-chevron">⌄</span></button>
+<div class="category-dropdown"><a href="#table-16" data-target="16">Counters for Food &amp; Drinks</a></div></div></div>
 <div class="nav-actions">
-  <button type="button" onclick="expandAll()">Expand all</button>
-  <button type="button" onclick="collapseAll()">Collapse all</button>
+  <button type="button">Expand all</button>
+  <button type="button">Collapse all</button>
 </div>
 
 <div class="study-toolbar">
   <label class="search-box">
     <span class="search-icon">⌕</span>
-    <input id="tableSearch" type="search" placeholder="Search Japanese, furigana, romaji or English…" autocomplete="off">
+    <input id="tableSearch" type="search" aria-label="Search vocabulary" aria-controls="vocabulary" placeholder="Search Japanese, furigana, romaji or English…" autocomplete="off">
     <button type="button" class="clear-search" id="clearSearch" aria-label="Clear search">×</button>
   </label>
   <div class="view-mode" aria-label="Viewing mode">
@@ -32,7 +33,7 @@
     <button type="button" data-mode="english">English</button>
   </div>
 </div>
-  <span id="searchCount" class="search-count"></span>
+  <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
 </div>
 <h1 class="document-title">Food, Kitchen &amp; Japanese</h1>
 <div id="vocabulary" aria-live="polite"></div>

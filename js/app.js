@@ -255,3 +255,33 @@ document.addEventListener('DOMContentLoaded', function () {
   var host=document.getElementById('vocabulary');
   if (host && window.vocabularySections) host.innerHTML=window.vocabularySections.join('\n');
 });
+
+// CSP-safe delegated event wiring for generated vocabulary controls.
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".section-head").forEach(function (head) {
+    head.addEventListener("click", function (event) {
+      if (!event.target.closest("button, input, label")) toggleSection(head.parentElement);
+    });
+    head.addEventListener("keydown", function (event) {
+      if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSection(head.parentElement); }
+    });
+  });
+  document.querySelectorAll(".print-one").forEach(function (button) {
+    button.addEventListener("click", function (event) { event.stopPropagation(); printOne(button.closest(".table-section").dataset.table); });
+  });
+  document.querySelectorAll(".sort-button").forEach(function (button) {
+    button.addEventListener("click", function (event) { event.stopPropagation(); sortTableFromButton(button); });
+  });
+  document.querySelectorAll(".category-button").forEach(function (button) {
+    button.addEventListener("click", function () { toggleCategory(button); });
+  });
+  document.querySelectorAll(".category-dropdown a").forEach(function (link) {
+    link.addEventListener("click", function (event) { event.preventDefault(); goToTable(link.dataset.target); closeCategoryMenus(); });
+  });
+});
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelector(".toolbar .primary")?.addEventListener("click", printSelected);
+  document.querySelector(".toolbar button:not(.primary)")?.addEventListener("click", printAll);
+  document.querySelector(".nav-actions button:first-child")?.addEventListener("click", expandAll);
+  document.querySelector(".nav-actions button:last-child")?.addEventListener("click", collapseAll);
+});

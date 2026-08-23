@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/validate-vocabulary.js && node --check js/app.js && node --check data/vocabulary.js"
+  }
+}
