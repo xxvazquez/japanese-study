@@ -47,7 +47,7 @@ html, body {
 .app {
   max-width: 1120px;
   margin: 0 auto;
-  padding: 30px 42px 70px;
+  padding: 20px 42px 70px;
 }
 
 /* Brand mark */
@@ -398,15 +398,17 @@ table {
   }
 }
 
-/* Sticky navigation */
+/* Sticky navigation -- a floating rounded panel, like the cards below it, not a square bar. */
 .sticky-header {
   position: sticky;
-  top: 0;
+  top: 12px;
   z-index: 1000;
   background: var(--surface);
-  border-bottom: 1px solid var(--line);
-  margin: -30px -42px 30px;
-  padding: 16px 42px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(35, 50, 55, .05);
+  margin: 0 0 30px;
+  padding: 16px 24px;
 }
 .sticky-header .toolbar { margin: 0 0 14px; }
 .header-row {
@@ -622,18 +624,71 @@ table {
 }
 .view-mode button:hover,
 .view-mode button.active { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
-/* Hide columns with visibility (not display) so the remaining column keeps its position instead of sliding into the gap. */
+/* Japanese/English view modes hide the TEXT of the other columns only -- the column,
+   its border, its header/zebra background, and the sort control all stay exactly as they are. */
 body.mode-japanese .vocab th:nth-child(2),
+body.mode-japanese .vocab th:nth-child(2) *,
 body.mode-japanese .vocab td:nth-child(2),
+body.mode-japanese .vocab td:nth-child(2) *,
 body.mode-japanese .vocab th:nth-child(3),
+body.mode-japanese .vocab th:nth-child(3) *,
 body.mode-japanese .vocab td:nth-child(3),
+body.mode-japanese .vocab td:nth-child(3) *,
 body.mode-english .vocab th:nth-child(1),
+body.mode-english .vocab th:nth-child(1) *,
 body.mode-english .vocab td:nth-child(1),
+body.mode-english .vocab td:nth-child(1) *,
 body.mode-english .vocab th:nth-child(2),
-body.mode-english .vocab td:nth-child(2) {
-  visibility: hidden;
-  border-color: transparent;
+body.mode-english .vocab th:nth-child(2) *,
+body.mode-english .vocab td:nth-child(2),
+body.mode-english .vocab td:nth-child(2) * {
+  color: transparent !important;
 }
+
+/* Carousel: one table at a time when browsing; buttons on desktop, swipe on mobile. */
+.carousel-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.carousel-prev,
+.carousel-next {
+  appearance: none;
+  border: 1px solid transparent;
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, color .15s ease;
+}
+.carousel-prev:hover,
+.carousel-next:hover {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
+.carousel-position {
+  margin: 0 auto;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+/* Search shows every match at once (the old stacked list); the carousel only applies while browsing without a query. */
+body:not(.carousel-mode) .carousel-nav { display: none; }
+body.carousel-mode .table-section { display: none; }
+body.carousel-mode .table-section.carousel-active { display: block; touch-action: pan-y; }
+body.carousel-mode .nav-actions { display: none; }
+@media print {
+  .carousel-nav { display: none !important; }
+  body.carousel-mode .table-section { display: block; }
+}
+
 @media print {
   .view-mode { display:none !important; }
   .vocab thead { display: table-header-group; }
@@ -645,13 +700,11 @@ body.mode-english .vocab td:nth-child(2) {
     padding: 22px 18px 56px;
   }
   .sticky-header {
-    margin-left:-18px;
-    margin-right:-18px;
-    padding-left:18px;
-    padding-right:18px;
+    padding: 14px 16px;
+    border-radius: 14px;
   }
   .table-section {
-    scroll-margin-top: 360px;
+    scroll-margin-top: 300px;
   }
   .toolbar {
     flex-wrap: wrap;
@@ -709,62 +762,39 @@ body.mode-english .vocab td:nth-child(2) {
   .nav-actions { display:none !important; }
 }
 
-/* Category navigation -- a slim text strip, not a heavy button. */
+/* Category navigation -- a plain button, same family as the other pills. */
 .category-nav {
   display:flex;
   align-items:center;
   gap:8px;
   position:relative;
-  flex: 1 1 auto;
-  min-width: 0;
 }
 .category-menu {
   position:relative;
-  min-width: 0;
-  max-width: 100%;
 }
 .category-button {
   appearance:none;
-  border:none;
-  background:transparent;
-  color:var(--muted);
-  border-radius:6px;
-  padding:6px 4px;
-  font:400 12px/1.3 Arial, Helvetica, sans-serif;
+  border:1px solid transparent;
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:8px;
+  padding:8px 13px;
+  font:700 12px/1 Arial, Helvetica, sans-serif;
   cursor:pointer;
   display:flex;
-  align-items:baseline;
-  gap:8px;
-  max-width: 100%;
-  min-width: 0;
+  align-items:center;
+  gap:7px;
+  transition: background .15s ease, color .15s ease;
 }
-.browse-label {
-  flex: 0 0 auto;
-  color: var(--ink);
-  font-weight: 700;
-}
-.browse-preview {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--muted);
-  text-align: left;
-}
-.category-button:hover .browse-label,
-.category-menu.open .browse-label {
+.category-button:hover,
+.category-menu.open .category-button {
+  background: var(--accent-soft);
   color: var(--accent-dark);
-}
-.category-button:hover .browse-preview,
-.category-menu.open .browse-preview {
-  color: var(--accent);
 }
 .category-chevron {
   flex: 0 0 auto;
   font-size:12px;
   line-height:1;
-  color: var(--muted);
   transition:transform .15s ease;
 }
 .category-menu.open .category-chevron {

@@ -51,12 +51,17 @@ function goToTable(i) {
   const section=document.querySelector(`.table-section[data-table="${i}"]`);
   if (!section) return;
   expandSection(section);
-  section.scrollIntoView({behavior:'smooth',block:'start'});
+  if (document.body.classList.contains('carousel-mode') && window.__carousel) {
+    window.__carousel.activate(section);
+  } else {
+    section.scrollIntoView({behavior:'smooth',block:'start'});
+  }
   document.querySelectorAll('.category-dropdown a').forEach(a=>a.classList.remove('active'));
   const link=document.querySelector(`.category-dropdown a[data-target="${i}"]`);
   if(link) link.classList.add('active');
 }
 function updateNavOnScroll() {
+  if (document.body.classList.contains('carousel-mode')) return;
   const sections=[...document.querySelectorAll('.table-section')];
   let current=sections[0];
   const y=window.scrollY+230;
@@ -168,6 +173,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (visible && q) { tables++; rows += sectionRows; expandSection(section); }
     });
     count.textContent = q ? rows + ' matching row' + (rows === 1 ? '' : 's') + ' · ' + tables + ' table' + (tables === 1 ? '' : 's') : '';
+
+    // A query needs every match visible at once, so it drops out of the one-table-at-a-time carousel.
+    document.body.classList.toggle('carousel-mode', !q);
+    if (!q && window.__carousel) window.__carousel.resume();
   }
 
   input.addEventListener('input', runSearch);
@@ -216,8 +225,10 @@ document.addEventListener('DOMContentLoaded', function () {
     button.addEventListener('click', function (event) {
       event.stopPropagation();
       const section = button.closest('.table-section');
+      const wasActive = section.classList.contains('carousel-active');
       section.dataset.userHidden = 'true';
       section.classList.add('section-hidden');
+      if (wasActive && window.__carousel) window.__carousel.step(1);
     });
   });
   document.querySelectorAll('.category-button').forEach(function (button) {
@@ -237,4 +248,80 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelector('.toolbar button:not(.primary)')?.addEventListener('click', printAll);
   document.querySelector('.nav-actions button:first-child')?.addEventListener('click', expandAll);
   document.querySelector('.nav-actions button:last-child')?.addEventListener('click', collapseAll);
+});
+
+/* Carousel: browsing shows one table at a time (buttons on desktop, swipe on mobile);
+   a search query drops back to the plain stacked list so every match stays visible at once. */
+document.addEventListener('DOMContentLoaded', function () {
+  const prevBtn = document.querySelector('.carousel-prev');
+  const nextBtn = document.querySelector('.carousel-next');
+  const posEl = document.getElementById('carouselPosition');
+  const vocab = document.getElementById('vocabulary');
+  if (!prevBtn || !nextBtn || !vocab) return;
+
+  function all() { return [...document.querySelectorAll('.table-section')]; }
+  function isHidden(section) { return section.dataset.userHidden === 'true'; }
+  function currentIndex(sections) {
+    const idx = sections.findIndex(s => s.classList.contains('carousel-active'));
+    return idx === -1 ? 0 : idx;
+  }
+
+  function activate(section) {
+    all().forEach(s => s.classList.remove('carousel-active'));
+    section.classList.add('carousel-active');
+    expandSection(section);
+    const sections = all();
+    posEl.textContent = (sections.indexOf(section) + 1) + ' / ' + sections.length;
+    document.querySelectorAll('.category-dropdown a').forEach(a => a.classList.remove('active'));
+    const link = document.querySelector('.category-dropdown a[data-target="' + section.dataset.table + '"]');
+    if (link) link.classList.add('active');
+    window.scrollTo({ top: 0 });
+  }
+
+  function step(delta) {
+    const sections = all();
+    if (!sections.length) return;
+    let idx = currentIndex(sections);
+    for (let i = 0; i < sections.length; i++) {
+      idx = (idx + delta + sections.length) % sections.length;
+      if (!isHidden(sections[idx])) break;
+    }
+    activate(sections[idx]);
+  }
+
+  function resume() {
+    const sections = all();
+    const stillActive = sections.find(s => s.classList.contains('carousel-active') && !isHidden(s));
+    activate(stillActive || sections.find(s => !isHidden(s)) || sections[0]);
+  }
+
+  window.__carousel = { activate, step, resume };
+
+  prevBtn.addEventListener('click', () => step(-1));
+  nextBtn.addEventListener('click', () => step(1));
+
+  document.addEventListener('keydown', function (event) {
+    if (!document.body.classList.contains('carousel-mode')) return;
+    if (/input|textarea|select/i.test(document.activeElement.tagName)) return;
+    if (event.key === 'ArrowRight') step(1);
+    else if (event.key === 'ArrowLeft') step(-1);
+  });
+
+  let touchX = 0, touchY = 0, tracking = false;
+  vocab.addEventListener('touchstart', function (event) {
+    if (!document.body.classList.contains('carousel-mode')) return;
+    tracking = true;
+    touchX = event.touches[0].clientX;
+    touchY = event.touches[0].clientY;
+  }, { passive: true });
+  vocab.addEventListener('touchend', function (event) {
+    if (!tracking) return;
+    tracking = false;
+    const dx = event.changedTouches[0].clientX - touchX;
+    const dy = event.changedTouches[0].clientY - touchY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
+  }, { passive: true });
+
+  const first = all().find(s => !isHidden(s)) || all()[0];
+  if (first) activate(first);
 });
