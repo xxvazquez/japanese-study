@@ -304,15 +304,20 @@ document.addEventListener('DOMContentLoaded', function () {
     box.classList.toggle('has-value', Boolean(q));
     const filter = currentFilter();
     let totalRows = 0, totalTables = 0;
+    const sectionOrder = [];
 
-    sections.forEach(section => {
+    sections.forEach((section, originalIndex) => {
       const tbody = section.querySelector('tbody');
       const ranked = [];
-      let sectionRows = 0;
+      let sectionRows = 0, sectionBest = null;
       tbody.querySelectorAll('tr').forEach(row => {
         const { match, rank } = evaluateRow(row, q, filter);
         row.classList.toggle('search-hidden', !match);
-        if (match) { sectionRows++; ranked.push({ row, rank }); }
+        if (match) {
+          sectionRows++;
+          ranked.push({ row, rank });
+          if (sectionBest === null || rank < sectionBest) sectionBest = rank;
+        }
       });
       if (q) { ranked.sort((a, b) => a.rank - b.rank); ranked.forEach(r => tbody.appendChild(r.row)); }
       else restoreOrder(tbody);
@@ -322,8 +327,20 @@ document.addEventListener('DOMContentLoaded', function () {
       if (q && sectionRows > 0) section.classList.remove('section-hidden');
       if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
       if (visible && q) { totalTables++; totalRows += sectionRows; expandSection(section); }
+      sectionOrder.push({ section, rank: sectionBest === null ? Infinity : sectionBest, originalIndex });
     });
     count.textContent = q ? totalRows + ' matching row' + (totalRows === 1 ? '' : 's') + ' · ' + totalTables + ' table' + (totalTables === 1 ? '' : 's') : '';
+
+    // The best match overall should be the first thing on the page, not just first
+    // within whichever table happens to sort earliest -- so reorder the table
+    // sections themselves by their best contained match, ties kept in table order.
+    const host = document.getElementById('vocabulary');
+    if (q) {
+      sectionOrder.sort((a, b) => a.rank - b.rank || a.originalIndex - b.originalIndex);
+      sectionOrder.forEach(s => host.appendChild(s.section));
+    } else {
+      sections.forEach(section => host.appendChild(section));
+    }
 
     // A query needs every match visible at once, so it drops out of the one-table-at-a-time carousel.
     document.body.classList.toggle('carousel-mode', !q);

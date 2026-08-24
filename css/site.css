@@ -7,7 +7,7 @@
   /* Figma "Blue Gray" family (base #6a89a7) plus a restrained rose pulled from
      the logo, used only as a functional accent (highlights, irregular rows) --
      never decoratively. No beige/cream/warm tones anywhere. */
-  --ink: #26333f;
+  --ink: #3d4f61;
   --muted: #63788c;
   --faint: #93a3b3;
   --furigana: #7488a0;
@@ -397,35 +397,46 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   font-weight: 700;
   letter-spacing: .04em;
   text-transform: uppercase;
-  padding: 8px 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--line);
 }
 .vocab td {
-  padding: 9px 12px;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   font-size: 13px;
   line-height: 1.4;
   color: var(--ink);
   background: #fff;
+  /* table-layout: fixed already enforces each column's width; this makes sure
+     content actually respects it -- a long unbroken word wraps inside its own
+     cell instead of overflowing into the next column. */
+  overflow-wrap: break-word;
 }
 .vocab tbody tr:last-child td { border-bottom: 0; }
 .vocab tbody tr:nth-child(even) td { background: var(--surface); }
 .vocab tbody tr:hover td { background: var(--accent-soft); }
 
-.vocab th:nth-child(1), .vocab td:nth-child(1) { width: 38%; }
-.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 20%; }
-.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 42%; }
+/* Widths are weighted by what each column actually holds: Japanese words run
+   1-5 characters at a large size, romaji is almost always one short word, and
+   English is the one that runs to full phrases and wraps -- so it gets the room. */
+.vocab th:nth-child(1), .vocab td:nth-child(1) { width: 32%; }
+.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 24%; }
+.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 44%; }
 
 /* Japanese: the primary column. */
 .vocab td.jp {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
   font-size: 18px;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.9;
   color: var(--ink);
 }
-.jpword { vertical-align: middle; white-space: nowrap; }
+/* No white-space:nowrap here: each <ruby> stays intact on its own (browsers never
+   split a ruby base from its annotation), but the word as a whole must still be
+   able to wrap onto a second line inside its own column rather than overflow
+   into the next one. */
+.jpword { vertical-align: middle; }
 .jpword ruby { ruby-position: over; }
 .jpmain { line-height: 1.05; }
 
@@ -515,11 +526,11 @@ body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(
 }
 
 @media screen and (min-width: 761px) {
-  .vocab th { font-size: 11px; padding-top: 10px; padding-bottom: 10px; }
-  .vocab td { font-size: 14px; padding-top: 10px; padding-bottom: 10px; }
-  .vocab td.jp { font-size: 22px; line-height: 2.1; }
-  .furigana { font-size: .5em; }
-  .vocab td:nth-child(2) { font-size: 13.5px; }
+  .vocab th { font-size: 12px; padding-top: 12px; padding-bottom: 12px; }
+  .vocab td { font-size: 16px; padding-top: 12px; padding-bottom: 12px; }
+  .vocab td.jp { font-size: 24px; line-height: 2.1; }
+  .furigana { font-size: .48em; }
+  .vocab td:nth-child(2) { font-size: 16px; }
 }
 
 @media (max-width: 700px) {
