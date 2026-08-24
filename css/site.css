@@ -1,35 +1,25 @@
-@media print {
-  /* Remove the screen-style card outline; keep the table grid itself. */
-  .table-section {
-    border: 0 !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-  }
-}
-
-
 @page {
   size: A4 portrait;
   margin: 15mm 14mm 16mm;
 }
 
 :root {
-  /* Figma "Blue Gray" family (base #6a89a7) plus a soft, restrained rose
-     pulled from the logo. Kept intentionally desaturated -- no beige/cream,
-     no near-black borders. */
-  --ink: #2d3d4c;
-  --muted: #5c7288;
+  /* Figma "Blue Gray" family (base #6a89a7) plus a restrained rose pulled from
+     the logo, used only as a functional accent (highlights, irregular rows) --
+     never decoratively. No beige/cream/warm tones anywhere. */
+  --ink: #26333f;
+  --muted: #63788c;
+  --faint: #93a3b3;
+  --furigana: #7488a0;
   --paper: #ffffff;
   --surface: #eef2f6;
   --page-bg: #e6ecf1;
-  --line: #dbe3ea;
+  --line: #dce3ea;
   --accent: #6a89a7;
   --accent-dark: #4c637a;
   --accent-soft: #dde6ee;
   --rose: #b97e91;
-  --rose-soft: #f3e6ea;
+  --rose-soft: #f6e9ed;
   --particle: #435a70;
   --irregular: var(--rose);
 }
@@ -45,893 +35,502 @@ html, body {
 }
 
 .app {
-  max-width: 1120px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 20px 42px 70px;
+  padding: 18px 32px 60px;
 }
 
-/* Brand mark */
+/* ---------------------------------------------------------------------
+   Header: search leads, everything else is compact and secondary.
+   --------------------------------------------------------------------- */
+.site-header {
+  position: sticky;
+  top: 10px;
+  z-index: 1000;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 2px 6px rgba(35, 50, 55, .05);
+  margin: 0 0 22px;
+  padding: 12px 18px 10px;
+}
+
+.top-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
 .brand {
   display: flex;
-  align-items: baseline;
-  gap: 9px;
-  margin-bottom: 18px;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
 }
-
-.brand-mark {
-  align-self: center;
-  border-radius: 50%;
-  display: block;
-}
-
+.brand-mark { display: block; border-radius: 50%; }
 .brand-title {
   margin: 0;
   font-family: Georgia, "Iowan Old Style", ui-serif, serif;
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 700;
-  letter-spacing: .01em;
   color: var(--ink);
 }
 
-.brand-sub {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-/* Top controls */
-.toolbar {
+.search-box {
+  flex: 1 1 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 30px;
+  min-width: 0;
+  height: 38px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0 10px;
 }
-
-.toolbar button,
-.print-one {
-  appearance: none;
-  border: 1px solid transparent;
-  background: var(--surface);
+.search-box:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(106, 137, 167, .16);
+}
+.search-icon { color: var(--muted); font-size: 16px; margin-right: 7px; line-height: 1; flex: 0 0 auto; }
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
   color: var(--ink);
-  border-radius: 8px;
-  padding: 8px 13px;
-  font-size: 12px;
+  font: inherit;
+  font-size: 14px;
+}
+.search-box input::placeholder { color: var(--faint); }
+.clear-search {
+  display: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 17px;
   line-height: 1;
   cursor: pointer;
-  transition: background .15s ease, color .15s ease;
+  padding: 2px 4px;
+  flex: 0 0 auto;
 }
+.search-box.has-value .clear-search { display: block; }
 
-.toolbar button {
-  background: var(--paper);
+.search-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  padding-left: 2px;
 }
-
-.toolbar button:hover,
-.print-one:hover {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-}
-
-.toolbar .primary {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 700;
-}
-
-.toolbar .primary:hover {
-  background: var(--accent-dark);
-  color: #fff;
-}
-
-.toolbar .hint {
-  margin-left: auto;
+.view-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   color: var(--muted);
   font-size: 12px;
 }
+.view-mode button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: 2px 3px;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.view-mode span { color: var(--line); }
+.view-mode button:hover,
+.view-mode button.active { color: var(--accent-dark); font-weight: 700; }
+.search-count {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
 
-/* Each table becomes a clean paper card */
+.utility-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+}
+
+/* Compact table nav: prev/next flank a jump-to-any-table trigger. */
+.table-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.carousel-prev,
+.carousel-next {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 6px;
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+.carousel-prev:hover,
+.carousel-next:hover { background: var(--accent-soft); color: var(--accent-dark); }
+
+.category-menu { position: relative; }
+.category-button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  border-radius: 6px;
+  padding: 3px 6px;
+  font: 700 12px/1.2 Arial, Helvetica, sans-serif;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.category-button:hover,
+.category-menu.open .category-button { background: var(--accent-soft); color: var(--accent-dark); }
+.category-chevron { font-size: 10px; color: var(--muted); transition: transform .15s ease; }
+.category-menu.open .category-chevron { transform: rotate(180deg); }
+.category-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 240px;
+  max-width: 320px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(45, 61, 76, .14);
+  z-index: 1100;
+}
+.category-menu.open .category-dropdown { display: block; }
+.category-dropdown a {
+  display: block;
+  padding: 7px 9px;
+  border-radius: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.category-dropdown a:hover,
+.category-dropdown a.active { background: var(--accent-soft); color: var(--accent-dark); }
+
+/* Secondary utility links: expand/collapse, print. Deliberately plain -- not buttons competing with search. */
+.utility-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.utility-actions button {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.utility-actions button:hover { color: var(--accent-dark); background: var(--accent-soft); }
+.utility-sep { color: var(--line); font-size: 11px; }
+
+@media (max-width: 700px) {
+  .top-row { flex-wrap: wrap; }
+  .brand { flex: 1 1 100%; }
+  .search-box { flex: 1 1 100%; }
+  .search-meta { flex-wrap: wrap; row-gap: 6px; }
+  .search-count { flex-basis: 100%; margin-left: 0; }
+  .utility-row { flex-wrap: wrap; row-gap: 8px; }
+  .utility-actions { flex-wrap: wrap; }
+}
+
+@media print {
+  .site-header { display: none !important; }
+}
+
+/* ---------------------------------------------------------------------
+   Cards and section headers.
+   --------------------------------------------------------------------- */
 .table-section {
   background: var(--paper);
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 24px 26px 28px;
-  margin: 0 0 34px;
-  box-shadow: 0 2px 8px rgba(35, 50, 55, .045);
+  border-radius: 12px;
+  padding: 18px 20px 20px;
+  margin: 0 0 22px;
   break-before: page;
   page-break-before: always;
 }
-
-.table-section:first-of-type {
-  break-before: auto;
-  page-break-before: auto;
-}
+.table-section:first-of-type { break-before: auto; page-break-before: auto; }
+.table-section { scroll-margin-top: 130px; }
 
 .section-head {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 19px;
+  gap: 14px;
+  margin-bottom: 14px;
 }
-
-.section-head h2 {
+.section-head h2 { margin: 0; }
+.section-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
   margin: 0;
-  color: #2d3d4c;
-  font-size: 20px;
+  padding: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 17px;
   line-height: 1.2;
   font-weight: 700;
-  letter-spacing: -0.2px;
+  letter-spacing: -.1px;
+  cursor: pointer;
 }
+.section-toggle::after {
+  content: "⌄";
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--accent);
+  transition: transform .15s ease;
+}
+.table-section.collapsed .section-toggle::after { transform: rotate(-90deg); }
+.table-section:not(.collapsed) .section-toggle::after { transform: rotate(0deg); }
 
 .controls {
   margin-left: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
-
-.pick {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.print-one {
+  appearance: none;
+  border: 0;
+  background: var(--surface);
   color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+.print-one:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.hide-section { border: 0; background: transparent; color: var(--muted); font-size: 11.5px; padding: 4px 6px; cursor: pointer; }
+.hide-section:hover { color: var(--accent-dark); }
+.pick { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
+.pick input { accent-color: var(--accent); }
+
+.table-section.collapsed .vocab { display: none; }
+.table-section.collapsed { padding-bottom: 14px; }
+.table-section.collapsed .section-head { margin-bottom: 0; }
+.section-hidden { display: none !important; }
+.search-hidden { display: none !important; }
+
+@media print {
+  /* Flatten the screen-style card into a plain title + table; keep the pagination
+     already set on .table-section above (break-before etc. are no-ops on screen,
+     so they don't need restating here). */
+  .table-section {
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+  .table-section.collapsed .vocab { display: table; }
+  .table-section .controls,
+  .table-section .print-one,
+  .table-section .pick { display: none !important; }
+  .table-section .section-head {
+    display: block !important;
+    margin: 0 0 10px !important;
+    padding: 0 !important;
+  }
+  .table-section .section-head h2 { margin: 0 !important; padding: 0 !important; font-size: 16px !important; }
+  .table-section .section-toggle { cursor: auto; }
+  .table-section .section-toggle::after { display: none !important; content: none !important; }
+
+  /* Printing one table or a selection: show only the target section(s), title + table only. */
+  body.print-only .table-section:not(.print-target) { display: none !important; }
+  body.print-only .table-section.print-target { display: block !important; }
+  body.print-only .table-section.print-target .controls,
+  body.print-only .table-section.print-target .sort-button { display: none !important; }
+  body.print-only .table-section.print-target .section-head { display: block !important; margin: 0 0 10px !important; padding: 0 !important; }
+  body.print-only .table-section.print-target .section-head h2 { margin: 0 !important; padding: 0 !important; }
 }
 
-.pick input {
-  accent-color: var(--accent);
+/* ---------------------------------------------------------------------
+   Carousel: one table at a time while browsing; a search query drops
+   back to the plain stacked list so every match stays visible at once.
+   --------------------------------------------------------------------- */
+body.carousel-mode .table-section { display: none; }
+body.carousel-mode .table-section.carousel-active { display: block; touch-action: pan-y; }
+body.carousel-mode .utility-actions .expand-all,
+body.carousel-mode .utility-actions .collapse-all { display: none; }
+@media print {
+  body.carousel-mode .table-section { display: block; }
 }
 
-/* Main tables */
-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed;
-}
+/* ---------------------------------------------------------------------
+   Tables: one consistent grid everywhere. Japanese -> furigana -> romaji
+   -> English is the reading order, reinforced by size, weight and color,
+   not by letting any one column balloon.
+   --------------------------------------------------------------------- */
+table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 
-.vocab {
-  overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 9px;
-}
-
+.vocab { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
 .vocab th {
   text-align: left;
-  color: #4f6b85;
+  color: var(--muted);
   background: var(--surface);
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  letter-spacing: .035em;
+  letter-spacing: .04em;
   text-transform: uppercase;
-  padding: 10px 13px;
+  padding: 8px 12px;
   border-bottom: 1px solid var(--line);
 }
-
 .vocab td {
-  padding: 10px 13px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   font-size: 13px;
   line-height: 1.4;
+  color: var(--ink);
   background: #fff;
 }
-
-.vocab tbody tr:last-child td {
-  border-bottom: 0;
-}
-
-.vocab tbody tr:hover td {
-  background: var(--surface);
-}
+.vocab tbody tr:last-child td { border-bottom: 0; }
+.vocab tbody tr:nth-child(even) td { background: var(--surface); }
+.vocab tbody tr:hover td { background: var(--accent-soft); }
 
 .vocab th:nth-child(1), .vocab td:nth-child(1) { width: 38%; }
-.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 24%; }
-.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 30%; }
-.vocab th:nth-child(4), .vocab td:nth-child(4) { width: 8%; }
+.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 20%; }
+.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 42%; }
 
+/* Japanese: the primary column. */
 .vocab td.jp {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
-  font-size: 17px;
-  line-height: 2.05;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1.9;
+  color: var(--ink);
 }
+.jpword { vertical-align: middle; white-space: nowrap; }
+.jpword ruby { ruby-position: over; }
+.jpmain { line-height: 1.05; }
 
-.jpword {
-  vertical-align: middle;
-  white-space: nowrap;
-}
-
-.jpword ruby {
-  ruby-position: over;
-}
-
-.jpword .jpmain { font-size: 1em; }
-
+/* Furigana: visibly the second tier -- small and noticeably lighter. */
 .furigana {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
-  font-size: .58em;
+  font-size: .52em;
+  font-weight: 400;
   line-height: 1.1;
-  font-weight: 500;
-  color: var(--ink);
-  min-height: 0;
-  margin-bottom: 1px;
+  color: var(--furigana);
   ruby-align: center;
 }
 
-.jpmain { line-height: 1.05; }
-
-.particle {
-  color: var(--particle);
-  font-weight: 700;
+/* Romaji: third tier -- muted and set in italics, like a phonetic gloss. */
+.vocab td:nth-child(2) {
+  color: var(--muted);
+  font-style: italic;
+  font-size: 12.5px;
 }
 
-.irregular-row td {
-  color: var(--irregular);
+/* English: the answer column -- plain and fully legible, not muted. */
+.vocab td:nth-child(3) { color: var(--ink); }
+
+.particle { color: var(--particle); font-weight: 700; }
+
+.irregular-row td { color: var(--irregular) !important; background: var(--rose-soft) !important; }
+.irregular-row td:first-child { box-shadow: inset 3px 0 0 var(--irregular) !important; }
+.irregular-row .furigana { color: var(--irregular) !important; opacity: .75; }
+.irregular-row .irr { font-weight: 700; }
+
+.number-value { display: inline-block; margin-left: .5em; color: var(--muted); font-size: .55em; font-style: normal; vertical-align: middle; }
+
+/* Search-match highlight -- the one place the rose accent does real work. */
+mark.search-hit {
   background: var(--rose-soft);
-}
-
-.irregular-row td:first-child {
-  box-shadow: inset 3px 0 0 var(--irregular);
-}
-
-.irregular-row .furigana,
-.irregular-row .jpmain {
   color: var(--irregular);
-}
-
-.irregular-row .irr {
+  border-radius: 3px;
+  padding: 0 1px;
   font-weight: 700;
 }
+.vocab td.jp mark.search-hit { background: none; color: inherit; border-bottom: 2px solid var(--rose); font-weight: inherit; }
 
-.vocab.cal td.jp { font-size: 17px; }
-.vocab.cal th:nth-child(1), .vocab.cal td:nth-child(1) { width: 39%; }
-.vocab.cal th:nth-child(2), .vocab.cal td:nth-child(2) { width: 25%; }
-.vocab.cal th:nth-child(3), .vocab.cal td:nth-child(3) { width: 27%; }
-.vocab.cal th:nth-child(4), .vocab.cal td:nth-child(4) { width: 9%; }
-
-
-/* Verb tables: compact study layout */
-.verbs-table {
-  table-layout: fixed;
-}
-.verbs-table th:nth-child(1),
-.verbs-table td:nth-child(1) { width: 38%; }
-.verbs-table th:nth-child(2),
-.verbs-table td:nth-child(2) { width: 38%; }
-.verbs-table th:nth-child(3),
-.verbs-table td:nth-child(3) { width: 24%; }
-
-.verbs-table thead th {
-  text-align: left;
-}
-.verbs-table .verb-pair-row td {
-  padding: 14px 18px !important;
-  vertical-align: middle;
-}
-.verbs-table .verb-pair-row:nth-child(even) td {
-  background: #f7fafc;
-}
-.verbs-table .verb-pair-row:hover td {
-  background: var(--surface);
-}
-
-.verbs-table .verb-pair-cell {
-  padding: 0 !important;
-}
-.verbs-table .verb-pair-grid {
-  display: contents;
-}
-.verbs-table .verb-block {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  align-items: center;
-  column-gap: 16px;
-  min-height: 68px;
-  padding: 4px 18px 4px 0;
-}
-.verbs-table .verb-block + .verb-block {
-  border-left: 1px solid var(--line);
-  padding-left: 22px;
-}
-.verbs-table .verb-form-label {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  margin: 0 0 5px;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: .09em;
-}
-.verbs-table .verb-form-line {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-}
-.verbs-table .jpword {
-  flex: 0 0 auto;
-  margin: 0;
-}
-.verbs-table .jpmain {
-  font-size: 22px;
-}
-.verbs-table .furigana {
-  font-size: 9px;
-  margin-bottom: 3px;
-}
-.verbs-table .verb-romaji {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1;
-  white-space: nowrap;
-}
-.verbs-table .verb-meaning {
-  padding-left: 22px !important;
-  font-size: 14px !important;
-  font-weight: 700;
-  color: var(--ink);
-}
-.verbs-table th {
-  padding-left: 18px;
-  padding-right: 18px;
-}
-
-@media print {
-  .verbs-table .verb-pair-row td {
-    padding: 9px 10px !important;
-  }
-  .verbs-table .verb-block {
-    min-height: 54px;
-    padding-right: 10px;
-  }
-  .verbs-table .verb-block + .verb-block {
-    padding-left: 12px;
-  }
-  .verbs-table .jpmain {
-    font-size: 17px;
-  }
-  .verbs-table .verb-form-line {
-    gap: 10px;
-  }
-}
-
-/* Sticky navigation -- a floating rounded panel, like the cards below it, not a square bar. */
-.sticky-header {
-  position: sticky;
-  top: 12px;
-  z-index: 1000;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(35, 50, 55, .05);
-  margin: 0 0 30px;
-  padding: 16px 24px;
-}
-.sticky-header .toolbar { margin: 0 0 14px; }
-.header-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.nav-actions {
-  flex: 0 0 auto;
-}
-
-/* Collapsed tables */
-.table-section.collapsed .vocab,
-.table-section.collapsed .examples {
-  display:none;
-}
-.table-section.collapsed {
-  padding-bottom:18px;
-}
-.table-section.collapsed .section-head {
-  margin-bottom:0;
-}
-.section-head {
-  cursor:pointer;
-}
-.section-head h2::after {
-  content:"⌄";
-  display:inline-block;
-  margin-left:10px;
-  font-size:16px;
-  color: var(--accent);
-  transition:transform .15s ease;
-}
-.table-section.collapsed .section-head h2::after {
-  transform:rotate(-90deg);
-}
-.table-section:not(.collapsed) .section-head h2::after {
-  transform:rotate(0deg);
-}
-
-/* Search opening matching sections */
-.search-hidden { display:none !important; }
-
-@media print {
-  
-  .table-section.collapsed .vocab { display:table; }
-  .table-section.collapsed .examples { display:block; }
-  .table-section { break-before:page; page-break-before:always; }
-  .table-section:first-of-type { break-before:auto; page-break-before:auto; }
-}
-
-.table-section {
-  scroll-margin-top: 240px;
-}
-
-.nav-actions {
-  display:flex;
-  gap:6px;
-  margin-top:0;
-}
-.nav-actions button {
-  border:0;
-  background:transparent;
-  color: var(--muted);
-  font-size:11px;
-  padding:7px 8px;
-  border-radius:7px;
-  cursor:pointer;
-}
-.nav-actions button:hover {
-  color: var(--accent-dark);
-  background: var(--accent-soft);
-}
-@media print {
-  .nav-actions { display:none !important; }
-}
-
-/* Per-table sorting */
-.vocab th {
-  position:relative;
-}
-.vocab th .th-label {
-  display:inline-block;
-  vertical-align:middle;
-}
+/* Per-column sort control */
+.vocab th { position: relative; }
 .sort-button {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  margin-left:8px;
-  padding:3px 7px;
-  min-width:34px;
-  height:23px;
-  border:1px solid var(--line);
-  border-radius:6px;
-  background:#fff;
-  color:#4f6b85;
-  font-size:9px;
-  font-weight:700;
-  line-height:1;
-  letter-spacing:.02em;
-  cursor:pointer;
-  vertical-align:middle;
-}
-.sort-button:hover {
-  border-color:#516e89;
-  color:#384c5f;
-  background:#f1f5f8;
-}
-.sort-button.active {
-  border-color:#516e89;
-  color:#384c5f;
-  background:#d1dbe4;
-}
-@media print {
-  
-}
-
-/* Fixed navigation and study controls */
-.study-toolbar {
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin:14px 0 0;
-  padding-top:14px;
-  border-top:1px solid var(--line);
-  min-height:40px;
-}
-.search-box {
-  display:flex;
-  align-items:center;
-  width:min(460px,100%);
-  height:40px;
-  background: var(--paper);
-  border:1px solid var(--line);
-  border-radius:10px;
-  padding:0 10px;
-}
-.search-box:focus-within {
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(106,137,167,.18);
-}
-.search-icon {
-  color:#4f6b85;
-  font-size:18px;
-  margin-right:7px;
-  line-height:1;
-}
-.search-box input {
-  flex:1;
-  min-width:0;
-  width:100%;
-  border:0;
-  outline:0;
-  background:transparent;
-  color:var(--ink);
-  font:inherit;
-  font-size:13px;
-}
-.search-box input::placeholder { color:#8496a8; }
-.clear-search {
-  display:none;
-  border:0;
-  background:transparent;
-  color:#4f6b85;
-  font-size:18px;
-  line-height:1;
-  cursor:pointer;
-  padding:2px 4px;
-}
-.search-box.has-value .clear-search { display:block; }
-.study-options {
-  display:flex;
-  align-items:center;
-  gap:14px;
-  color:#4f6b85;
-  font-size:12px;
-  white-space:nowrap;
-}
-.study-options label {
-  display:flex;
-  align-items:center;
-  gap:6px;
-  cursor:pointer;
-}
-.study-options input { accent-color:var(--accent); }
-.search-count {
-  margin-left:auto;
-  color:#4f6b85;
-  font-size:11px;
-  white-space:nowrap;
-}
-.view-mode {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  color: #4f6b85;
-  font-size: 12px;
-  white-space: nowrap;
+  justify-content: center;
+  margin-left: 6px;
+  padding: 2px 6px;
+  min-width: 30px;
+  height: 20px;
   border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 4px 6px;
-  background: var(--paper);
-}
-.view-mode button {
-  border: 0;
-  background: transparent;
-  color: #4f6b85;
-  padding: 4px 6px;
-  font: inherit;
-  cursor: pointer;
   border-radius: 5px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
 }
-.view-mode button:hover,
-.view-mode button.active { color: var(--accent); background: var(--accent-soft); font-weight: 700; }
-/* Japanese/English view modes hide the TEXT of the other columns only -- the column,
+.sort-button:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+.sort-button.active { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+
+/* Japanese/English/Romaji filters hide the TEXT of the other columns only -- the column,
    its border, its header/zebra background, and the sort control all stay exactly as they are. */
-body.mode-japanese .vocab th:nth-child(2),
-body.mode-japanese .vocab th:nth-child(2) *,
-body.mode-japanese .vocab td:nth-child(2),
-body.mode-japanese .vocab td:nth-child(2) *,
-body.mode-japanese .vocab th:nth-child(3),
-body.mode-japanese .vocab th:nth-child(3) *,
-body.mode-japanese .vocab td:nth-child(3),
-body.mode-japanese .vocab td:nth-child(3) *,
-body.mode-english .vocab th:nth-child(1),
-body.mode-english .vocab th:nth-child(1) *,
-body.mode-english .vocab td:nth-child(1),
-body.mode-english .vocab td:nth-child(1) *,
-body.mode-english .vocab th:nth-child(2),
-body.mode-english .vocab th:nth-child(2) *,
-body.mode-english .vocab td:nth-child(2),
-body.mode-english .vocab td:nth-child(2) * {
+body.mode-japanese .vocab th:nth-child(2), body.mode-japanese .vocab th:nth-child(2) *,
+body.mode-japanese .vocab td:nth-child(2), body.mode-japanese .vocab td:nth-child(2) *,
+body.mode-japanese .vocab th:nth-child(3), body.mode-japanese .vocab th:nth-child(3) *,
+body.mode-japanese .vocab td:nth-child(3), body.mode-japanese .vocab td:nth-child(3) *,
+body.mode-romaji .vocab th:nth-child(1), body.mode-romaji .vocab th:nth-child(1) *,
+body.mode-romaji .vocab td:nth-child(1), body.mode-romaji .vocab td:nth-child(1) *,
+body.mode-romaji .vocab th:nth-child(3), body.mode-romaji .vocab th:nth-child(3) *,
+body.mode-romaji .vocab td:nth-child(3), body.mode-romaji .vocab td:nth-child(3) *,
+body.mode-english .vocab th:nth-child(1), body.mode-english .vocab th:nth-child(1) *,
+body.mode-english .vocab td:nth-child(1), body.mode-english .vocab td:nth-child(1) *,
+body.mode-english .vocab th:nth-child(2), body.mode-english .vocab th:nth-child(2) *,
+body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) * {
   color: transparent !important;
 }
 
-/* Carousel: one table at a time when browsing; buttons on desktop, swipe on mobile. */
-.carousel-nav {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin: 14px 0 0;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-.carousel-prev,
-.carousel-next {
-  appearance: none;
-  border: 1px solid transparent;
-  background: var(--paper);
-  color: var(--ink);
-  border-radius: 8px;
-  padding: 8px 13px;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  transition: background .15s ease, color .15s ease;
-}
-.carousel-prev:hover,
-.carousel-next:hover {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-}
-.carousel-position {
-  margin: 0 auto;
-  color: var(--muted);
-  font-size: 12px;
-  white-space: nowrap;
-}
-/* Search shows every match at once (the old stacked list); the carousel only applies while browsing without a query. */
-body:not(.carousel-mode) .carousel-nav { display: none; }
-body.carousel-mode .table-section { display: none; }
-body.carousel-mode .table-section.carousel-active { display: block; touch-action: pan-y; }
-body.carousel-mode .nav-actions { display: none; }
 @media print {
-  .carousel-nav { display: none !important; }
-  body.carousel-mode .table-section { display: block; }
-}
-
-@media print {
-  .view-mode { display:none !important; }
+  .view-mode { display: none !important; }
   .vocab thead { display: table-header-group; }
   .vocab tr { break-inside: avoid; page-break-inside: avoid; }
-  .vocab td, .vocab th { padding-top: 7px; padding-bottom: 7px; }
-}
-@media (max-width:760px) {
-  .app {
-    padding: 22px 18px 56px;
-  }
-  .sticky-header {
-    padding: 14px 16px;
-    border-radius: 14px;
-  }
-  .table-section {
-    scroll-margin-top: 300px;
-  }
-  .toolbar {
-    flex-wrap: wrap;
-    row-gap: 8px;
-    margin-bottom: 34px;
-  }
-  .toolbar button,
-  .print-one {
-    white-space: nowrap;
-  }
-  .toolbar .hint {
-    margin-left: 0;
-    flex-basis: 100%;
-  }
-  .header-row {
-    flex-wrap:wrap;
-    row-gap: 8px;
-  }
-  .study-toolbar {
-    flex-wrap:wrap;
-    row-gap: 10px;
-  }
-  .search-box { width:100%; }
-  .search-box input { font-size: 12px; }
-  .view-mode { width: 100%; justify-content: center; }
-  .study-options { width:100%; flex-wrap:wrap; }
-  .search-count { margin-left:0; flex-basis: 100%; }
-
-  .table-section {
-    padding: 20px 18px 22px;
-  }
-  .section-head {
-    flex-wrap: wrap;
-    row-gap: 12px;
-  }
-  .section-head h2 {
-    flex: 1 1 100%;
-  }
-  .controls {
-    margin-left: 0;
-    flex-basis: 100%;
-    flex-wrap: wrap;
-    row-gap: 8px;
-  }
-  .controls .print-one {
-    flex: 1 1 auto;
-    white-space: nowrap;
-  }
+  .vocab td, .vocab th { padding-top: 6px; padding-bottom: 6px; }
+  .sort-button { display: none !important; }
 }
 
-@media print {
-  .sticky-header,
-  .study-toolbar,
-  .sort-button,
-  .nav-actions { display:none !important; }
-}
-
-/* Category navigation -- a plain button, same family as the other pills. */
-.category-nav {
-  display:flex;
-  align-items:center;
-  gap:8px;
-  position:relative;
-}
-.category-menu {
-  position:relative;
-}
-.category-button {
-  appearance:none;
-  border:1px solid transparent;
-  background:var(--paper);
-  color:var(--ink);
-  border-radius:8px;
-  padding:8px 13px;
-  font:700 12px/1 Arial, Helvetica, sans-serif;
-  cursor:pointer;
-  display:flex;
-  align-items:center;
-  gap:7px;
-  transition: background .15s ease, color .15s ease;
-}
-.category-button:hover,
-.category-menu.open .category-button {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-}
-.category-chevron {
-  flex: 0 0 auto;
-  font-size:12px;
-  line-height:1;
-  transition:transform .15s ease;
-}
-.category-menu.open .category-chevron {
-  transform:rotate(180deg);
-}
-.category-dropdown {
-  display:none;
-  position:absolute;
-  top:calc(100% + 6px);
-  left:0;
-  min-width:250px;
-  max-width:330px;
-  padding:6px;
-  background:#fff;
-  border:1px solid var(--line);
-  border-radius:10px;
-  box-shadow:0 10px 24px rgba(45,61,76,.14);
-  z-index:1100;
-}
-.category-menu.open .category-dropdown {
-  display:block;
-}
-.category-dropdown a {
-  display:block;
-  padding:7px 9px;
-  border-radius:6px;
-  color:#2d3d4c;
-  text-decoration:none;
-  font-size:11px;
-  line-height:1.25;
-}
-.category-dropdown a:hover,
-.category-dropdown a.active {
-  background:var(--accent-soft);
-  color:var(--accent);
-}
-@media (max-width:760px) {
-  .category-nav {
-    overflow-x:auto;
-    padding-bottom:3px;
-  }
-  .category-dropdown {
-    position:fixed;
-    top:auto;
-    margin-top:6px;
-    max-width:calc(100vw - 36px);
-  }
-}
-
-.sort-button {
-  position:relative;
-  z-index:3;
-  pointer-events:auto;
-}
-
-/* Clean printed output: title + table only */
-@media print {
-  .table-section .controls,
-  .table-section .print-one,
-  .table-section .pick {
-    display: none !important;
-  }
-
-  .table-section .section-head {
-    display: block !important;
-    margin: 0 0 12px !important;
-    padding: 0 !important;
-  }
-
-  .table-section .section-head h2 {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 18px !important;
-    line-height: 1.2 !important;
-  }
-
-  .table-section .section-head h2::after {
-    display: none !important;
-    content: none !important;
-  }
-}
-
-@media print {
-  /* Individual/selected printing: print ONLY the sections explicitly targeted. */
-  body.print-only .table-section:not(.print-target) {
-    display: none !important;
-  }
-
-  body.print-only .table-section.print-target {
-    display: block !important;
-  }
-
-  /* Print only the title and table, never interactive controls. */
-  body.print-only .table-section.print-target .controls,
-  body.print-only .table-section.print-target .sort-button {
-    display: none !important;
-  }
-
-  body.print-only .table-section.print-target .section-head {
-    display: block !important;
-    margin: 0 0 12px !important;
-    padding: 0 !important;
-  }
-
-  body.print-only .table-section.print-target .section-head h2 {
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-}
-
-:focus-visible { outline: 3px solid rgba(63,120,104,.55); outline-offset: 3px; }
-.section-head:focus-visible, .category-button:focus-visible, .category-dropdown a:focus-visible { outline-color: var(--accent); }
-
-
-/* Desktop study typography: give Japanese and furigana room to breathe. */
 @media screen and (min-width: 761px) {
-  .vocab th { font-size: 12px; padding-top: 11px; padding-bottom: 11px; }
-  .vocab td { font-size: 14px; line-height: 1.5; padding-top: 11px; padding-bottom: 11px; }
-  .vocab td.jp { font-size: 21px; line-height: 2.3; }
-  .furigana { font-size: .56em; line-height: 1.1; margin-bottom: 3px; }
-  .jpmain { line-height: 1.08; }
-  .verbs-table .jpmain { font-size: 25px; }
-  .verbs-table .furigana { font-size: 12px; margin-bottom: 4px; }
-  .verbs-table .verb-romaji { font-size: 13px; }
-  .verbs-table .verb-pair-row td { padding-top: 16px !important; padding-bottom: 16px !important; }
+  .vocab th { font-size: 11px; padding-top: 10px; padding-bottom: 10px; }
+  .vocab td { font-size: 14px; padding-top: 10px; padding-bottom: 10px; }
+  .vocab td.jp { font-size: 22px; line-height: 2.1; }
+  .furigana { font-size: .5em; }
+  .vocab td:nth-child(2) { font-size: 13.5px; }
 }
 
-.number-value { display: inline-block; margin-left: .55em; color: var(--muted); font-size: .55em; font-family: Arial, Helvetica, sans-serif; vertical-align: middle; }
+@media (max-width: 700px) {
+  .app { padding: 14px 14px 48px; }
+  .site-header { border-radius: 12px; padding: 10px 12px 8px; }
+  .table-section { padding: 14px 14px 16px; scroll-margin-top: 190px; }
+  .section-head { flex-wrap: wrap; row-gap: 8px; }
+  .section-head h2 { flex: 1 1 100%; }
+  .controls { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; row-gap: 6px; }
+  .vocab td.jp { font-size: 16px; }
+}
 
-/* Irregular entries get a whisper of the rose accent plus a left rule -- restrained, not loud. */
-.irregular-row td { color: var(--irregular) !important; }
-.irregular-row td:first-child { box-shadow: inset 3px 0 0 var(--irregular) !important; }
-
-.section-hidden { display: none !important; }
-.hide-section { border: 0; background: transparent; color: var(--muted); font-size: 11px; padding: 4px 6px; cursor: pointer; }
-.hide-section:hover { color: var(--accent); }
-
-.vocab tbody tr:nth-child(even) td { background: #f7fafc; }
-.vocab td.jp { color: #263b50; }
-.sticky-header .search-box { width: min(560px, 100%); }
+:focus-visible { outline: 3px solid rgba(106, 137, 167, .55); outline-offset: 2px; }
+.section-toggle:focus-visible, .category-button:focus-visible, .category-dropdown a:focus-visible { outline-color: var(--accent); }

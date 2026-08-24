@@ -1,6 +1,10 @@
 {
   "private": true,
   "scripts": {
-    "validate": "node scripts/validate-vocabulary.js && node --check js/app.js && node --check data/vocabulary.js"
+    "validate": "node scripts/validate-vocabulary.js && node --check js/app.js && node --check data/vocabulary.js",
+    "test": "node scripts/smoke-test.js"
+  },
+  "devDependencies": {
+    "jsdom": "^30.0.1"
   }
 }

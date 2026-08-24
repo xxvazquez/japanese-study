@@ -5,41 +5,61 @@ const page = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("css/site.css", "utf8");
 const sandbox = { window: {} };
 vm.runInNewContext(source, sandbox);
-const sections = sandbox.window.vocabularySections || [];
-const tables = sections.length;
-const rows = sections.reduce((total, section) => total + ((section.match(/<tr>/g) || []).length - 1), 0);
-const expectedTables = 14
-const expectedRows = 346;
-if (tables !== expectedTables || rows !== expectedRows) {
-  console.error("Vocabulary validation failed: found " + rows + " rows across " + tables + " tables; expected " + expectedRows + " rows across " + expectedTables + " tables.");
+const tableList = sandbox.window.vocabularyTables || [];
+const tableCount = tableList.length;
+const rowCount = tableList.reduce((total, t) => total + t.rows.length, 0);
+const expectedTables = 14;
+const expectedRows = 354;
+if (tableCount !== expectedTables || rowCount !== expectedRows) {
+  console.error("Vocabulary validation failed: found " + rowCount + " rows across " + tableCount + " tables; expected " + expectedRows + " rows across " + expectedTables + " tables.");
   process.exit(1);
 }
 if (!page.includes('role="status"') || !page.includes('aria-live="polite"')) { console.error("Accessibility validation failed: search results must use a live status region."); process.exit(1); }
 if (!page.includes('aria-label="Search vocabulary"') || !css.includes(":focus-visible")) { console.error("Accessibility validation failed: search labeling or focus styling is missing."); process.exit(1); }
-if (!source.includes("<th>")) { console.error("Accessibility validation failed: vocabulary tables must retain table headings."); process.exit(1); }
-console.log("Vocabulary and accessibility validation passed: " + rows + " rows across " + tables + " tables.");
+if (!/function\s+sortHeader/.test(fs.readFileSync("js/app.js", "utf8"))) { console.error("Accessibility validation failed: table headings must be rendered with sort controls."); process.exit(1); }
+console.log("Vocabulary and accessibility validation passed: " + rowCount + " rows across " + tableCount + " tables.");
 
-const stripTags = value => value.replace(/<[^>]*>/g, "").replace(/&amp;/g, "&").trim();
 const japanesePattern = /[ぁ-ゖァ-ヺ一-龯々〆ヵヶ〜]/;
 const seenVocabulary = new Set();
-for (const section of sections) {
-  const body = section.match(/<tbody>([\s\S]*?)<\/tbody>/)?.[1] || "";
-  for (const row of body.matchAll(/<tr>([\s\S]*?)<\/tr>/g)) {
-    const cells = [...row[1].matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)].map(match => stripTags(match[1]));
-    if (cells.length !== 3) {
-      console.error("Vocabulary quality validation failed: every body row must have exactly three cells.");
+
+function jpText(segments) {
+  return segments.map(seg => seg.kanji ? seg.kanji + seg.reading : seg.text).join("");
+}
+
+for (const table of tableList) {
+  for (const row of table.rows) {
+    if (row.type === "verb-pair") {
+      if (!row.forms || row.forms.length < 2 || !row.english) {
+        console.error("Vocabulary quality validation failed: verb-pair rows need at least two forms and an English meaning (" + table.title + ").");
+        process.exit(1);
+      }
+      for (const form of row.forms) {
+        const jp = jpText(form.jp);
+        if (!japanesePattern.test(jp)) {
+          console.error("Vocabulary quality validation failed: verb-pair form must contain Japanese script: " + jp);
+          process.exit(1);
+        }
+        if (!jp || !form.romaji) {
+          console.error("Vocabulary quality validation failed: verb-pair form is missing text (" + table.title + ").");
+          process.exit(1);
+        }
+      }
+      const key = row.forms.map(f => jpText(f.jp)).join("/") + "|" + row.english;
+      if (seenVocabulary.has(key)) { console.error("Vocabulary quality validation failed: duplicate entry: " + key); process.exit(1); }
+      seenVocabulary.add(key);
+      continue;
+    }
+
+    const jp = jpText(row.jp);
+    if (!japanesePattern.test(jp)) {
+      console.error("Vocabulary quality validation failed: Japanese cell must contain Japanese script: " + jp);
       process.exit(1);
     }
-    const japaneseCell = cells.find(cell => japanesePattern.test(cell));
-    if (!japaneseCell) {
-      console.error("Vocabulary quality validation failed: Japanese cells must contain Japanese script: " + cells[0]);
+    if (!jp || !row.romaji || !row.english) {
+      console.error("Vocabulary quality validation failed: romaji/polite form and English meaning cannot be empty (" + table.title + ").");
       process.exit(1);
     }
-    if (cells.slice(0, 3).some(cell => !cell)) {
-      console.error("Vocabulary quality validation failed: romaji/polite form and English meaning cannot be empty.");
-      process.exit(1);
-    }
-    const key = japaneseCell + "|" + cells[cells.length - 1];
+    const key = jp + "|" + row.english;
     if (seenVocabulary.has(key)) {
       console.error("Vocabulary quality validation failed: duplicate Japanese/meaning pair: " + key);
       process.exit(1);
@@ -47,3 +67,4 @@ for (const section of sections) {
     seenVocabulary.add(key);
   }
 }
+console.log("Vocabulary quality validation passed: no empty fields, no missing Japanese script, no duplicate entries.");

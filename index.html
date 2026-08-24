@@ -3,30 +3,42 @@
 <title>sakura</title><link rel="stylesheet" href="css/site.css?v=__CACHEBUST__">
 <link rel="icon" href="logo.png">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"></head><body class="carousel-mode"><div class="app">
-<div class="sticky-header"><div class="brand"><img class="brand-mark" src="logo.png" alt="" width="30" height="30"><h1 class="brand-title">sakura</h1><span class="brand-sub">Japanese reference</span></div><div class="toolbar"><button class="primary">Print selected tables</button><button>Print all</button><span class="hint">A4 print layout · tables can continue across multiple sheets</span></div>
-<div class="header-row"><div class="category-nav"><div class="category-menu"><button type="button" class="category-button" aria-expanded="false">Browse tables<span class="category-chevron">⌄</span></button><div class="category-dropdown"><a href="#table-0" data-target="0">Counters</a><a href="#table-1" data-target="1">Drinks</a><a href="#table-2" data-target="2">Cooking Ingredients</a><a href="#table-3" data-target="3">Fruits</a><a href="#table-4" data-target="4">Kitchen Tools &amp; Appliances</a><a href="#table-5" data-target="5">Meals &amp; Dishes</a><a href="#table-6" data-target="6">N5 Adjectives</a><a href="#table-7" data-target="7">N5 Verbs</a><a href="#table-8" data-target="8">Numbers 0–1,000,000</a><a href="#table-9" data-target="9">Particles</a><a href="#table-10" data-target="10">Proteins &amp; Dairy</a><a href="#table-11" data-target="11">Tableware</a><a href="#table-12" data-target="12">Taste &amp; Texture</a><a href="#table-13" data-target="13">Vegetables</a></div></div></div><div class="nav-actions">
-  <button type="button">Expand all</button>
-  <button type="button">Collapse all</button>
-</div></div>
-<div class="study-toolbar">
-  <label class="search-box">
-    <span class="search-icon">⌕</span>
-    <input id="tableSearch" type="search" aria-label="Search vocabulary" aria-controls="vocabulary" placeholder="Search Japanese, furigana, romaji or English…" autocomplete="off">
-    <button type="button" class="clear-search" id="clearSearch" aria-label="Clear search">×</button>
-  </label>
-  <div class="view-mode" aria-label="Viewing mode">
-    <button type="button" class="active" data-mode="all">All</button><span aria-hidden="true">|</span>
-    <button type="button" data-mode="japanese">Japanese</button><span aria-hidden="true">|</span>
-    <button type="button" data-mode="english">English</button>
+<header class="site-header">
+  <div class="top-row">
+    <div class="brand"><img class="brand-mark" src="logo.png" alt="" width="24" height="24"><h1 class="brand-title">sakura</h1></div>
+    <label class="search-box">
+      <span class="search-icon">⌕</span>
+      <input id="tableSearch" type="search" aria-label="Search vocabulary" aria-controls="vocabulary" placeholder="Search Japanese, furigana, romaji or English…" autocomplete="off">
+      <button type="button" class="clear-search" id="clearSearch" aria-label="Clear search">×</button>
+    </label>
   </div>
-  <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
-</div>
-<div class="carousel-nav">
-  <button type="button" class="carousel-prev" aria-label="Previous table">‹ Prev</button>
-  <span class="carousel-position" id="carouselPosition"></span>
-  <button type="button" class="carousel-next" aria-label="Next table">Next ›</button>
-</div>
-</div>
-<div id="vocabulary" aria-live="polite"></div>
+  <div class="search-meta">
+    <div class="view-mode" aria-label="Search scope">
+      <button type="button" class="active" data-mode="all" aria-pressed="true">All</button><span aria-hidden="true">|</span>
+      <button type="button" data-mode="japanese" aria-pressed="false">Japanese</button><span aria-hidden="true">|</span>
+      <button type="button" data-mode="romaji" aria-pressed="false">Romaji</button><span aria-hidden="true">|</span>
+      <button type="button" data-mode="english" aria-pressed="false">English</button>
+    </div>
+    <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
+  </div>
+  <div class="utility-row">
+    <div class="table-nav">
+      <button type="button" class="carousel-prev" aria-label="Previous table">‹</button>
+      <div class="category-menu">
+        <button type="button" class="category-button" aria-expanded="false"><span id="carouselPosition"></span><span class="category-chevron">⌄</span></button>
+        <div class="category-dropdown"><a href="#table-0" data-target="0">Counters</a><a href="#table-1" data-target="1">Drinks</a><a href="#table-2" data-target="2">Cooking Ingredients</a><a href="#table-3" data-target="3">Fruits</a><a href="#table-4" data-target="4">Kitchen Tools &amp; Appliances</a><a href="#table-5" data-target="5">Meals &amp; Dishes</a><a href="#table-6" data-target="6">N5 Adjectives</a><a href="#table-7" data-target="7">N5 Verbs</a><a href="#table-8" data-target="8">Numbers 0–1,000,000</a><a href="#table-9" data-target="9">Particles</a><a href="#table-10" data-target="10">Proteins &amp; Dairy</a><a href="#table-11" data-target="11">Tableware</a><a href="#table-12" data-target="12">Taste &amp; Texture</a><a href="#table-13" data-target="13">Vegetables</a></div>
+      </div>
+      <button type="button" class="carousel-next" aria-label="Next table">›</button>
+    </div>
+    <div class="utility-actions">
+      <button type="button" class="expand-all">Expand all</button>
+      <button type="button" class="collapse-all">Collapse all</button>
+      <span class="utility-sep" aria-hidden="true">·</span>
+      <button type="button" class="print-selected">Print selected</button>
+      <button type="button" class="print-all">Print all</button>
+    </div>
+  </div>
+</header>
+<div id="vocabulary"></div>
 </div>
 <script src="data/vocabulary.js?v=__CACHEBUST__"></script><script src="js/app.js?v=__CACHEBUST__"></script></body></html>
