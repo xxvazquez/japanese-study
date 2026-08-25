@@ -10,20 +10,6 @@ function printOne(i){
   target.classList.add('print-target');
   window.print();
 }
-function printSelected(){
-  const selected=[...document.querySelectorAll('.table-pick:checked')].map(x=>x.value);
-  if(!selected.length){ alert('Select at least one table.'); return; }
-  document.body.classList.add('print-only');
-  document.querySelectorAll('.table-section').forEach(s=>{
-    s.classList.toggle('print-target', selected.includes(s.dataset.table));
-  });
-  window.print();
-}
-function printAll(){
-  document.body.classList.remove('print-only');
-  document.querySelectorAll('.table-section').forEach(s=>s.classList.remove('print-target'));
-  window.print();
-}
 window.addEventListener('afterprint',()=>{
   document.body.classList.remove('print-only');
   document.querySelectorAll('.table-section').forEach(s=>s.classList.remove('print-target'));
@@ -38,68 +24,72 @@ function expandSection(section) {
   section.classList.remove('collapsed');
   section.querySelector('.section-toggle').setAttribute('aria-expanded','true');
 }
-function collapseAll() {
-  document.querySelectorAll('.table-section').forEach(s=>{
-    s.classList.add('collapsed');
-    s.querySelector('.section-toggle').setAttribute('aria-expanded','false');
-  });
+function openSidebar() {
+  document.querySelector('.sidebar').classList.add('open');
+  document.body.classList.add('sidebar-open');
+  const toggle = document.querySelector('.sidebar-toggle');
+  if (toggle) toggle.setAttribute('aria-expanded', 'true');
 }
-function expandAll() {
-  document.querySelectorAll('.table-section').forEach(expandSection);
+function closeSidebar() {
+  document.querySelector('.sidebar').classList.remove('open');
+  document.body.classList.remove('sidebar-open');
+  const toggle = document.querySelector('.sidebar-toggle');
+  if (toggle) toggle.setAttribute('aria-expanded', 'false');
+}
+/* Each category behaves like its own page: only its tables render at once,
+   instead of one long scroll through everything. Overview is a separate
+   table-of-contents page. Search is the one thing that reaches across
+   category boundaries -- it un-hides matches from every category, then
+   restores whichever page was active when the query is cleared. */
+function markActiveNav(categoryName, tableId) {
+  document.querySelector('.sidebar-overview').classList.toggle('active', !categoryName);
+  document.querySelectorAll('.sidebar-group-nav').forEach(b => b.classList.toggle('active', b.dataset.category === categoryName));
+  document.querySelectorAll('.sidebar-group-items a').forEach(a => a.classList.toggle('active', tableId != null && a.dataset.target === String(tableId)));
+}
+function showCategoryPage(name) {
+  if (window.clearSearchQuery) window.clearSearchQuery();
+  document.body.dataset.activeCategory = name;
+  document.getElementById('overviewPage').hidden = true;
+  document.getElementById('vocabulary').hidden = false;
+  document.querySelectorAll('.table-section').forEach(function (s) {
+    const match = s.dataset.category === name;
+    s.classList.toggle('page-hidden', !match);
+    if (match) expandSection(s);
+  });
+  markActiveNav(name, null);
+  window.scrollTo({ top: 0 });
+  closeSidebar();
+}
+function showOverviewPage() {
+  if (window.clearSearchQuery) window.clearSearchQuery();
+  document.body.dataset.activeCategory = '';
+  document.getElementById('vocabulary').hidden = true;
+  document.getElementById('overviewPage').hidden = false;
+  markActiveNav(null, null);
+  window.scrollTo({ top: 0 });
+  closeSidebar();
 }
 function goToTable(i) {
   const section=document.querySelector(`.table-section[data-table="${i}"]`);
   if (!section) return;
+  showCategoryPage(section.dataset.category);
   expandSection(section);
-  if (document.body.classList.contains('carousel-mode') && window.__carousel) {
-    window.__carousel.activate(section);
-  } else {
-    section.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  document.querySelectorAll('.category-dropdown a').forEach(a=>a.classList.remove('active'));
-  const link=document.querySelector(`.category-dropdown a[data-target="${i}"]`);
-  if(link) link.classList.add('active');
+  section.scrollIntoView({behavior:'smooth',block:'start'});
+  markActiveNav(section.dataset.category, i);
 }
 function updateNavOnScroll() {
-  if (document.body.classList.contains('carousel-mode')) return;
-  const sections=[...document.querySelectorAll('.table-section')];
+  if (document.getElementById('vocabulary').hidden) return;
+  const sections=[...document.querySelectorAll('.table-section:not(.page-hidden):not(.search-hidden)')];
+  if (!sections.length) return;
   let current=sections[0];
   const y=window.scrollY+230;
   for(const sec of sections) if(sec.offsetTop<=y) current=sec;
-  document.querySelectorAll('.category-dropdown a').forEach(a=>{
+  document.querySelectorAll('.sidebar-group-items a').forEach(a=>{
     a.classList.toggle('active', current && a.dataset.target===current.dataset.table);
   });
 }
 window.addEventListener('scroll',updateNavOnScroll,{passive:true});
 window.addEventListener('load',updateNavOnScroll);
-
-function toggleCategory(button) {
-  const menu = button.closest('.category-menu');
-  const wasOpen = menu.classList.contains('open');
-  closeCategoryMenus();
-  if (!wasOpen) {
-    menu.classList.add('open');
-    button.setAttribute('aria-expanded','true');
-  }
-}
-function closeCategoryMenus() {
-  document.querySelectorAll('.category-menu.open').forEach(menu => {
-    menu.classList.remove('open');
-    const button = menu.querySelector('.category-button');
-    if (button) button.setAttribute('aria-expanded','false');
-  });
-}
-document.addEventListener('click', e => {
-  if (!e.target.closest('.category-menu')) closeCategoryMenus();
-});
-document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape') return;
-  const openMenu = document.querySelector('.category-menu.open');
-  if (!openMenu) return;
-  const button = openMenu.querySelector('.category-button');
-  closeCategoryMenus();
-  if (button) button.focus();
-});
 
 /* Per-table sorting: numbers, weekdays, and months sort naturally; everything else falls back to locale order. */
 (function(){
@@ -141,10 +131,10 @@ document.addEventListener('keydown', e => {
     rows.forEach(r=>tbody.appendChild(r));
     table.querySelectorAll('.sort-button').forEach(b=>{
       b.classList.remove('active');
-      if(b!==button){b.dataset.sortDir='asc';b.textContent='A–Z';}
+      if(b!==button){b.dataset.sortDir='asc';b.textContent='↑';}
     });
     button.classList.add('active');
-    button.textContent=dir==='asc'?'A–Z':'Z–A';
+    button.textContent=dir==='asc'?'↑':'↓';
     button.dataset.sortDir=dir==='asc'?'desc':'asc';
   };
 })();
@@ -180,26 +170,86 @@ document.addEventListener('keydown', e => {
     return '<tr><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + '</td></tr>';
   }
   function sortHeader(label, col) {
-    return '<th>' + label + '<button type="button" class="sort-button" data-sort-col="' + col + '" data-sort-dir="asc">A–Z</button></th>';
+    return '<th>' + label + '<button type="button" class="sort-button" data-sort-col="' + col + '" data-sort-dir="asc" aria-label="Sort ' + esc(label) + '">↑</button></th>';
   }
+  var PRINT_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V2.5h8V6"/><rect x="2.5" y="6" width="13" height="7" rx="1.2"/><path d="M5 11.5h8V15.5H5Z"/></svg>';
   function renderTable(t) {
     var tableClass = 'vocab' + (t.tableClass ? ' ' + t.tableClass : '');
     var rows = t.rows.map(function (row) { return row.type === 'verb-pair' ? verbPairRow(row) : wordRow(row); }).join('\n    ');
-    return '<section class="table-section collapsed" data-table="' + t.id + '" id="table-' + t.id + '">' +
+    return '<section class="table-section page-hidden" data-table="' + t.id + '" data-category="' + esc(t.category || '') + '" id="table-' + t.id + '">' +
       '<div class="section-head">' +
-      '<h2><button type="button" class="section-toggle" aria-expanded="false" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '</button></h2>' +
+      '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '</button></h2>' +
       '<div class="controls">' +
-      '<button type="button" class="print-one">Print this table</button>' +
-      '<button type="button" class="hide-section">Hide</button>' +
-      '<label class="pick"><input type="checkbox" class="table-pick" value="' + t.id + '"> Select</label>' +
+      '<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>' +
       '</div></div>' +
       '<table class="' + tableClass + '" id="vocab-' + t.id + '"><thead><tr><th>Japanese</th>' + sortHeader('Romaji', 1) + sortHeader('English', 2) + '</tr></thead><tbody>\n    ' +
       rows + '\n  </tbody></table></section>';
   }
 
+  // Small, hand-drawn line icons -- one per category, each its own color
+  // from the existing palette, purely as a fast visual anchor when scanning.
+  var CATEGORY_META = {
+    'Grammar': { color: '#4c637a', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="12.5" y2="9"/><line x1="3" y1="13" x2="9.5" y2="13"/></svg>' },
+    'Food & Ingredients': { color: '#b97e91', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h12"/><path d="M3.5 7.5a5.5 5.5 0 0 0 11 0"/><path d="M9 7.5V3.8c1.4 0 2.2.9 2.2 2"/></svg>' },
+    'Kitchen & Dining': { color: '#6a89a7', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="9.5" r="4.2"/><line x1="10.8" y1="7.2" x2="15.5" y2="4.2"/></svg>' },
+    'Numbers & Counting': { color: '#8f6a78', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' }
+  };
+  var DEFAULT_CATEGORY_META = { color: 'var(--muted)', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3Z"/></svg>' };
+  var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
+  function categoryMeta(name) { return CATEGORY_META[name] || DEFAULT_CATEGORY_META; }
+  function categoryHeaderHtml(name, count) {
+    var meta = categoryMeta(name);
+    return '<span class="cat-icon" style="color:' + meta.color + '">' + meta.icon + '</span>' +
+      '<span class="cat-name">' + esc(name) + '</span>' +
+      '<span class="cat-count">' + count + '</span>';
+  }
+  // Group tables by category (alphabetical categories, alphabetical tables
+  // within each) -- shared by the sidebar and the Overview table of contents
+  // so both stay in sync as tables/categories are added.
+  function groupByCategory(tables) {
+    var byName = {};
+    tables.forEach(function (t) {
+      var name = t.category || 'Tables';
+      if (!byName[name]) byName[name] = [];
+      byName[name].push(t);
+    });
+    var names = Object.keys(byName).sort(function (a, b) { return a.localeCompare(b); });
+    return names.map(function (name) {
+      return { name: name, tables: byName[name].slice().sort(function (a, b) { return a.title.localeCompare(b.title); }) };
+    });
+  }
+  function renderSidebar(tables) {
+    return groupByCategory(tables).map(function (g) {
+      var links = g.tables.map(function (t) {
+        return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
+      }).join('');
+      return '<div class="sidebar-group">' +
+        '<div class="sidebar-group-head">' +
+        '<button type="button" class="sidebar-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length) + '</button>' +
+        '<button type="button" class="sidebar-group-chevron" aria-expanded="true" aria-label="Toggle ' + esc(g.name) + '">' + CHEVRON_ICON + '</button>' +
+        '</div>' +
+        '<div class="sidebar-group-items">' + links + '</div></div>';
+    }).join('');
+  }
+  // Overview is a plain table of contents -- no accordion, just links.
+  function renderOverview(tables) {
+    return groupByCategory(tables).map(function (g) {
+      var links = g.tables.map(function (t) {
+        return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
+      }).join('');
+      return '<div class="overview-group">' +
+        '<button type="button" class="overview-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length) + '</button>' +
+        '<div class="overview-group-items">' + links + '</div></div>';
+    }).join('');
+  }
+
   var host = document.getElementById('vocabulary');
+  var sidebarHost = document.querySelector('.sidebar-groups');
+  var overviewHost = document.querySelector('.overview-groups');
   if (host && window.vocabularyTables) {
     host.innerHTML = window.vocabularyTables.map(renderTable).join('\n');
+    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(window.vocabularyTables);
+    if (overviewHost) overviewHost.innerHTML = renderOverview(window.vocabularyTables);
   }
   document.querySelectorAll('.vocab tbody').forEach(function (tbody) {
     [...tbody.querySelectorAll('tr')].forEach(function (row, i) { row.dataset.originalIndex = i; });
@@ -305,6 +355,15 @@ document.addEventListener('DOMContentLoaded', function () {
     const filter = currentFilter();
     let totalRows = 0, totalTables = 0;
     const sectionOrder = [];
+    const overviewPage = document.getElementById('overviewPage');
+    const vocabHost = document.getElementById('vocabulary');
+    const activeCategory = document.body.dataset.activeCategory || '';
+
+    // A query needs matches from every category, not just the one currently
+    // open -- so search temporarily lifts the per-category page restriction.
+    if (q) { vocabHost.hidden = false; overviewPage.hidden = true; }
+    else if (activeCategory) { vocabHost.hidden = false; overviewPage.hidden = true; }
+    else { vocabHost.hidden = true; overviewPage.hidden = false; }
 
     sections.forEach((section, originalIndex) => {
       const tbody = section.querySelector('tbody');
@@ -322,11 +381,14 @@ document.addEventListener('DOMContentLoaded', function () {
       if (q) { ranked.sort((a, b) => a.rank - b.rank); ranked.forEach(r => tbody.appendChild(r.row)); }
       else restoreOrder(tbody);
 
-      const visible = !q || sectionRows > 0;
-      section.classList.toggle('search-hidden', !visible);
-      if (q && sectionRows > 0) section.classList.remove('section-hidden');
-      if (!q && section.dataset.userHidden === 'true') section.classList.add('section-hidden');
-      if (visible && q) { totalTables++; totalRows += sectionRows; expandSection(section); }
+      if (q) {
+        section.classList.remove('page-hidden');
+        section.classList.toggle('search-hidden', sectionRows === 0);
+        if (sectionRows > 0) { totalTables++; totalRows += sectionRows; expandSection(section); }
+      } else {
+        section.classList.remove('search-hidden');
+        section.classList.toggle('page-hidden', Boolean(activeCategory) && section.dataset.category !== activeCategory);
+      }
       sectionOrder.push({ section, rank: sectionBest === null ? Infinity : sectionBest, originalIndex });
     });
     count.textContent = q ? totalRows + ' matching row' + (totalRows === 1 ? '' : 's') + ' · ' + totalTables + ' table' + (totalTables === 1 ? '' : 's') : '';
@@ -334,18 +396,16 @@ document.addEventListener('DOMContentLoaded', function () {
     // The best match overall should be the first thing on the page, not just first
     // within whichever table happens to sort earliest -- so reorder the table
     // sections themselves by their best contained match, ties kept in table order.
-    const host = document.getElementById('vocabulary');
     if (q) {
       sectionOrder.sort((a, b) => a.rank - b.rank || a.originalIndex - b.originalIndex);
-      sectionOrder.forEach(s => host.appendChild(s.section));
+      sectionOrder.forEach(s => vocabHost.appendChild(s.section));
     } else {
-      sections.forEach(section => host.appendChild(section));
+      sections.forEach(section => vocabHost.appendChild(section));
     }
-
-    // A query needs every match visible at once, so it drops out of the one-table-at-a-time carousel.
-    document.body.classList.toggle('carousel-mode', !q);
-    if (!q && window.__carousel) window.__carousel.resume();
   }
+  window.clearSearchQuery = function () {
+    if (input.value) { input.value = ''; runSearch(); }
+  };
 
   input.addEventListener('input', runSearch);
   document.getElementById('clearSearch').addEventListener('click', function () {
@@ -408,107 +468,39 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.sort-button').forEach(function (button) {
     button.addEventListener('click', function (event) { event.stopPropagation(); sortTableFromButton(button); });
   });
-  document.querySelectorAll('.hide-section').forEach(function (button) {
-    button.addEventListener('click', function (event) {
-      event.stopPropagation();
-      const section = button.closest('.table-section');
-      const wasActive = section.classList.contains('carousel-active');
-      section.dataset.userHidden = 'true';
-      section.classList.add('section-hidden');
-      if (wasActive && window.__carousel) window.__carousel.step(1);
+  document.querySelectorAll('.sidebar-group-chevron').forEach(function (button) {
+    button.addEventListener('click', function () {
+      const group = button.closest('.sidebar-group');
+      const collapsed = group.classList.toggle('collapsed');
+      button.setAttribute('aria-expanded', String(!collapsed));
     });
   });
-  document.querySelectorAll('.category-button').forEach(function (button) {
-    button.addEventListener('click', function () { toggleCategory(button); });
+  document.querySelectorAll('.sidebar-group-nav, .overview-group-nav').forEach(function (button) {
+    button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
   });
-  document.querySelectorAll('.category-dropdown a').forEach(function (link) {
+  document.querySelectorAll('.sidebar-group-items a, .overview-group-items a').forEach(function (link) {
     link.addEventListener('click', function (event) {
       event.preventDefault();
-      const section = document.querySelector('.table-section[data-table="' + link.dataset.target + '"]');
-      if (section) { section.dataset.userHidden = 'false'; section.classList.remove('section-hidden'); }
       goToTable(link.dataset.target);
-      closeCategoryMenus();
     });
   });
-
-  document.querySelector('.print-selected')?.addEventListener('click', printSelected);
-  document.querySelector('.print-all')?.addEventListener('click', printAll);
-  document.querySelector('.expand-all')?.addEventListener('click', expandAll);
-  document.querySelector('.collapse-all')?.addEventListener('click', collapseAll);
-});
-
-/* Carousel: browsing shows one table at a time (buttons on desktop, swipe on mobile);
-   a search query drops back to the plain stacked list so every match stays visible at once. */
-document.addEventListener('DOMContentLoaded', function () {
-  const prevBtn = document.querySelector('.carousel-prev');
-  const nextBtn = document.querySelector('.carousel-next');
-  const posEl = document.getElementById('carouselPosition');
-  const vocab = document.getElementById('vocabulary');
-  if (!prevBtn || !nextBtn || !vocab) return;
-
-  function all() { return [...document.querySelectorAll('.table-section')]; }
-  function isHidden(section) { return section.dataset.userHidden === 'true'; }
-  function currentIndex(sections) {
-    const idx = sections.findIndex(s => s.classList.contains('carousel-active'));
-    return idx === -1 ? 0 : idx;
+  const overviewLink = document.querySelector('.sidebar-overview');
+  if (overviewLink) {
+    overviewLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      showOverviewPage();
+    });
   }
-
-  function activate(section) {
-    all().forEach(s => s.classList.remove('carousel-active'));
-    section.classList.add('carousel-active');
-    expandSection(section);
-    const sections = all();
-    posEl.textContent = (sections.indexOf(section) + 1) + ' / ' + sections.length;
-    document.querySelectorAll('.category-dropdown a').forEach(a => a.classList.remove('active'));
-    const link = document.querySelector('.category-dropdown a[data-target="' + section.dataset.table + '"]');
-    if (link) link.classList.add('active');
-    window.scrollTo({ top: 0 });
+  const sidebarToggle = document.querySelector('.sidebar-toggle');
+  if (sidebarToggle) {
+    sidebarToggle.addEventListener('click', function () {
+      if (document.querySelector('.sidebar').classList.contains('open')) closeSidebar();
+      else openSidebar();
+    });
   }
-
-  function step(delta) {
-    const sections = all();
-    if (!sections.length) return;
-    let idx = currentIndex(sections);
-    for (let i = 0; i < sections.length; i++) {
-      idx = (idx + delta + sections.length) % sections.length;
-      if (!isHidden(sections[idx])) break;
-    }
-    activate(sections[idx]);
-  }
-
-  function resume() {
-    const sections = all();
-    const stillActive = sections.find(s => s.classList.contains('carousel-active') && !isHidden(s));
-    activate(stillActive || sections.find(s => !isHidden(s)) || sections[0]);
-  }
-
-  window.__carousel = { activate, step, resume };
-
-  prevBtn.addEventListener('click', () => step(-1));
-  nextBtn.addEventListener('click', () => step(1));
-
+  const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
+  if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
   document.addEventListener('keydown', function (event) {
-    if (!document.body.classList.contains('carousel-mode')) return;
-    if (/input|textarea|select/i.test(document.activeElement.tagName)) return;
-    if (event.key === 'ArrowRight') step(1);
-    else if (event.key === 'ArrowLeft') step(-1);
+    if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
   });
-
-  let touchX = 0, touchY = 0, tracking = false;
-  vocab.addEventListener('touchstart', function (event) {
-    if (!document.body.classList.contains('carousel-mode')) return;
-    tracking = true;
-    touchX = event.touches[0].clientX;
-    touchY = event.touches[0].clientY;
-  }, { passive: true });
-  vocab.addEventListener('touchend', function (event) {
-    if (!tracking) return;
-    tracking = false;
-    const dx = event.changedTouches[0].clientX - touchX;
-    const dy = event.changedTouches[0].clientY - touchY;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) step(dx < 0 ? 1 : -1);
-  }, { passive: true });
-
-  const first = all().find(s => !isHidden(s)) || all()[0];
-  if (first) activate(first);
 });

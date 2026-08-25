@@ -2,6 +2,7 @@ window.vocabularyTables = [
   {
     id: 0,
     title: "Counters",
+    category: "Numbers & Counting",
     rows: [
     {"type":"word","jp":[{"text":"〜"},{"kanji":"個","reading":"こ"}],"romaji":"~ko","english":"small individual items"},
     {"type":"word","jp":[{"text":"〜"},{"kanji":"枚","reading":"まい"}],"romaji":"~mai","english":"flat items"},
@@ -14,6 +15,7 @@ window.vocabularyTables = [
   {
     id: 1,
     title: "Drinks",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"text":"ビール"}],"romaji":"bīru","english":"beer"},
     {"type":"word","jp":[{"kanji":"紅茶","reading":"こうちゃ"}],"romaji":"kōcha","english":"black tea"},
@@ -29,6 +31,7 @@ window.vocabularyTables = [
   {
     id: 2,
     title: "Cooking Ingredients",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"text":"ワイン"}],"romaji":"wain","english":"wine"},
     {"type":"word","jp":[{"kanji":"油","reading":"あぶら"}],"romaji":"abura","english":"cooking oil"},
@@ -52,6 +55,7 @@ window.vocabularyTables = [
   {
     id: 3,
     title: "Fruits",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"text":"りんご"}],"romaji":"ringo","english":"apple"},
     {"type":"word","jp":[{"text":"バナナ"}],"romaji":"banana","english":"banana"},
@@ -71,6 +75,7 @@ window.vocabularyTables = [
   {
     id: 4,
     title: "Kitchen Tools & Appliances",
+    category: "Kitchen & Dining",
     rows: [
     {"type":"word","jp":[{"text":"ざる"}],"romaji":"zaru","english":"colander / strainer"},
     {"type":"word","jp":[{"text":"まな"},{"kanji":"板","reading":"いた"}],"romaji":"manaita","english":"cutting board"},
@@ -97,6 +102,7 @@ window.vocabularyTables = [
   {
     id: 5,
     title: "Meals & Dishes",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"kanji":"パン","reading":""}],"romaji":"pan","english":"bread"},
     {"type":"word","jp":[{"kanji":"朝","reading":"あさ"},{"text":"ご"},{"kanji":"飯","reading":"はん"}],"romaji":"asagohan","english":"breakfast"},
@@ -148,6 +154,7 @@ window.vocabularyTables = [
   {
     id: 6,
     title: "N5 Adjectives",
+    category: "Grammar",
     rows: [
     {"type":"word","jp":[{"kanji":"大","reading":"おお"},{"text":"きい"}],"romaji":"ōkii","english":"big"},
     {"type":"word","jp":[{"kanji":"小","reading":"ちい"},{"text":"さい"}],"romaji":"chiisai","english":"small"},
@@ -167,6 +174,7 @@ window.vocabularyTables = [
   {
     id: 7,
     title: "N5 Verbs",
+    category: "Grammar",
     rows: [
     {"type":"verb-pair","forms":[{"jp":[{"kanji":"茹","reading":"ゆ"},{"text":"でる"}],"romaji":"yuderu"},{"jp":[{"kanji":"茹","reading":"ゆ"},{"text":"でます"}],"romaji":"yudemasu"}],"english":"boil in water"},
     {"type":"verb-pair","forms":[{"jp":[{"kanji":"切","reading":"き"},{"text":"る"}],"romaji":"kiru"},{"jp":[{"kanji":"切","reading":"き"},{"text":"ります"}],"romaji":"kirimasu"}],"english":"cut / slice"},
@@ -211,6 +219,7 @@ window.vocabularyTables = [
   {
     id: 8,
     title: "Numbers 0–1,000,000",
+    category: "Numbers & Counting",
     tableClass: "numbers-table",
     rows: [
     {"type":"word","jp":[{"kanji":"零","reading":"れい"}],"numberValue":"(0)","romaji":"れい","english":"zero"},
@@ -283,6 +292,7 @@ window.vocabularyTables = [
   {
     id: 9,
     title: "Particles",
+    category: "Grammar",
     rows: [
     {"type":"word","jp":[{"text":"は"}],"particle":true,"romaji":"wa","english":"topic / contrast"},
     {"type":"word","jp":[{"text":"が"}],"particle":true,"romaji":"ga","english":"subject / emphasis"},
@@ -300,6 +310,7 @@ window.vocabularyTables = [
   {
     id: 10,
     title: "Proteins & Dairy",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"text":"バター"}],"romaji":"batā","english":"butter"},
     {"type":"word","jp":[{"text":"チーズ"}],"romaji":"chīzu","english":"cheese"},
@@ -359,6 +370,7 @@ window.vocabularyTables = [
   {
     id: 11,
     title: "Tableware",
+    category: "Kitchen & Dining",
     rows: [
     {"type":"word","jp":[{"kanji":"箸","reading":"はし"}],"romaji":"hashi","english":"chopsticks"},
     {"type":"word","jp":[{"text":"コップ"}],"romaji":"koppu","english":"cup / glass"},
@@ -376,6 +388,7 @@ window.vocabularyTables = [
   {
     id: 12,
     title: "Taste & Texture",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"text":"まずい"}],"romaji":"mazui","english":"bad-tasting"},
     {"type":"word","jp":[{"kanji":"苦","reading":"にが"},{"text":"い"}],"romaji":"nigai","english":"bitter"},
@@ -400,6 +413,7 @@ window.vocabularyTables = [
   {
     id: 13,
     title: "Vegetables",
+    category: "Food & Ingredients",
     rows: [
     {"type":"word","jp":[{"kanji":"野菜","reading":"やさい"}],"romaji":"yasai","english":"vegetables"},
     {"type":"word","jp":[{"kanji":"豆","reading":"まめ"}],"romaji":"mame","english":"bean"},

@@ -13,6 +13,7 @@
   --furigana: #7488a0;
   --paper: #ffffff;
   --surface: #eef2f6;
+  --row-alt: #f7f9fb;
   --page-bg: #e6ecf1;
   --line: #dce3ea;
   --accent: #6a89a7;
@@ -29,16 +30,191 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: var(--page-bg);
+  background-color: var(--page-bg);
+  /* A faint scatter of rain-drop dots -- just enough texture to keep the
+     page-bg from feeling flat in the margins around the (opaque) cards;
+     never strong enough to compete with the tables. */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%237c92a3' opacity='0.08'%3E%3Ccircle cx='20' cy='27' r='2'/%3E%3Ccircle cx='80' cy='13' r='2.6'/%3E%3Ccircle cx='127' cy='53' r='1.7'/%3E%3Ccircle cx='40' cy='93' r='2.3'/%3E%3Ccircle cx='107' cy='120' r='2'/%3E%3Ccircle cx='147' cy='93' r='1.6'/%3E%3Ccircle cx='60' cy='140' r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@media print {
+  html, body { background-image: none !important; }
+}
+
+.layout {
+  display: flex;
+  align-items: flex-start;
+}
+
 .app {
+  flex: 1 1 auto;
+  min-width: 0;
   max-width: 1040px;
   margin: 0 auto;
   padding: 18px 32px 60px;
 }
+
+/* ---------------------------------------------------------------------
+   Sidebar: the table index, always visible and scrolling on its own so
+   long lists of tables never push the vocabulary content down the page.
+   --------------------------------------------------------------------- */
+.sidebar {
+  flex: 0 0 240px;
+  width: 240px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  padding: 18px 14px 24px;
+}
+.sidebar-overview {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 7px 8px;
+  border-radius: 6px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.sidebar-overview:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-overview.active { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-overview svg { flex: 0 0 auto; }
+.sidebar::after {
+  content: "";
+  display: block;
+  height: 1px;
+  background: var(--line);
+  margin: 0 8px 14px;
+}
+
+.sidebar-groups { display: flex; flex-direction: column; gap: 18px; }
+.sidebar-group-head {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.sidebar-group-nav {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+}
+.sidebar-group-nav:hover { background: var(--accent-soft); }
+.sidebar-group-nav.active { background: var(--accent-soft); }
+.cat-icon { flex: 0 0 auto; display: flex; }
+.cat-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+  font: 700 11.5px/1.2 Arial, Helvetica, sans-serif;
+  letter-spacing: .02em;
+}
+.sidebar-group-nav.active .cat-name { color: var(--accent-dark); }
+.cat-count {
+  flex: 0 0 auto;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 400;
+}
+.sidebar-group-chevron {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  color: var(--faint);
+  cursor: pointer;
+}
+.sidebar-group-chevron:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-group-chevron svg { transition: transform .15s ease; }
+.sidebar-group.collapsed .sidebar-group-chevron svg { transform: rotate(-90deg); }
+.sidebar-group-items { display: flex; flex-direction: column; margin-top: 2px; }
+.sidebar-group.collapsed .sidebar-group-items { display: none; }
+.sidebar-group-items a {
+  display: block;
+  padding: 6px 8px 6px 32px;
+  border-radius: 6px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+.sidebar-group-items a:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-group-items a.active {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+/* ---------------------------------------------------------------------
+   Overview: a plain table of contents, grouped the same way as the
+   sidebar so the two stay visually consistent.
+   --------------------------------------------------------------------- */
+.page-overview { padding: 20px 0 40px; }
+.page-overview h2 {
+  margin: 0 0 24px;
+  color: var(--ink);
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -.2px;
+}
+.overview-groups { display: flex; flex-direction: column; gap: 24px; }
+
+/* Each category is its own quiet card -- a light surface and a hairline
+   border do the grouping instead of a divider rule under every heading. */
+.overview-group {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+.overview-group-nav {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  margin: 0 0 12px;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+}
+.overview-group-nav:hover .cat-name { color: var(--accent-dark); }
+.overview-group-nav .cat-name { font-size: 15.5px; }
+.overview-group-items { display: flex; flex-wrap: wrap; column-gap: 20px; row-gap: 7px; }
+.overview-group-items a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13.5px;
+}
+.overview-group-items a:hover { color: var(--accent-dark); text-decoration: underline; }
 
 /* ---------------------------------------------------------------------
    Header: search leads, everything else is compact and secondary.
@@ -52,7 +228,7 @@ html, body {
   border-radius: 14px;
   box-shadow: 0 2px 6px rgba(35, 50, 55, .05);
   margin: 0 0 22px;
-  padding: 12px 18px 10px;
+  padding: 10px 16px 8px;
 }
 
 .top-row {
@@ -70,9 +246,9 @@ html, body {
 .brand-mark { display: block; border-radius: 50%; }
 .brand-title {
   margin: 0;
-  font-family: Georgia, "Iowan Old Style", ui-serif, serif;
-  font-size: 18px;
-  font-weight: 700;
+  font-family: "Kosugi Maru", Arial, Helvetica, sans-serif;
+  font-size: 19px;
+  font-weight: 400;
   color: var(--ink);
 }
 
@@ -81,7 +257,7 @@ html, body {
   display: flex;
   align-items: center;
   min-width: 0;
-  height: 38px;
+  height: 33px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -121,7 +297,7 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
+  margin-top: 5px;
   padding-left: 2px;
 }
 .view-mode {
@@ -150,115 +326,17 @@ html, body {
   white-space: nowrap;
 }
 
-.utility-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-top: 10px;
-  padding-top: 9px;
-  border-top: 1px solid var(--line);
-}
-
-/* Compact table nav: prev/next flank a jump-to-any-table trigger. */
-.table-nav {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-}
-.carousel-prev,
-.carousel-next {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  border-radius: 6px;
-  width: 24px;
-  height: 24px;
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-}
-.carousel-prev:hover,
-.carousel-next:hover { background: var(--accent-soft); color: var(--accent-dark); }
-
-.category-menu { position: relative; }
-.category-button {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  border-radius: 6px;
-  padding: 3px 6px;
-  font: 700 12px/1.2 Arial, Helvetica, sans-serif;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-.category-button:hover,
-.category-menu.open .category-button { background: var(--accent-soft); color: var(--accent-dark); }
-.category-chevron { font-size: 10px; color: var(--muted); transition: transform .15s ease; }
-.category-menu.open .category-chevron { transform: rotate(180deg); }
-.category-dropdown {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 240px;
-  max-width: 320px;
-  padding: 6px;
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  box-shadow: 0 10px 24px rgba(45, 61, 76, .14);
-  z-index: 1100;
-}
-.category-menu.open .category-dropdown { display: block; }
-.category-dropdown a {
-  display: block;
-  padding: 7px 9px;
-  border-radius: 6px;
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 12px;
-  line-height: 1.25;
-}
-.category-dropdown a:hover,
-.category-dropdown a.active { background: var(--accent-soft); color: var(--accent-dark); }
-
-/* Secondary utility links: expand/collapse, print. Deliberately plain -- not buttons competing with search. */
-.utility-actions {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.utility-actions button {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11.5px;
-  padding: 4px 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.utility-actions button:hover { color: var(--accent-dark); background: var(--accent-soft); }
-.utility-sep { color: var(--line); font-size: 11px; }
-
 @media (max-width: 700px) {
   .top-row { flex-wrap: wrap; }
   .brand { flex: 1 1 100%; }
   .search-box { flex: 1 1 100%; }
   .search-meta { flex-wrap: wrap; row-gap: 6px; }
   .search-count { flex-basis: 100%; margin-left: 0; }
-  .utility-row { flex-wrap: wrap; row-gap: 8px; }
-  .utility-actions { flex-wrap: wrap; }
 }
 
 @media print {
   .site-header { display: none !important; }
+  .sidebar, .page-overview { display: none !important; }
 }
 
 /* ---------------------------------------------------------------------
@@ -317,23 +395,22 @@ html, body {
 .print-one {
   appearance: none;
   border: 0;
-  background: var(--surface);
-  color: var(--muted);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
   border-radius: 6px;
-  padding: 5px 10px;
-  font-size: 11.5px;
+  color: var(--faint);
   cursor: pointer;
 }
 .print-one:hover { background: var(--accent-soft); color: var(--accent-dark); }
-.hide-section { border: 0; background: transparent; color: var(--muted); font-size: 11.5px; padding: 4px 6px; cursor: pointer; }
-.hide-section:hover { color: var(--accent-dark); }
-.pick { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11.5px; white-space: nowrap; }
-.pick input { accent-color: var(--accent); }
 
 .table-section.collapsed .vocab { display: none; }
 .table-section.collapsed { padding-bottom: 14px; }
 .table-section.collapsed .section-head { margin-bottom: 0; }
-.section-hidden { display: none !important; }
+.page-hidden { display: none !important; }
 .search-hidden { display: none !important; }
 
 @media print {
@@ -349,8 +426,7 @@ html, body {
   }
   .table-section.collapsed .vocab { display: table; }
   .table-section .controls,
-  .table-section .print-one,
-  .table-section .pick { display: none !important; }
+  .table-section .print-one { display: none !important; }
   .table-section .section-head {
     display: block !important;
     margin: 0 0 10px !important;
@@ -370,18 +446,6 @@ html, body {
 }
 
 /* ---------------------------------------------------------------------
-   Carousel: one table at a time while browsing; a search query drops
-   back to the plain stacked list so every match stays visible at once.
-   --------------------------------------------------------------------- */
-body.carousel-mode .table-section { display: none; }
-body.carousel-mode .table-section.carousel-active { display: block; touch-action: pan-y; }
-body.carousel-mode .utility-actions .expand-all,
-body.carousel-mode .utility-actions .collapse-all { display: none; }
-@media print {
-  body.carousel-mode .table-section { display: block; }
-}
-
-/* ---------------------------------------------------------------------
    Tables: one consistent grid everywhere. Japanese -> furigana -> romaji
    -> English is the reading order, reinforced by size, weight and color,
    not by letting any one column balloon.
@@ -393,15 +457,14 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   text-align: left;
   color: var(--muted);
   background: var(--surface);
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: .04em;
-  text-transform: uppercase;
-  padding: 8px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 7px 14px;
   border-bottom: 1px solid var(--line);
+  white-space: nowrap;
 }
 .vocab td {
-  padding: 12px 14px;
+  padding: 10.5px 14px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   font-size: 13px;
@@ -414,7 +477,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   overflow-wrap: break-word;
 }
 .vocab tbody tr:last-child td { border-bottom: 0; }
-.vocab tbody tr:nth-child(even) td { background: var(--surface); }
+.vocab tbody tr:nth-child(even) td { background: var(--row-alt); }
 .vocab tbody tr:hover td { background: var(--accent-soft); }
 
 /* Widths are weighted by what each column actually holds: Japanese words run
@@ -429,7 +492,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
   font-size: 18px;
   font-weight: 400;
-  line-height: 1.9;
+  line-height: 1.7;
   color: var(--ink);
 }
 /* No white-space:nowrap here: each <ruby> stays intact on its own (browsers never
@@ -479,26 +542,24 @@ mark.search-hit {
 }
 .vocab td.jp mark.search-hit { background: none; color: inherit; border-bottom: 2px solid var(--rose); font-weight: inherit; }
 
-/* Per-column sort control */
+/* Per-column sort control: just a small arrow next to the column name. */
 .vocab th { position: relative; }
 .sort-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-left: 6px;
-  padding: 2px 6px;
-  min-width: 30px;
-  height: 20px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: #fff;
-  color: var(--muted);
-  font-size: 9px;
-  font-weight: 700;
+  vertical-align: middle;
+  margin-left: 5px;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--faint);
+  font-size: 11px;
+  line-height: 1;
   cursor: pointer;
 }
-.sort-button:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
-.sort-button.active { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+.sort-button:hover { color: var(--accent-dark); }
+.sort-button.active { color: var(--accent-dark); }
 
 /* Japanese/English/Romaji filters hide the TEXT of the other columns only -- the column,
    its border, its header/zebra background, and the sort control all stay exactly as they are. */
@@ -526,22 +587,84 @@ body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(
 }
 
 @media screen and (min-width: 761px) {
-  .vocab th { font-size: 12px; padding-top: 12px; padding-bottom: 12px; }
-  .vocab td { font-size: 16px; padding-top: 12px; padding-bottom: 12px; }
-  .vocab td.jp { font-size: 24px; line-height: 2.1; }
+  .vocab th { font-size: 13px; padding-top: 10.5px; padding-bottom: 10.5px; }
+  .vocab td { font-size: 16px; padding-top: 10.5px; padding-bottom: 10.5px; }
+  .vocab td.jp { font-size: 24px; line-height: 1.85; }
   .furigana { font-size: .48em; }
   .vocab td:nth-child(2) { font-size: 16px; }
 }
 
+.sidebar-toggle {
+  display: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  padding: 6px;
+  margin-right: 4px;
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+.sidebar-toggle span,
+.sidebar-toggle span::before,
+.sidebar-toggle span::after {
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 1px;
+}
+.sidebar-toggle span { position: relative; }
+.sidebar-toggle span::before,
+.sidebar-toggle span::after { content: ""; position: absolute; left: 0; }
+.sidebar-toggle span::before { top: -6px; }
+.sidebar-toggle span::after { top: 6px; }
+
+.sidebar-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(35, 50, 65, .35);
+  z-index: 1900;
+}
+
 @media (max-width: 700px) {
-  .app { padding: 14px 14px 48px; }
+  .sidebar-toggle { display: block; }
+  .layout { display: block; }
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 82%;
+    max-width: 300px;
+    height: 100vh;
+    border-right: 1px solid var(--line);
+    box-shadow: 2px 0 16px rgba(35, 50, 65, .18);
+    z-index: 2000;
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+  body.sidebar-open .sidebar-backdrop { display: block; }
+  .app { padding: 14px 12px 48px; }
   .site-header { border-radius: 12px; padding: 10px 12px 8px; }
-  .table-section { padding: 14px 14px 16px; scroll-margin-top: 190px; }
-  .section-head { flex-wrap: wrap; row-gap: 8px; }
-  .section-head h2 { flex: 1 1 100%; }
-  .controls { margin-left: 0; flex-basis: 100%; flex-wrap: wrap; row-gap: 6px; }
+  .table-section { padding: 14px 12px 16px; scroll-margin-top: 190px; }
+  /* Just one compact icon button lives here now -- keep it on the same row as
+     the title, pinned to the right, instead of forcing it onto its own line. */
+  .section-head { margin-bottom: 10px; }
   .vocab td.jp { font-size: 16px; }
+
+  /* Rebalance the grid for narrow screens: Japanese gets more room so short
+     unbroken katakana words (furaipan, etc.) fit on one line, romaji gets
+     enough to hold a single long word without breaking mid-word, and English
+     gives up some width since it already wraps cleanly at word boundaries. */
+  .vocab th:nth-child(1), .vocab td:nth-child(1) { width: 38%; }
+  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 29%; }
+  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 33%; }
+  .vocab th, .vocab td { padding-left: 10px; padding-right: 10px; }
 }
 
 :focus-visible { outline: 3px solid rgba(106, 137, 167, .55); outline-offset: 2px; }
-.section-toggle:focus-visible, .category-button:focus-visible, .category-dropdown a:focus-visible { outline-color: var(--accent); }
+.section-toggle:focus-visible, .sidebar-group-nav:focus-visible, .sidebar-group-chevron:focus-visible,
+.sidebar-overview:focus-visible, .sidebar-group-items a:focus-visible,
+.overview-group-nav:focus-visible, .overview-group-items a:focus-visible { outline-color: var(--accent); }

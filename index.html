@@ -1,10 +1,21 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>sakura</title><link rel="stylesheet" href="css/site.css?v=__CACHEBUST__">
+<title>sakura</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap">
+<link rel="stylesheet" href="css/site.css?v=__CACHEBUST__">
 <link rel="icon" href="logo.png">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'"></head><body class="carousel-mode"><div class="app">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'"></head><body><div class="layout">
+<div class="sidebar-backdrop"></div>
+<nav class="sidebar" aria-label="Table index">
+  <a class="sidebar-overview active" href="#overview" data-page="overview">Overview</a>
+  <div class="sidebar-groups"></div>
+</nav>
+<div class="app">
 <header class="site-header">
   <div class="top-row">
+    <button type="button" class="sidebar-toggle" aria-label="Open table index" aria-expanded="false"><span></span></button>
     <div class="brand"><img class="brand-mark" src="logo.png" alt="" width="24" height="24"><h1 class="brand-title">sakura</h1></div>
     <label class="search-box">
       <span class="search-icon">⌕</span>
@@ -21,24 +32,12 @@
     </div>
     <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
   </div>
-  <div class="utility-row">
-    <div class="table-nav">
-      <button type="button" class="carousel-prev" aria-label="Previous table">‹</button>
-      <div class="category-menu">
-        <button type="button" class="category-button" aria-expanded="false"><span id="carouselPosition"></span><span class="category-chevron">⌄</span></button>
-        <div class="category-dropdown"><a href="#table-0" data-target="0">Counters</a><a href="#table-1" data-target="1">Drinks</a><a href="#table-2" data-target="2">Cooking Ingredients</a><a href="#table-3" data-target="3">Fruits</a><a href="#table-4" data-target="4">Kitchen Tools &amp; Appliances</a><a href="#table-5" data-target="5">Meals &amp; Dishes</a><a href="#table-6" data-target="6">N5 Adjectives</a><a href="#table-7" data-target="7">N5 Verbs</a><a href="#table-8" data-target="8">Numbers 0–1,000,000</a><a href="#table-9" data-target="9">Particles</a><a href="#table-10" data-target="10">Proteins &amp; Dairy</a><a href="#table-11" data-target="11">Tableware</a><a href="#table-12" data-target="12">Taste &amp; Texture</a><a href="#table-13" data-target="13">Vegetables</a></div>
-      </div>
-      <button type="button" class="carousel-next" aria-label="Next table">›</button>
-    </div>
-    <div class="utility-actions">
-      <button type="button" class="expand-all">Expand all</button>
-      <button type="button" class="collapse-all">Collapse all</button>
-      <span class="utility-sep" aria-hidden="true">·</span>
-      <button type="button" class="print-selected">Print selected</button>
-      <button type="button" class="print-all">Print all</button>
-    </div>
-  </div>
 </header>
-<div id="vocabulary"></div>
+<section id="overviewPage" class="page-overview">
+  <h2>Overview</h2>
+  <div class="overview-groups"></div>
+</section>
+<div id="vocabulary" hidden></div>
+</div>
 </div>
 <script src="data/vocabulary.js?v=__CACHEBUST__"></script><script src="js/app.js?v=__CACHEBUST__"></script></body></html>

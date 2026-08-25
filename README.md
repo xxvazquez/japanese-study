@@ -6,7 +6,7 @@ Live at [xxvazquez.github.io/japanese-study](https://xxvazquez.github.io/japanes
 
 ## What's here
 
-- `index.html` — the page shell: header, search, table nav
+- `index.html` — the page shell: header, search, sidebar, overview page
 - `css/site.css` — styling and print rules
 - `js/app.js` — renders the tables, search, sorting, view modes, printing, the whole UI
 - `data/vocabulary.js` — the actual vocab, as plain data (not HTML)
@@ -18,10 +18,12 @@ No framework, no build step. Just open `index.html`.
 ## Features
 
 - Search across Japanese, furigana, romaji, and English, with filters to scope it to just one of those
-- Results sorted by how good the match is (exact → starts with → ends with → contains), matched text highlighted
-- Browse one table at a time with arrow keys / swipe, or search to see every match at once across all tables
-- Sortable columns, per-table or select-and-print, A4-friendly print layout
+- Results sorted by how good the match is (exact → starts with → ends with → contains), matched text highlighted, and pulled in from every category even if you're not currently viewing it
+- Tables are grouped into categories in the sidebar; each category is its own page, so you're never scrolling past the whole book to find one table
+- An Overview page (also the sidebar's landing page) lists every category and table as a plain table of contents
+- Sortable columns, per-table print, A4-friendly print layout
 - Furigana sits over the actual kanji it belongs to, not the whole word
+- On mobile the sidebar tucks behind a menu button instead of eating screen space
 
 ## Running it
 
