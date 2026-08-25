@@ -24,6 +24,12 @@ function expandSection(section) {
   section.classList.remove('collapsed');
   section.querySelector('.section-toggle').setAttribute('aria-expanded','true');
 }
+function updateHiddenStatus(section) {
+  const count = section.querySelectorAll('tbody tr.row-hidden').length;
+  const status = section.querySelector('.rows-hidden-status');
+  status.hidden = count === 0;
+  status.querySelector('.rows-hidden-count').textContent = count + ' row' + (count === 1 ? '' : 's') + ' hidden';
+}
 function openSidebar() {
   document.querySelector('.sidebar').classList.add('open');
   document.body.classList.add('sidebar-open');
@@ -74,7 +80,7 @@ function goToTable(i) {
   if (!section) return;
   showCategoryPage(section.dataset.category);
   expandSection(section);
-  section.scrollIntoView({behavior:'smooth',block:'start'});
+  section.scrollIntoView({block:'start'});
   markActiveNav(section.dataset.category, i);
 }
 function updateNavOnScroll() {
@@ -160,14 +166,18 @@ window.addEventListener('load',updateNavOnScroll);
     if (row.numberValue) inner += '<span class="number-value">' + esc(row.numberValue) + '</span>';
     return '<td class="jp" lang="ja">' + inner + '</td>';
   }
-  function wordRow(row) {
-    return (row.irregular ? '<tr class="irregular-row">' : '<tr>') + jpCell(row) +
-      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + '</td></tr>';
+  var EYE_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c1.8-3.2 4.5-4.8 7-4.8s5.2 1.6 7 4.8c-1.8 3.2-4.5 4.8-7 4.8S3.8 12.2 2 9Z"/><circle cx="9" cy="9" r="2"/></svg>';
+  function rowHideButton() {
+    return '<button type="button" class="row-hide-btn" aria-label="Hide this row" title="Hide this row">' + EYE_ICON + '</button>';
   }
-  function verbPairRow(row) {
+  function wordRow(row, i) {
+    return (row.irregular ? '<tr class="irregular-row">' : '<tr>') + '<td class="row-num">' + (i + 1) + '</td>' + jpCell(row) +
+      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + rowHideButton() + '</td></tr>';
+  }
+  function verbPairRow(row, i) {
     var jp = row.forms.map(function (f) { return '<div class="verb-form"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f) { return '<div class="verb-form">' + esc(f.romaji) + '</div>'; }).join('');
-    return '<tr><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + '</td></tr>';
+    return '<tr><td class="row-num">' + (i + 1) + '</td><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + rowHideButton() + '</td></tr>';
   }
   function sortHeader(label, col) {
     return '<th>' + label + '<button type="button" class="sort-button" data-sort-col="' + col + '" data-sort-dir="asc" aria-label="Sort ' + esc(label) + '">↑</button></th>';
@@ -175,31 +185,42 @@ window.addEventListener('load',updateNavOnScroll);
   var PRINT_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V2.5h8V6"/><rect x="2.5" y="6" width="13" height="7" rx="1.2"/><path d="M5 11.5h8V15.5H5Z"/></svg>';
   function renderTable(t) {
     var tableClass = 'vocab' + (t.tableClass ? ' ' + t.tableClass : '');
-    var rows = t.rows.map(function (row) { return row.type === 'verb-pair' ? verbPairRow(row) : wordRow(row); }).join('\n    ');
+    var rows = t.rows.map(function (row, i) { return row.type === 'verb-pair' ? verbPairRow(row, i) : wordRow(row, i); }).join('\n    ');
+    // The row-number column is only ever as wide as the widest number it needs
+    // to hold in this particular table -- a 6-row table and a 70-row table
+    // don't need the same gutter. Width comes from a data-digits attribute
+    // (matched in CSS) rather than an inline style="" -- the page's CSP has
+    // no 'unsafe-inline' for style-src, so inline styles are silently dropped.
+    var numDigits = Math.min(String(t.rows.length).length, 6);
     return '<section class="table-section page-hidden" data-table="' + t.id + '" data-category="' + esc(t.category || '') + '" id="table-' + t.id + '">' +
       '<div class="section-head">' +
       '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '</button></h2>' +
       '<div class="controls">' +
+      '<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>' +
+      '<button type="button" class="manage-rows-toggle">Manage rows</button>' +
       '<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>' +
       '</div></div>' +
-      '<table class="' + tableClass + '" id="vocab-' + t.id + '"><thead><tr><th>Japanese</th>' + sortHeader('Romaji', 1) + sortHeader('English', 2) + '</tr></thead><tbody>\n    ' +
+      '<table class="' + tableClass + '" id="vocab-' + t.id + '"><thead><tr><th class="row-num-th" data-digits="' + numDigits + '"></th><th>Japanese</th>' + sortHeader('Romaji', 2) + sortHeader('English', 3) + '</tr></thead><tbody>\n    ' +
       rows + '\n  </tbody></table></section>';
   }
 
   // Small, hand-drawn line icons -- one per category, each its own color
   // from the existing palette, purely as a fast visual anchor when scanning.
+  // Colors come from CSS classes rather than inline style="" -- the page's CSP
+  // (style-src 'self', no 'unsafe-inline') silently drops inline style
+  // attributes, so any per-category color has to live in the stylesheet.
   var CATEGORY_META = {
-    'Grammar': { color: '#4c637a', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="12.5" y2="9"/><line x1="3" y1="13" x2="9.5" y2="13"/></svg>' },
-    'Food & Ingredients': { color: '#b97e91', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h12"/><path d="M3.5 7.5a5.5 5.5 0 0 0 11 0"/><path d="M9 7.5V3.8c1.4 0 2.2.9 2.2 2"/></svg>' },
-    'Kitchen & Dining': { color: '#6a89a7', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="9.5" r="4.2"/><line x1="10.8" y1="7.2" x2="15.5" y2="4.2"/></svg>' },
-    'Numbers & Counting': { color: '#8f6a78', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' }
+    'Grammar': { cls: 'cat-color-a', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="12.5" y2="9"/><line x1="3" y1="13" x2="9.5" y2="13"/></svg>' },
+    'Food & Ingredients': { cls: 'cat-color-b', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h12"/><path d="M3.5 7.5a5.5 5.5 0 0 0 11 0"/><path d="M9 7.5V3.8c1.4 0 2.2.9 2.2 2"/></svg>' },
+    'Kitchen & Dining': { cls: 'cat-color-c', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="9.5" r="4.2"/><line x1="10.8" y1="7.2" x2="15.5" y2="4.2"/></svg>' },
+    'Numbers & Counting': { cls: 'cat-color-d', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' }
   };
-  var DEFAULT_CATEGORY_META = { color: 'var(--muted)', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3Z"/></svg>' };
+  var DEFAULT_CATEGORY_META = { cls: 'cat-color-default', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3Z"/></svg>' };
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
   function categoryMeta(name) { return CATEGORY_META[name] || DEFAULT_CATEGORY_META; }
   function categoryHeaderHtml(name, count) {
     var meta = categoryMeta(name);
-    return '<span class="cat-icon" style="color:' + meta.color + '">' + meta.icon + '</span>' +
+    return '<span class="cat-icon ' + meta.cls + '">' + meta.icon + '</span>' +
       '<span class="cat-name">' + esc(name) + '</span>' +
       '<span class="cat-count">' + count + '</span>';
   }
@@ -294,12 +315,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function fieldsForFilter(row, filter) {
     const fields = [];
     if (filter === 'all' || filter === 'japanese') {
-      const jp = jpFields(row.cells[0]);
-      fields.push({ cell: row.cells[0], text: jp.kanji });
-      fields.push({ cell: row.cells[0], text: jp.furigana });
+      const jp = jpFields(row.cells[1]);
+      fields.push({ cell: row.cells[1], text: jp.kanji });
+      fields.push({ cell: row.cells[1], text: jp.furigana });
     }
-    if (filter === 'all' || filter === 'romaji') fields.push({ cell: row.cells[1], text: row.cells[1].textContent });
-    if (filter === 'all' || filter === 'english') fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
+    if (filter === 'all' || filter === 'romaji') fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
+    if (filter === 'all' || filter === 'english') fields.push({ cell: row.cells[3], text: row.cells[3].textContent });
     return fields;
   }
 
@@ -414,7 +435,7 @@ document.addEventListener('DOMContentLoaded', function () {
   input.addEventListener('keydown', function (event) {
     if (event.key === 'Enter') {
       const first = document.querySelector('.table-section:not(.search-hidden) tbody tr:not(.search-hidden)');
-      if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (first) first.scrollIntoView({ block: 'center' });
     } else if (event.key === 'Escape') {
       input.value = ''; runSearch(); input.blur();
     }
@@ -430,10 +451,10 @@ document.addEventListener('DOMContentLoaded', function () {
   // reader and its sort button focusable. Mark the hidden columns aria-hidden and
   // disable their sort control so the accessible state matches what's visually shown.
   function applyViewModeAccessibility(mode) {
-    const hiddenByMode = { japanese: [2, 3], romaji: [1, 3], english: [1, 2] };
+    const hiddenByMode = { japanese: [3, 4], romaji: [2, 4], english: [2, 3] };
     const hidden = hiddenByMode[mode] || [];
     document.querySelectorAll('.vocab').forEach(function (table) {
-      [1, 2, 3].forEach(function (col) {
+      [2, 3, 4].forEach(function (col) {
         const isHidden = hidden.indexOf(col) !== -1;
         table.querySelectorAll('th:nth-child(' + col + '), td:nth-child(' + col + ')').forEach(function (cell) {
           if (isHidden) cell.setAttribute('aria-hidden', 'true'); else cell.removeAttribute('aria-hidden');
@@ -464,6 +485,30 @@ document.addEventListener('DOMContentLoaded', function () {
   });
   document.querySelectorAll('.print-one').forEach(function (button) {
     button.addEventListener('click', function (event) { event.stopPropagation(); printOne(button.closest('.table-section').dataset.table); });
+  });
+  document.querySelectorAll('.manage-rows-toggle').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      const section = button.closest('.table-section');
+      const managing = section.classList.toggle('managing-rows');
+      button.textContent = managing ? 'Done' : 'Manage rows';
+    });
+  });
+  document.querySelectorAll('.row-hide-btn').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      const section = button.closest('.table-section');
+      button.closest('tr').classList.add('row-hidden');
+      updateHiddenStatus(section);
+    });
+  });
+  document.querySelectorAll('.show-all-rows').forEach(function (button) {
+    button.addEventListener('click', function (event) {
+      event.stopPropagation();
+      const section = button.closest('.table-section');
+      section.querySelectorAll('tbody tr.row-hidden').forEach(function (row) { row.classList.remove('row-hidden'); });
+      updateHiddenStatus(section);
+    });
   });
   document.querySelectorAll('.sort-button').forEach(function (button) {
     button.addEventListener('click', function (event) { event.stopPropagation(); sortTableFromButton(button); });

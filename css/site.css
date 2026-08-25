@@ -34,7 +34,7 @@ html, body {
   /* A faint scatter of rain-drop dots -- just enough texture to keep the
      page-bg from feeling flat in the margins around the (opaque) cards;
      never strong enough to compete with the tables. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%237c92a3' opacity='0.08'%3E%3Ccircle cx='20' cy='27' r='2'/%3E%3Ccircle cx='80' cy='13' r='2.6'/%3E%3Ccircle cx='127' cy='53' r='1.7'/%3E%3Ccircle cx='40' cy='93' r='2.3'/%3E%3Ccircle cx='107' cy='120' r='2'/%3E%3Ccircle cx='147' cy='93' r='1.6'/%3E%3Ccircle cx='60' cy='140' r='2.2'/%3E%3C/g%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%237c92a3' opacity='0.22'%3E%3Ccircle cx='20' cy='27' r='2.4'/%3E%3Ccircle cx='80' cy='13' r='3'/%3E%3Ccircle cx='127' cy='53' r='2'/%3E%3Ccircle cx='40' cy='93' r='2.7'/%3E%3Ccircle cx='107' cy='120' r='2.4'/%3E%3Ccircle cx='147' cy='93' r='1.9'/%3E%3Ccircle cx='60' cy='140' r='2.6'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
@@ -123,6 +123,13 @@ html, body {
 .sidebar-group-nav:hover { background: var(--accent-soft); }
 .sidebar-group-nav.active { background: var(--accent-soft); }
 .cat-icon { flex: 0 0 auto; display: flex; }
+/* Per-category icon colors -- classes rather than inline style="" because the
+   page's CSP (style-src 'self', no 'unsafe-inline') drops inline styles. */
+.cat-color-a { color: #4c637a; }
+.cat-color-b { color: #b97e91; }
+.cat-color-c { color: #6a89a7; }
+.cat-color-d { color: #8f6a78; }
+.cat-color-default { color: var(--muted); }
 .cat-name {
   flex: 1 1 auto;
   min-width: 0;
@@ -396,7 +403,10 @@ html, body {
   margin-left: auto;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
+  row-gap: 4px;
 }
 .print-one {
   appearance: none;
@@ -412,6 +422,61 @@ html, body {
   cursor: pointer;
 }
 .print-one:hover { background: var(--accent-soft); color: var(--accent-dark); }
+
+.manage-rows-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11.5px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.manage-rows-toggle:hover { color: var(--accent-dark); background: var(--accent-soft); }
+.table-section.managing-rows .manage-rows-toggle { color: var(--accent-dark); font-weight: 700; }
+
+.rows-hidden-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.rows-hidden-status[hidden] { display: none; }
+.show-all-rows {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+}
+.show-all-rows:hover { text-decoration: underline; }
+
+/* The eye toggle only shows once a table is in "manage rows" mode -- otherwise
+   it's just clutter on a reference table meant for quick lookup. */
+.row-hide-btn {
+  display: none;
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: var(--faint) !important;
+  cursor: pointer;
+}
+.row-hide-btn:hover { color: var(--accent-dark) !important; }
+.table-section.managing-rows .row-hide-btn { display: flex; }
+.table-section.managing-rows .vocab tbody td:last-child { padding-right: 30px; }
+.vocab tbody tr.row-hidden { display: none; }
 
 .table-section.collapsed .vocab { display: none; }
 .table-section.collapsed { padding-bottom: 14px; }
@@ -488,10 +553,32 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 
 /* Widths are weighted by what each column actually holds: Japanese words run
    1-5 characters at a large size, romaji is almost always one short word, and
-   English is the one that runs to full phrases and wraps -- so it gets the room. */
-.vocab th:nth-child(1), .vocab td:nth-child(1) { width: 32%; }
-.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 24%; }
-.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 44%; }
+   English is the one that runs to full phrases and wraps -- so it gets the room.
+   The row-number column (nth-child(1)) is sized per table by its own row
+   count via a data-digits attribute (see renderTable() in app.js) -- not an
+   inline style="", since the page's CSP has no 'unsafe-inline' for style-src. */
+.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 32%; }
+.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 24%; }
+.vocab th:nth-child(4), .vocab td:nth-child(4) { width: 44%; }
+
+.vocab th.row-num-th[data-digits="1"] { width: calc(1ch + 20px); }
+.vocab th.row-num-th[data-digits="2"] { width: calc(2ch + 20px); }
+.vocab th.row-num-th[data-digits="3"] { width: calc(3ch + 20px); }
+.vocab th.row-num-th[data-digits="4"] { width: calc(4ch + 20px); }
+.vocab th.row-num-th[data-digits="5"] { width: calc(5ch + 20px); }
+.vocab th.row-num-th[data-digits="6"] { width: calc(6ch + 20px); }
+
+/* Row numbers: a quiet ledger column, never competing with the actual content. */
+.vocab th.row-num-th { padding-left: 10px; padding-right: 6px; }
+.vocab td.row-num {
+  padding-left: 10px;
+  padding-right: 6px;
+  color: var(--faint);
+  font-size: 11.5px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
 
 /* Japanese: the primary column. */
 .vocab td.jp {
@@ -520,14 +607,14 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 }
 
 /* Romaji: third tier -- muted and set in italics, like a phonetic gloss. */
-.vocab td:nth-child(2) {
+.vocab td:nth-child(3) {
   color: var(--muted);
   font-style: italic;
   font-size: 12.5px;
 }
 
 /* English: the answer column -- plain and fully legible, not muted. */
-.vocab td:nth-child(3) { color: var(--ink); }
+.vocab td:nth-child(4) { color: var(--ink); position: relative; }
 
 .particle { color: var(--particle); font-weight: 700; }
 
@@ -569,19 +656,25 @@ mark.search-hit {
 
 /* Japanese/English/Romaji filters hide the TEXT of the other columns only -- the column,
    its border, its header/zebra background, and the sort control all stay exactly as they are. */
-body.mode-japanese .vocab th:nth-child(2), body.mode-japanese .vocab th:nth-child(2) *,
-body.mode-japanese .vocab td:nth-child(2), body.mode-japanese .vocab td:nth-child(2) *,
 body.mode-japanese .vocab th:nth-child(3), body.mode-japanese .vocab th:nth-child(3) *,
 body.mode-japanese .vocab td:nth-child(3), body.mode-japanese .vocab td:nth-child(3) *,
-body.mode-romaji .vocab th:nth-child(1), body.mode-romaji .vocab th:nth-child(1) *,
-body.mode-romaji .vocab td:nth-child(1), body.mode-romaji .vocab td:nth-child(1) *,
-body.mode-romaji .vocab th:nth-child(3), body.mode-romaji .vocab th:nth-child(3) *,
-body.mode-romaji .vocab td:nth-child(3), body.mode-romaji .vocab td:nth-child(3) *,
-body.mode-english .vocab th:nth-child(1), body.mode-english .vocab th:nth-child(1) *,
-body.mode-english .vocab td:nth-child(1), body.mode-english .vocab td:nth-child(1) *,
+body.mode-japanese .vocab th:nth-child(4), body.mode-japanese .vocab th:nth-child(4) *,
+body.mode-japanese .vocab td:nth-child(4), body.mode-japanese .vocab td:nth-child(4) *,
+body.mode-romaji .vocab th:nth-child(2), body.mode-romaji .vocab th:nth-child(2) *,
+body.mode-romaji .vocab td:nth-child(2), body.mode-romaji .vocab td:nth-child(2) *,
+body.mode-romaji .vocab th:nth-child(4), body.mode-romaji .vocab th:nth-child(4) *,
+body.mode-romaji .vocab td:nth-child(4), body.mode-romaji .vocab td:nth-child(4) *,
 body.mode-english .vocab th:nth-child(2), body.mode-english .vocab th:nth-child(2) *,
-body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) * {
+body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) *,
+body.mode-english .vocab th:nth-child(3), body.mode-english .vocab th:nth-child(3) *,
+body.mode-english .vocab td:nth-child(3), body.mode-english .vocab td:nth-child(3) * {
   color: transparent !important;
+}
+/* The row-hide toggle is a control, not content -- it stays usable even when
+   its column's text is dimmed by a Japanese/Romaji-only view filter. */
+body.mode-japanese .vocab td:nth-child(4) .row-hide-btn,
+body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
+  color: var(--faint) !important;
 }
 
 @media print {
@@ -590,6 +683,8 @@ body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(
   .vocab tr { break-inside: avoid; page-break-inside: avoid; }
   .vocab td, .vocab th { padding-top: 6px; padding-bottom: 6px; }
   .sort-button { display: none !important; }
+  .row-hide-btn { display: none !important; }
+  .table-section.managing-rows .vocab tbody td:last-child { padding-right: 14px; }
 }
 
 @media screen and (min-width: 761px) {
@@ -597,7 +692,7 @@ body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(
   .vocab td { font-size: 16px; padding-top: 10.5px; padding-bottom: 10.5px; }
   .vocab td.jp { font-size: 24px; line-height: 1.85; }
   .furigana { font-size: .48em; }
-  .vocab td:nth-child(2) { font-size: 16px; }
+  .vocab td:nth-child(3) { font-size: 16px; }
 }
 
 .sidebar-toggle {
@@ -664,10 +759,11 @@ body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(
      unbroken katakana words (furaipan, etc.) fit on one line, romaji gets
      enough to hold a single long word without breaking mid-word, and English
      gives up some width since it already wraps cleanly at word boundaries. */
-  .vocab th:nth-child(1), .vocab td:nth-child(1) { width: 38%; }
-  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 29%; }
-  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 33%; }
+  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 38%; }
+  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 29%; }
+  .vocab th:nth-child(4), .vocab td:nth-child(4) { width: 33%; }
   .vocab th, .vocab td { padding-left: 10px; padding-right: 10px; }
+  .vocab th.row-num-th, .vocab td.row-num { padding-left: 6px; padding-right: 4px; }
 }
 
 :focus-visible { outline: 3px solid rgba(106, 137, 167, .55); outline-offset: 2px; }

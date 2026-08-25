@@ -41,6 +41,10 @@ async function main() {
   check("section toggle is a real <button> (native keyboard activation)", document.querySelector(".section-toggle").tagName === "BUTTON");
   check("controls are siblings of the toggle, not nested inside it", !document.querySelector(".section-toggle .print-one"));
   check("every table section carries its category", [...sections].every(s => s.dataset.category));
+  // The page's CSP is style-src 'self' with no 'unsafe-inline', so any inline
+  // style="" attribute gets silently dropped by the browser (not an error) --
+  // easy to introduce by accident and easy to miss without a check like this.
+  check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
 
   console.log("Default landing page is the Overview table of contents");
   check("vocabulary starts hidden", document.getElementById("vocabulary").hidden === true);
@@ -115,12 +119,12 @@ async function main() {
   const japaneseModeBtn = document.querySelector('.view-mode button[data-mode="japanese"]');
   japaneseModeBtn.click();
   check("active view-mode button reports aria-pressed=true", japaneseModeBtn.getAttribute("aria-pressed") === "true");
-  const hiddenEnglishCell = document.querySelector(".vocab td:nth-child(3)");
+  const hiddenEnglishCell = document.querySelector(".vocab td:nth-child(4)");
   check("hidden column cells are aria-hidden (accessible state matches the visual)", hiddenEnglishCell.getAttribute("aria-hidden") === "true");
-  const hiddenSortButton = document.querySelector(".vocab th:nth-child(3) .sort-button");
+  const hiddenSortButton = document.querySelector(".vocab th:nth-child(4) .sort-button");
   check("sort control in a hidden column is disabled, not just invisible", hiddenSortButton.disabled === true);
   document.querySelector('.view-mode button[data-mode="all"]').click();
-  check("switching back to All clears aria-hidden", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
+  check("switching back to All clears aria-hidden", document.querySelector(".vocab td:nth-child(4)").getAttribute("aria-hidden") === null);
 
   console.log("Keyboard-operable table toggle");
   const grammarSection = document.querySelector('.table-section[data-category="Grammar"]');
@@ -128,6 +132,28 @@ async function main() {
   grammarSection.querySelector(".section-toggle").click();
   check("clicking the toggle (the same activation a native button gets from Enter/Space) flips collapsed state", grammarSection.classList.contains("collapsed") !== wasCollapsed);
   check("aria-expanded tracks the toggle", grammarSection.querySelector(".section-toggle").getAttribute("aria-expanded") === String(!grammarSection.classList.contains("collapsed")));
+
+  console.log("Row numbers");
+  const countersSection = document.querySelector('.table-section[data-table="0"]');
+  const countersNums = [...countersSection.querySelectorAll("tbody td.row-num")].map(td => td.textContent);
+  check("each row is numbered sequentially from 1", countersNums.every((n, i) => Number(n) === i + 1));
+  check("the number column header is sized to that table's own row count", document.querySelector('.table-section[data-table="0"] .row-num-th').dataset.digits === "1");
+
+  console.log("Manage rows");
+  const drinksSectionManage = document.querySelector('.table-section[data-table="1"]');
+  const firstEyeBtn = drinksSectionManage.querySelector(".row-hide-btn");
+  check("the eye toggle is hidden until manage mode is on", window.getComputedStyle(firstEyeBtn).display === "none");
+  drinksSectionManage.querySelector(".manage-rows-toggle").click();
+  check("turning on manage mode marks the section", drinksSectionManage.classList.contains("managing-rows"));
+  check("the toggle label flips to Done", drinksSectionManage.querySelector(".manage-rows-toggle").textContent === "Done");
+  const firstRow = drinksSectionManage.querySelector("tbody tr");
+  firstRow.querySelector(".row-hide-btn").click();
+  check("clicking the eye hides that row", firstRow.classList.contains("row-hidden"));
+  const status = drinksSectionManage.querySelector(".rows-hidden-status");
+  check("the status line appears and reports the count", status.hidden === false && status.querySelector(".rows-hidden-count").textContent === "1 row hidden");
+  status.querySelector(".show-all-rows").click();
+  check("Show all restores the row", !firstRow.classList.contains("row-hidden"));
+  check("the status line hides again once nothing is hidden", drinksSectionManage.querySelector(".rows-hidden-status").hidden === true);
 
   console.log("Removed controls stay removed");
   check("no expand-all button", !document.querySelector(".expand-all"));
