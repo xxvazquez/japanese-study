@@ -386,6 +386,7 @@ html, body {
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -.1px;
+  text-align: left;
   cursor: pointer;
 }
 .section-toggle::after {
