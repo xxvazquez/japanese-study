@@ -67,6 +67,11 @@ html, body {
   height: 100vh;
   position: sticky;
   top: 0;
+  /* Sticky elements can visibly lag a frame behind fast/momentum scrolling
+     without their own compositing layer -- this keeps the sidebar (and the
+     header below) pinned instead of letting scrolled-past rows flash above
+     them. */
+  will-change: transform;
   overflow-y: auto;
   background: var(--surface);
   border-right: 1px solid var(--line);
@@ -223,6 +228,7 @@ html, body {
   position: sticky;
   top: 10px;
   z-index: 1000;
+  will-change: transform;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
