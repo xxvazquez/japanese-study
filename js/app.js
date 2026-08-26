@@ -194,7 +194,7 @@ window.addEventListener('load',updateNavOnScroll);
     var numDigits = Math.min(String(t.rows.length).length, 6);
     return '<section class="table-section page-hidden" data-table="' + t.id + '" data-category="' + esc(t.category || '') + '" id="table-' + t.id + '">' +
       '<div class="section-head">' +
-      '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '</button></h2>' +
+      '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
       '<div class="controls">' +
       '<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>' +
       '<button type="button" class="manage-rows-toggle">Manage rows</button>' +

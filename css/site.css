@@ -12,8 +12,15 @@
   --faint: #93a3b3;
   --furigana: #7488a0;
   --paper: #ffffff;
-  --surface: #eef2f6;
-  --row-alt: #f7f9fb;
+  /* --surface matches --paper on purpose: chrome (header, sidebar) reads as
+     one clean white UI shell, clearly separated from the dotted --page-bg
+     canvas by both color and texture -- not a third near-duplicate gray
+     sitting between them, and not the same tone as the canvas either
+     (that made the whole left side read as one undifferentiated blue
+     block). Chrome and cards share white; only their position tells them
+     apart, which is enough since they never touch. */
+  --surface: #ffffff;
+  --row-alt: #eef4fa;
   --page-bg: #e6ecf1;
   --line: #dce3ea;
   --accent: #6a89a7;
@@ -23,6 +30,11 @@
   --rose-soft: #f6e9ed;
   --particle: #435a70;
   --irregular: var(--rose);
+  /* Table header band: a quiet tint, a step below --accent-soft -- present
+     enough to read as a header row, deliberately quieter than the section
+     title above it so hierarchy stays title > label. */
+  --classic-band: #e6edf3;
+  --classic-band-line: #cddbe6;
 }
 
 * { box-sizing: border-box; }
@@ -90,7 +102,11 @@ html, body {
   text-decoration: none;
 }
 .sidebar-overview:hover { background: var(--accent-soft); color: var(--accent-dark); }
-.sidebar-overview.active { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-overview.active {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
 .sidebar-overview svg { flex: 0 0 auto; }
 .sidebar::after {
   content: "";
@@ -121,7 +137,7 @@ html, body {
   text-align: left;
 }
 .sidebar-group-nav:hover { background: var(--accent-soft); }
-.sidebar-group-nav.active { background: var(--accent-soft); }
+.sidebar-group-nav.active { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
 .cat-icon { flex: 0 0 auto; display: flex; }
 /* Per-category icon colors -- classes rather than inline style="" because the
    page's CSP (style-src 'self', no 'unsafe-inline') drops inline styles. */
@@ -212,12 +228,14 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0;
-  margin: 0 0 12px;
-  width: 100%;
+  padding: 4px 6px;
+  margin: -4px -6px 8px;
+  width: calc(100% + 12px);
+  border-radius: 8px;
   cursor: pointer;
   text-align: left;
 }
+.overview-group-nav:hover { background: var(--accent-soft); }
 .overview-group-nav:hover .cat-name { color: var(--accent-dark); }
 .overview-group-nav .cat-name { font-size: 15.5px; }
 .overview-group-items { display: flex; flex-wrap: wrap; column-gap: 20px; row-gap: 7px; }
@@ -225,23 +243,30 @@ html, body {
   color: var(--muted);
   text-decoration: none;
   font-size: 13.5px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+  border-radius: 6px;
 }
-.overview-group-items a:hover { color: var(--accent-dark); text-decoration: underline; }
+.overview-group-items a:hover { background: var(--accent-soft); color: var(--accent-dark); }
 
 /* ---------------------------------------------------------------------
    Header: search leads, everything else is compact and secondary.
    --------------------------------------------------------------------- */
 .site-header {
   position: sticky;
-  top: 10px;
+  top: 0;
   z-index: 1000;
   will-change: transform;
   background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  box-shadow: 0 2px 6px rgba(35, 50, 55, .05);
-  margin: 0 0 22px;
-  padding: 10px 16px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  /* Cancel .app's own top/left/right padding so the header sits flush against
+     the viewport top and the sidebar's right edge -- a docked bar, not a
+     floating card -- then restore that inset as padding so its content still
+     lines up with the rest of .app. */
+  margin: -18px -32px 22px;
+  padding: 10px 32px 8px;
 }
 
 .top-row {
@@ -280,7 +305,7 @@ html, body {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(106, 137, 167, .16);
 }
-.search-icon { color: var(--muted); font-size: 16px; margin-right: 7px; line-height: 1; flex: 0 0 auto; }
+.search-icon { display: flex; color: var(--muted); margin-right: 7px; flex: 0 0 auto; }
 .search-box input {
   flex: 1;
   min-width: 0;
@@ -389,16 +414,15 @@ html, body {
   text-align: left;
   cursor: pointer;
 }
-.section-toggle::after {
-  content: "⌄";
-  display: inline-block;
+.section-toggle-icon {
+  display: inline-flex;
+  vertical-align: -1px;
   margin-left: 8px;
-  font-size: 14px;
   color: var(--accent);
   transition: transform .15s ease;
 }
-.table-section.collapsed .section-toggle::after { transform: rotate(-90deg); }
-.table-section:not(.collapsed) .section-toggle::after { transform: rotate(0deg); }
+.table-section.collapsed .section-toggle-icon { transform: rotate(-90deg); }
+.table-section:not(.collapsed) .section-toggle-icon { transform: rotate(0deg); }
 
 .controls {
   margin-left: auto;
@@ -496,7 +520,6 @@ html, body {
     padding-left: 0 !important;
     padding-right: 0 !important;
   }
-  .table-section.collapsed .vocab { display: table; }
   .table-section .controls,
   .table-section .print-one { display: none !important; }
   .table-section .section-head {
@@ -506,7 +529,7 @@ html, body {
   }
   .table-section .section-head h2 { margin: 0 !important; padding: 0 !important; font-size: 16px !important; }
   .table-section .section-toggle { cursor: auto; }
-  .table-section .section-toggle::after { display: none !important; content: none !important; }
+  .table-section .section-toggle-icon { display: none !important; }
 
   /* Printing one table or a selection: show only the target section(s), title + table only. */
   body.print-only .table-section:not(.print-target) { display: none !important; }
@@ -524,15 +547,17 @@ html, body {
    --------------------------------------------------------------------- */
 table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 
-.vocab { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.vocab { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
 .vocab th {
   text-align: left;
-  color: var(--muted);
-  background: var(--surface);
-  font-size: 11.5px;
-  font-weight: 600;
-  padding: 7px 14px;
-  border-bottom: 1px solid var(--line);
+  color: var(--accent-dark);
+  background: var(--classic-band);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--classic-band-line);
   white-space: nowrap;
 }
 .vocab td {
@@ -749,7 +774,7 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   .sidebar.open { transform: translateX(0); }
   body.sidebar-open .sidebar-backdrop { display: block; }
   .app { padding: 14px 12px 48px; }
-  .site-header { border-radius: 12px; padding: 10px 12px 8px; }
+  .site-header { margin: -14px -12px 22px; padding: 10px 12px 8px; }
   .table-section { padding: 14px 12px 16px; scroll-margin-top: 190px; }
   /* Just one compact icon button lives here now -- keep it on the same row as
      the title, pinned to the right, instead of forcing it onto its own line. */
