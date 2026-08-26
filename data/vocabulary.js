@@ -153,7 +153,7 @@ window.vocabularyTables = [
   },
   {
     id: 6,
-    title: "N5 Adjectives",
+    title: "Adjectives",
     category: "Grammar",
     rows: [
     {"type":"word","jp":[{"kanji":"大","reading":"おお"},{"text":"きい"}],"romaji":"ōkii","english":"big"},
@@ -173,7 +173,7 @@ window.vocabularyTables = [
   },
   {
     id: 7,
-    title: "N5 Verbs",
+    title: "Verbs",
     category: "Grammar",
     rows: [
     {"type":"verb-pair","forms":[{"jp":[{"kanji":"茹","reading":"ゆ"},{"text":"でる"}],"romaji":"yuderu"},{"jp":[{"kanji":"茹","reading":"ゆ"},{"text":"でます"}],"romaji":"yudemasu"}],"english":"boil in water"},

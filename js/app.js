@@ -52,8 +52,15 @@ function markActiveNav(categoryName, tableId) {
   document.querySelectorAll('.sidebar-group-nav').forEach(b => b.classList.toggle('active', b.dataset.category === categoryName));
   document.querySelectorAll('.sidebar-group-items a').forEach(a => a.classList.toggle('active', tableId != null && a.dataset.target === String(tableId)));
 }
+// Tracks whichever table is currently the active page, independent of the
+// sidebar's own DOM -- the sidebar gets fully re-rendered whenever a table
+// is hidden/shown from Overview (see window.refreshNav), which would
+// otherwise wipe out the .active marking those re-created nodes start
+// without. refreshNav re-applies it from this after every re-render.
+var currentTableId = null;
 function showCategoryPage(name) {
   if (window.clearSearchQuery) window.clearSearchQuery();
+  currentTableId = null;
   document.body.dataset.activeCategory = name;
   document.getElementById('overviewPage').hidden = true;
   document.getElementById('vocabulary').hidden = false;
@@ -68,6 +75,7 @@ function showCategoryPage(name) {
 }
 function showOverviewPage() {
   if (window.clearSearchQuery) window.clearSearchQuery();
+  currentTableId = null;
   document.body.dataset.activeCategory = '';
   document.getElementById('vocabulary').hidden = true;
   document.getElementById('overviewPage').hidden = false;
@@ -79,6 +87,7 @@ function goToTable(i) {
   const section=document.querySelector(`.table-section[data-table="${i}"]`);
   if (!section) return;
   showCategoryPage(section.dataset.category);
+  currentTableId = i;
   expandSection(section);
   section.scrollIntoView({block:'start'});
   markActiveNav(section.dataset.category, i);
@@ -167,6 +176,22 @@ window.addEventListener('load',updateNavOnScroll);
     return '<td class="jp" lang="ja">' + inner + '</td>';
   }
   var EYE_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c1.8-3.2 4.5-4.8 7-4.8s5.2 1.6 7 4.8c-1.8 3.2-4.5 4.8-7 4.8S3.8 12.2 2 9Z"/><circle cx="9" cy="9" r="2"/></svg>';
+  // Which tables are hidden from the Overview table-of-contents -- persisted
+  // client-side (localStorage), independent of the sidebar/search/direct
+  // links, which never consult this and always show every table. Guarded
+  // against localStorage being unavailable (private browsing, some test
+  // environments): the feature just silently stops persisting rather than
+  // breaking the page.
+  var HIDDEN_OVERVIEW_KEY = 'sakura-hidden-overview-tables';
+  function loadHiddenOverviewTables() {
+    try {
+      var raw = window.localStorage && localStorage.getItem(HIDDEN_OVERVIEW_KEY);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch (e) { return new Set(); }
+  }
+  function saveHiddenOverviewTables(set) {
+    try { localStorage.setItem(HIDDEN_OVERVIEW_KEY, JSON.stringify([...set])); } catch (e) {}
+  }
   function rowHideButton() {
     return '<button type="button" class="row-hide-btn" aria-label="Hide this row" title="Hide this row">' + EYE_ICON + '</button>';
   }
@@ -239,42 +264,105 @@ window.addEventListener('load',updateNavOnScroll);
       return { name: name, tables: byName[name].slice().sort(function (a, b) { return a.title.localeCompare(b.title); }) };
     });
   }
-  function renderSidebar(tables) {
+  // Hidden tables are filtered out of both the sidebar and Overview -- the
+  // same `hidden` set drives both, so hiding a table from Overview also
+  // pulls it out of the sidebar's nav tree. It stays fully intact and
+  // reachable everywhere else (its #table-N link, search, print) -- this
+  // only ever affects the two navigation lists, never the data or routing.
+  function renderSidebar(tables, hidden) {
     return groupByCategory(tables).map(function (g) {
-      var links = g.tables.map(function (t) {
+      var visible = g.tables.filter(function (t) { return !hidden.has(String(t.id)); });
+      var links = visible.map(function (t) {
         return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
       }).join('');
       return '<div class="sidebar-group">' +
         '<div class="sidebar-group-head">' +
-        '<button type="button" class="sidebar-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length) + '</button>' +
+        '<button type="button" class="sidebar-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, visible.length) + '</button>' +
         '<button type="button" class="sidebar-group-chevron" aria-expanded="true" aria-label="Toggle ' + esc(g.name) + '">' + CHEVRON_ICON + '</button>' +
         '</div>' +
         '<div class="sidebar-group-items">' + links + '</div></div>';
     }).join('');
   }
-  // Overview is a plain table of contents -- no accordion, just links.
-  function renderOverview(tables) {
+  // Overview is a plain table of contents -- no accordion, just links. Each
+  // row gets a trailing chevron (a rotated copy of CHEVRON_ICON, so it's the
+  // same icon family as everywhere else) to read as a clickable list row
+  // rather than wrapped inline text, plus a hide control.
+  function renderOverview(tables, hidden) {
     return groupByCategory(tables).map(function (g) {
+      var hiddenCount = 0;
       var links = g.tables.map(function (t) {
-        return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
+        if (hidden.has(String(t.id))) { hiddenCount++; return ''; }
+        return '<div class="overview-row">' +
+          '<a class="overview-link" href="#table-' + t.id + '" data-target="' + t.id + '">' +
+          '<span class="overview-link-text">' + esc(t.title) + '</span>' +
+          '<span class="overview-link-chevron">' + CHEVRON_ICON + '</span>' +
+          '</a>' +
+          '<button type="button" class="overview-hide-btn" data-target="' + t.id + '" aria-label="Hide ' + esc(t.title) + ' from Overview" title="Hide from Overview">' + EYE_ICON + '</button>' +
+          '</div>';
       }).join('');
+      var status = hiddenCount === 0 ? '' :
+        '<div class="overview-hidden-status">' + hiddenCount + ' hidden · ' +
+        '<button type="button" class="overview-show-hidden" data-category="' + esc(g.name) + '">Show all</button></div>';
+      // The count matches the sidebar's (visible tables only) -- the
+      // "N hidden · Show all" status line right below already accounts for
+      // the rest, so the header count doesn't need to double as a total.
       return '<div class="overview-group">' +
-        '<button type="button" class="overview-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length) + '</button>' +
-        '<div class="overview-group-items">' + links + '</div></div>';
+        '<button type="button" class="overview-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length - hiddenCount) + '</button>' +
+        '<div class="overview-group-items">' + links + '</div>' + status + '</div>';
     }).join('');
   }
 
   var host = document.getElementById('vocabulary');
   var sidebarHost = document.querySelector('.sidebar-groups');
   var overviewHost = document.querySelector('.overview-groups');
+  var hiddenTables = loadHiddenOverviewTables();
   if (host && window.vocabularyTables) {
     host.innerHTML = window.vocabularyTables.map(renderTable).join('\n');
-    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(window.vocabularyTables);
-    if (overviewHost) overviewHost.innerHTML = renderOverview(window.vocabularyTables);
+    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(window.vocabularyTables, hiddenTables);
+    if (overviewHost) overviewHost.innerHTML = renderOverview(window.vocabularyTables, hiddenTables);
   }
   document.querySelectorAll('.vocab tbody').forEach(function (tbody) {
     [...tbody.querySelectorAll('tr')].forEach(function (row, i) { row.dataset.originalIndex = i; });
   });
+
+  // Re-rendering the sidebar/Overview (after a hide/show-all) destroys any
+  // listeners and UI state (collapsed groups, the active-page marker) on
+  // their old nodes -- this rebuilds both from the same hidden set, restores
+  // what it can (which groups were collapsed), re-binds their delegated
+  // events (window.bindSidebarEvents/bindOverviewEvents, defined alongside
+  // the rest of the event wiring), and reapplies the active marker from
+  // `currentTableId` (tracked in goToTable/showCategoryPage/showOverviewPage)
+  // since the freshly-rendered nodes start with no .active class of their own.
+  window.refreshNav = function () {
+    var collapsedCategories = new Set(
+      [...document.querySelectorAll('.sidebar-group.collapsed .sidebar-group-nav')]
+        .map(function (nav) { return nav.dataset.category; })
+    );
+    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(window.vocabularyTables, hiddenTables);
+    if (overviewHost) overviewHost.innerHTML = renderOverview(window.vocabularyTables, hiddenTables);
+    document.querySelectorAll('.sidebar-group').forEach(function (group) {
+      var nav = group.querySelector('.sidebar-group-nav');
+      if (!nav || !collapsedCategories.has(nav.dataset.category)) return;
+      group.classList.add('collapsed');
+      var chevronBtn = group.querySelector('.sidebar-group-chevron');
+      if (chevronBtn) chevronBtn.setAttribute('aria-expanded', 'false');
+    });
+    if (window.bindSidebarEvents) window.bindSidebarEvents();
+    if (window.bindOverviewEvents) window.bindOverviewEvents();
+    markActiveNav(document.body.dataset.activeCategory || null, currentTableId);
+  };
+  window.hideOverviewTable = function (id) {
+    hiddenTables.add(String(id));
+    saveHiddenOverviewTables(hiddenTables);
+    window.refreshNav();
+  };
+  window.showOverviewCategory = function (category) {
+    window.vocabularyTables.forEach(function (t) {
+      if ((t.category || 'Tables') === category) hiddenTables.delete(String(t.id));
+    });
+    saveHiddenOverviewTables(hiddenTables);
+    window.refreshNav();
+  };
 })();
 
 /* Search across Japanese, furigana, romaji and English. A filter (All/Japanese/Romaji/English)
@@ -513,22 +601,55 @@ document.addEventListener('DOMContentLoaded', function () {
   document.querySelectorAll('.sort-button').forEach(function (button) {
     button.addEventListener('click', function (event) { event.stopPropagation(); sortTableFromButton(button); });
   });
-  document.querySelectorAll('.sidebar-group-chevron').forEach(function (button) {
-    button.addEventListener('click', function () {
-      const group = button.closest('.sidebar-group');
-      const collapsed = group.classList.toggle('collapsed');
-      button.setAttribute('aria-expanded', String(!collapsed));
+  // The sidebar and Overview list both re-render themselves (hide/show-all
+  // pulls a table from both at once, see window.refreshNav), which destroys
+  // and recreates their nodes -- so their bindings live in named, re-callable
+  // functions instead of a one-time forEach like everything else here.
+  window.bindSidebarEvents = function () {
+    document.querySelectorAll('.sidebar-group-chevron').forEach(function (button) {
+      button.addEventListener('click', function () {
+        const group = button.closest('.sidebar-group');
+        const collapsed = group.classList.toggle('collapsed');
+        button.setAttribute('aria-expanded', String(!collapsed));
+      });
     });
-  });
-  document.querySelectorAll('.sidebar-group-nav, .overview-group-nav').forEach(function (button) {
-    button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
-  });
-  document.querySelectorAll('.sidebar-group-items a, .overview-group-items a').forEach(function (link) {
-    link.addEventListener('click', function (event) {
-      event.preventDefault();
-      goToTable(link.dataset.target);
+    document.querySelectorAll('.sidebar-group-nav').forEach(function (button) {
+      button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
     });
-  });
+    document.querySelectorAll('.sidebar-group-items a').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        goToTable(link.dataset.target);
+      });
+    });
+  };
+  window.bindSidebarEvents();
+  window.bindOverviewEvents = function () {
+    document.querySelectorAll('.overview-group-nav').forEach(function (button) {
+      button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
+    });
+    document.querySelectorAll('.overview-link').forEach(function (link) {
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        goToTable(link.dataset.target);
+      });
+    });
+    document.querySelectorAll('.overview-hide-btn').forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.hideOverviewTable(button.dataset.target);
+      });
+    });
+    document.querySelectorAll('.overview-show-hidden').forEach(function (button) {
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        window.showOverviewCategory(button.dataset.category);
+      });
+    });
+  };
+  window.bindOverviewEvents();
   const overviewLink = document.querySelector('.sidebar-overview');
   if (overviewLink) {
     overviewLink.addEventListener('click', function (event) {

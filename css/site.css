@@ -4,37 +4,48 @@
 }
 
 :root {
-  /* Figma "Blue Gray" family (base #6a89a7) plus a restrained rose pulled from
-     the logo, used only as a functional accent (highlights, irregular rows) --
-     never decoratively. No beige/cream/warm tones anywhere. */
-  --ink: #3d4f61;
-  --muted: #63788c;
-  --faint: #93a3b3;
-  --furigana: #7488a0;
+  /* "sakura study" brand palette -- Deep Teal / Teal / Soft Teal / Light Gray
+     / Text Dark / Text Muted. Plus a restrained rose, kept from the previous
+     palette purely as a functional accent (irregular rows, search-match
+     highlights) -- never decorative, never part of the brand family itself. */
+  --ink: #1f2933;
+  --muted: #6b7c85;
+  --faint: #97a5ac;
+  --furigana: #5b8482;
   --paper: #ffffff;
-  /* --surface matches --paper on purpose: chrome (header, sidebar) reads as
-     one clean white UI shell, clearly separated from the dotted --page-bg
-     canvas by both color and texture -- not a third near-duplicate gray
-     sitting between them, and not the same tone as the canvas either
-     (that made the whole left side read as one undifferentiated blue
-     block). Chrome and cards share white; only their position tells them
-     apart, which is enough since they never touch. */
-  --surface: #ffffff;
-  --row-alt: #eef4fa;
-  --page-bg: #e6ecf1;
-  --line: #dce3ea;
-  --accent: #6a89a7;
-  --accent-dark: #4c637a;
-  --accent-soft: #dde6ee;
+  /* --surface is the content pane's own flat surface -- distinct from white
+     cards, giving the app three gentle layers (light nav rail / pane / white
+     cards) instead of cards adrift on an unrelated canvas. */
+  --surface: #f4f7f8;
+  --row-alt: #eff4f4;
+  --page-bg: #f4f7f8;
+  --line: #dce3e5;
+  --line-strong: #c3cfd2;
+  --accent: #2ba7a0;
+  --accent-dark: #0f6b6d;
+  --accent-soft: #d6efee;
   --rose: #b97e91;
   --rose-soft: #f6e9ed;
-  --particle: #435a70;
+  --particle: #0f6b6d;
   --irregular: var(--rose);
-  /* Table header band: a quiet tint, a step below --accent-soft -- present
-     enough to read as a header row, deliberately quieter than the section
-     title above it so hierarchy stays title > label. */
-  --classic-band: #e6edf3;
-  --classic-band-line: #cddbe6;
+  /* Table header: a quiet light-gray label row, not a brand-colored fill --
+     Teal is reserved for the active nav pill, not the table chrome. */
+  --classic-band: var(--surface);
+  --classic-band-line: var(--line);
+  --classic-band-text: var(--muted);
+
+  /* App shell: the sidebar is its own light panel -- structural and clearly
+     separate from white cards, but never a dark rail. The active item gets
+     a solid Teal pill (not Deep Teal -- that's reserved for smaller, more
+     deliberate emphasis, not a whole pill). */
+  --shell-bg: var(--surface);
+  --shell-line: var(--line);
+  --shell-hover: #e7f3f2;
+  --shell-active: var(--accent);
+  --shell-text: var(--ink);
+  --shell-text-dim: var(--muted);
+  --shell-text-faint: var(--faint);
+  --shell-accent-text: #ffffff;
 
   /* Type scale -- one set of tokens for the whole page so every tier (page
      titles, nav, table headers, Japanese/furigana/romaji/English) stays in a
@@ -46,7 +57,7 @@
   --fs-nav: 14.5px;
   --fs-nav-sub: 14px;
   --fs-table-header: 12.5px;
-  --fs-jp: 22px;
+  --fs-jp: 19px;
   --fs-romaji: 14.5px;
   --fs-english: 14.5px;
 }
@@ -58,7 +69,7 @@
     --fs-nav: 15.5px;
     --fs-nav-sub: 14.5px;
     --fs-table-header: 13px;
-    --fs-jp: 26px;
+    --fs-jp: 22px;
     --fs-romaji: 17px;
     --fs-english: 17px;
   }
@@ -69,18 +80,13 @@
 html, body {
   margin: 0;
   padding: 0;
+  /* The dark sidebar is the app shell's left edge; this is only ever visible
+     as a sliver below short content, so it just needs to sit quietly behind
+     the (opaque) content pane -- no texture needed now that the pane itself
+     is a deliberate flat surface rather than cards adrift on open canvas. */
   background-color: var(--page-bg);
-  /* A faint scatter of rain-drop dots -- just enough texture to keep the
-     page-bg from feeling flat in the margins around the (opaque) cards;
-     never strong enough to compete with the tables. */
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cg fill='%237c92a3' opacity='0.22'%3E%3Ccircle cx='20' cy='27' r='2.4'/%3E%3Ccircle cx='80' cy='13' r='3'/%3E%3Ccircle cx='127' cy='53' r='2'/%3E%3Ccircle cx='40' cy='93' r='2.7'/%3E%3Ccircle cx='107' cy='120' r='2.4'/%3E%3Ccircle cx='147' cy='93' r='1.9'/%3E%3Ccircle cx='60' cy='140' r='2.6'/%3E%3C/g%3E%3C/svg%3E");
-  background-repeat: repeat;
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-@media print {
-  html, body { background-image: none !important; }
 }
 
 .layout {
@@ -91,10 +97,24 @@ html, body {
 .app {
   flex: 1 1 auto;
   min-width: 0;
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 18px 32px 60px;
+  /* The pane itself spans the full width next to the sidebar -- flush,
+     attached, no gap -- so the *surface* clearly belongs to the shell even
+     though the readable content inside is comfortably capped (see the
+     shared max-width rule below, applied per child rather than here). */
+  background: var(--surface);
 }
+
+/* One consistent gutter + reading-width cap, applied to each direct child
+   of .app individually (rather than to .app itself) so .app's own surface
+   can stay full-bleed against the sidebar while the content within it stays
+   comfortably centered on wide screens. */
+.site-header, .page-overview, #vocabulary {
+  max-width: 1104px;
+  margin: 0 auto;
+  padding-left: 32px;
+  padding-right: 32px;
+}
+#vocabulary { padding-top: 12px; padding-bottom: 60px; }
 
 /* ---------------------------------------------------------------------
    Sidebar: the table index, always visible and scrolling on its own so
@@ -112,9 +132,14 @@ html, body {
      them. */
   will-change: transform;
   overflow-y: auto;
-  background: var(--surface);
-  border-right: 1px solid var(--line);
-  padding: 18px 14px 24px;
+  /* A true navigation rail: its own light-but-present surface (clearly a
+     step deeper than --surface), structurally attached to the left edge of
+     the shell -- a visible edge plus a soft cast shadow (no gradient) do
+     the separating, not a card border floating it above the page. */
+  background: var(--shell-bg);
+  border-right: 1px solid var(--shell-line);
+  box-shadow: 2px 0 10px rgba(31, 41, 51, .08);
+  padding: 20px 14px 24px;
 }
 .sidebar-overview {
   display: flex;
@@ -123,23 +148,22 @@ html, body {
   margin-bottom: 10px;
   padding: 7px 8px;
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--shell-text);
   font-size: var(--fs-nav);
   font-weight: 700;
   text-decoration: none;
 }
-.sidebar-overview:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-overview:hover { background: var(--shell-hover); }
 .sidebar-overview.active {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: var(--shell-active);
+  color: var(--shell-accent-text);
 }
 .sidebar-overview svg { flex: 0 0 auto; }
 .sidebar::after {
   content: "";
   display: block;
   height: 1px;
-  background: var(--line);
+  background: var(--shell-line);
   margin: 0 8px 14px;
 }
 
@@ -163,15 +187,19 @@ html, body {
   cursor: pointer;
   text-align: left;
 }
-.sidebar-group-nav:hover { background: var(--accent-soft); }
-.sidebar-group-nav.active { background: var(--accent-soft); box-shadow: inset 3px 0 0 var(--accent); }
+.sidebar-group-nav:hover { background: var(--shell-hover); }
+/* Deliberately no distinct fill for .sidebar-group-nav.active: this class
+   just means "one of this category's tables is the current page" -- with a
+   specific table selected, that item's own pill (below) is the one "you are
+   here" marker; painting the parent category too would read as two
+   different things both being selected at once. */
 .cat-icon { flex: 0 0 auto; display: flex; }
 /* Per-category icon colors -- classes rather than inline style="" because the
    page's CSP (style-src 'self', no 'unsafe-inline') drops inline styles. */
-.cat-color-a { color: #4c637a; }
-.cat-color-b { color: #b97e91; }
-.cat-color-c { color: #6a89a7; }
-.cat-color-d { color: #8f6a78; }
+.cat-color-a { color: var(--accent-dark); }
+.cat-color-b { color: var(--accent); }
+.cat-color-c { color: #4a8c87; }
+.cat-color-d { color: #6b7c85; }
 .cat-color-default { color: var(--muted); }
 .cat-name {
   flex: 1 1 auto;
@@ -183,13 +211,13 @@ html, body {
   font: 700 var(--fs-nav)/1.3 Arial, Helvetica, sans-serif;
   letter-spacing: .01em;
 }
-.sidebar-group-nav.active .cat-name { color: var(--accent-dark); }
 .cat-count {
   flex: 0 0 auto;
   color: var(--faint);
   font-size: 12px;
   font-weight: 400;
 }
+.sidebar .cat-count { color: var(--shell-text-faint); }
 .sidebar-group-chevron {
   appearance: none;
   border: 0;
@@ -201,10 +229,10 @@ html, body {
   width: 24px;
   height: 24px;
   border-radius: 6px;
-  color: var(--faint);
+  color: var(--shell-text-faint);
   cursor: pointer;
 }
-.sidebar-group-chevron:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-group-chevron:hover { background: var(--shell-hover); color: var(--shell-text); }
 .sidebar-group-chevron svg { transition: transform .15s ease; }
 .sidebar-group.collapsed .sidebar-group-chevron svg { transform: rotate(-90deg); }
 .sidebar-group-items { display: flex; flex-direction: column; margin-top: 2px; }
@@ -213,24 +241,23 @@ html, body {
   display: block;
   padding: 7px 8px 7px 32px;
   border-radius: 6px;
-  color: var(--ink);
+  color: var(--shell-text-dim);
   text-decoration: none;
   font-size: var(--fs-nav-sub);
   line-height: 1.35;
 }
-.sidebar-group-items a:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-group-items a:hover { background: var(--shell-hover); color: var(--shell-text); }
 .sidebar-group-items a.active {
-  background: var(--accent-soft);
-  color: var(--accent-dark);
+  background: var(--shell-active);
+  color: var(--shell-accent-text);
   font-weight: 700;
-  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 /* ---------------------------------------------------------------------
    Overview: a plain table of contents, grouped the same way as the
    sidebar so the two stay visually consistent.
    --------------------------------------------------------------------- */
-.page-overview { padding: 20px 0 40px; }
+.page-overview { padding-top: 20px; padding-bottom: 40px; }
 .page-overview h2 {
   margin: 0 0 24px;
   color: var(--ink);
@@ -248,32 +275,117 @@ html, body {
   border-radius: 12px;
   padding: 16px 18px;
 }
+/* A permanent, very light teal wash (not just on hover) plus real breathing
+   room below it -- the category needs to read as the parent grouping at a
+   glance, before you even start scanning table names. Still just a tint,
+   not a filled/bordered button. */
 .overview-group-nav {
   appearance: none;
   border: 0;
-  background: transparent;
+  background: rgba(43, 167, 160, .07);
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 6px;
-  margin: -4px -6px 8px;
-  width: calc(100% + 12px);
+  padding: 9px 10px;
+  margin: -9px -10px 16px;
+  width: calc(100% + 20px);
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
 }
-.overview-group-nav:hover { background: var(--accent-soft); }
+.overview-group-nav:hover { background: rgba(43, 167, 160, .14); }
 .overview-group-nav:hover .cat-name { color: var(--accent-dark); }
-.overview-group-items { display: flex; flex-wrap: wrap; column-gap: 20px; row-gap: 8px; }
-.overview-group-items a {
+/* A single vertical list, not wrapped inline text -- each table reads as
+   its own clickable row (name left, chevron right), like a reference
+   book's table of contents rather than a loose cluster of tags. Table
+   names are deliberately lighter (--muted) than the category title
+   (--ink, bold) above, so the parent/child weight reads clearly. */
+.overview-group-items { display: flex; flex-direction: column; }
+.overview-row {
+  display: flex;
+  align-items: center;
+  /* Negative side margins match .overview-group's own padding, so the row
+     spans the full width of the card, edge to edge -- not just a small
+     hit-area around the text. */
+  margin: 0 -18px;
+  border-top: 1px solid var(--line);
+}
+.overview-row:first-child { border-top: 0; }
+.overview-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 18px;
   color: var(--muted);
   text-decoration: none;
   font-size: var(--fs-nav-sub);
-  padding: 2px 6px;
-  margin: -2px -6px;
-  border-radius: 6px;
 }
-.overview-group-items a:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.overview-row:hover, .overview-row:focus-within { background: var(--accent-soft); }
+.overview-row:hover .overview-link, .overview-row:focus-within .overview-link { color: var(--accent-dark); }
+.overview-link-chevron {
+  display: flex;
+  flex: 0 0 auto;
+  color: var(--faint);
+  transform: rotate(-90deg);
+  transition: color .15s ease;
+}
+.overview-row:hover .overview-link-chevron, .overview-row:focus-within .overview-link-chevron { color: var(--accent); }
+
+/* The hide control: visually secondary to both the table name and the
+   chevron -- small, muted, and (on devices with real hover) invisible
+   until the row is actually being looked at, so a clean list doesn't turn
+   into a row of icons. Devices without hover (touch) always show it, since
+   there's no hover state to reveal it there. */
+.overview-hide-btn {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-right: 10px;
+  border-radius: 6px;
+  color: var(--faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .15s ease, color .15s ease, background .15s ease;
+}
+.overview-row:hover .overview-hide-btn,
+.overview-row:focus-within .overview-hide-btn { opacity: 1; }
+.overview-hide-btn:hover { background: var(--accent-soft); color: var(--accent-dark); }
+@media (hover: none) {
+  .overview-hide-btn { opacity: 1; }
+}
+
+/* Per-category restore control -- same pattern as a table's own
+   "Manage rows" hidden-count status, just one level up. */
+.overview-hidden-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px -18px -16px;
+  padding: 10px 18px;
+  border-top: 1px solid var(--line);
+  color: var(--faint);
+  font-size: 12px;
+}
+.overview-show-hidden {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--accent-dark);
+  font: inherit;
+  font-weight: 700;
+  padding: 0;
+  cursor: pointer;
+}
+.overview-show-hidden:hover { text-decoration: underline; }
 
 /* ---------------------------------------------------------------------
    Header: search leads, everything else is compact and secondary.
@@ -283,16 +395,16 @@ html, body {
   top: 0;
   z-index: 1000;
   will-change: transform;
-  /* Same card language as .table-section (white, hairline border, 12px
-     radius), same width and horizontal position too -- it's a block child
-     of .app like every table card, with no width/margin override pulling it
-     out to a different shape. That's what makes it read as the first card
-     in the stack rather than a separate system bar sitting on top of it. */
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px 20px 14px;
-  margin: 0 0 12px;
+  /* A toolbar, not a card: same flat surface as .app itself (not paper
+     white), so it reads as the top edge of the content pane rather than a
+     separate box sitting on top of it. Only a rule at the bottom marks
+     where the fixed toolbar ends and the scrolling content begins. */
+  background: var(--surface);
+  border: 0;
+  border-bottom: 1px solid var(--line-strong);
+  border-radius: 0;
+  padding-top: 16px;
+  padding-bottom: 14px;
 }
 
 .top-row {
@@ -304,16 +416,26 @@ html, body {
 .brand {
   display: flex;
   align-items: center;
-  gap: 7px;
-  flex: 0 0 auto;
+  gap: 9px;
+  padding: 0 8px;
+  margin-bottom: 18px;
 }
-.brand-mark { display: block; border-radius: 50%; }
+.brand-mark { display: block; flex: 0 0 auto; }
+.brand-text { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
 .brand-title {
   margin: 0;
   font-family: "Kosugi Maru", Arial, Helvetica, sans-serif;
   font-size: 19px;
   font-weight: 400;
+  line-height: 1.1;
   color: var(--ink);
+}
+.brand-subtitle {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 
 .search-box {
@@ -321,7 +443,7 @@ html, body {
   display: flex;
   align-items: center;
   min-width: 0;
-  height: 33px;
+  height: 34px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -329,7 +451,7 @@ html, body {
 }
 .search-box:focus-within {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(106, 137, 167, .16);
+  box-shadow: 0 0 0 3px rgba(43, 167, 160, .18);
 }
 .search-icon { display: flex; color: var(--muted); margin-right: 7px; flex: 0 0 auto; }
 .search-box input {
@@ -403,7 +525,6 @@ html, body {
 
 @media (max-width: 700px) {
   .top-row { flex-wrap: wrap; }
-  .brand { flex: 1 1 100%; }
   .search-box { flex: 1 1 100%; }
   .search-meta { flex-wrap: wrap; row-gap: 6px; }
   .search-count { flex-basis: 100%; margin-left: 0; }
@@ -420,20 +541,32 @@ html, body {
 .table-section {
   background: var(--paper);
   border: 1px solid var(--line);
+  /* A soft, friendly radius, not a sharp/square edge -- the surface
+     contrast against .app's own pane (--surface) is what keeps the table
+     from disappearing into the background, not a drop shadow floating it
+     above one undifferentiated canvas. */
   border-radius: 12px;
-  padding: 18px 20px 20px;
-  margin: 0 0 22px;
+  /* Clips the table's own square corners to the card's rounded ones, so the
+     grid can run flush edge-to-edge inside the card instead of sitting
+     inset with a second border+radius of its own -- one bordered surface,
+     not a card nested inside a card. */
+  overflow: hidden;
+  margin: 0 0 20px;
   break-before: page;
   page-break-before: always;
 }
 .table-section:first-of-type { break-before: auto; page-break-before: auto; }
 .table-section { scroll-margin-top: 130px; }
 
+/* The title, row-management control and print action read as one table
+   toolbar -- a strip capping the card, ruled off from the grid below it,
+   the same way the app's own top toolbar is ruled off from the sidebar. */
 .section-head {
   display: flex;
   align-items: center;
   gap: 14px;
-  margin-bottom: 14px;
+  padding: 14px 18px 12px;
+  border-bottom: 1px solid var(--line);
 }
 .section-head h2 { margin: 0; }
 .section-toggle {
@@ -472,32 +605,37 @@ html, body {
 }
 .print-one {
   appearance: none;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--paper);
   display: flex;
   align-items: center;
   justify-content: center;
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  color: var(--faint);
+  color: var(--muted);
   cursor: pointer;
 }
-.print-one:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.print-one:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
 
 .manage-rows-toggle {
   appearance: none;
-  border: 0;
-  background: transparent;
+  border: 1px solid var(--line);
+  background: var(--paper);
   color: var(--muted);
   font-size: 11.5px;
-  padding: 4px 6px;
+  font-weight: 700;
+  padding: 5px 10px;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
 }
-.manage-rows-toggle:hover { color: var(--accent-dark); background: var(--accent-soft); }
-.table-section.managing-rows .manage-rows-toggle { color: var(--accent-dark); font-weight: 700; }
+.manage-rows-toggle:hover { color: var(--accent-dark); background: var(--accent-soft); border-color: var(--accent); }
+.table-section.managing-rows .manage-rows-toggle {
+  color: var(--paper);
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
 
 .rows-hidden-status {
   display: flex;
@@ -541,8 +679,7 @@ html, body {
 .vocab tbody tr.row-hidden { display: none; }
 
 .table-section.collapsed .vocab { display: none; }
-.table-section.collapsed { padding-bottom: 14px; }
-.table-section.collapsed .section-head { margin-bottom: 0; }
+.table-section.collapsed .section-head { padding-bottom: 14px; border-bottom: 0; }
 .page-hidden { display: none !important; }
 .search-hidden { display: none !important; }
 
@@ -584,17 +721,19 @@ html, body {
    --------------------------------------------------------------------- */
 table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout: fixed; }
 
-.vocab { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.vocab { overflow: hidden; }
 .vocab th {
   text-align: left;
-  color: var(--accent-dark);
+  /* A strong, deliberate fill -- the header needs to read as unmistakably
+     distinct from body rows, not a paler tint of them. */
+  color: var(--classic-band-text);
   background: var(--classic-band);
   font-size: var(--fs-table-header);
   font-weight: 700;
-  letter-spacing: .04em;
+  letter-spacing: .05em;
   text-transform: uppercase;
-  padding: 9px 14px;
-  border-bottom: 1px solid var(--classic-band-line);
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--classic-band-line);
   white-space: nowrap;
 }
 .vocab td {
@@ -604,7 +743,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   font-size: var(--fs-english);
   line-height: 1.45;
   color: var(--ink);
-  background: #fff;
+  background: var(--paper);
   /* table-layout: fixed already enforces each column's width; this makes sure
      content actually respects it -- a long unbroken word wraps inside its own
      cell instead of overflowing into the next column. */
@@ -612,7 +751,15 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 }
 .vocab tbody tr:last-child td { border-bottom: 0; }
 .vocab tbody tr:nth-child(even) td { background: var(--row-alt); }
+/* Hover reads as "this row is active" the same way the sidebar's own active
+   state does -- a fill plus the same left accent bar, one consistent
+   selection language across the whole app rather than a fill alone. */
 .vocab tbody tr:hover td { background: var(--accent-soft); }
+.vocab tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
+/* A rule after the Japanese column -- the dominant column gets its own
+   clear boundary, like a headword column in a dictionary layout. */
+.vocab td:nth-child(2) { border-right: 1px solid var(--line); }
+.vocab th:nth-child(2) { border-right: 1px solid var(--classic-band-line); }
 
 /* Widths are weighted by what each column actually holds: Japanese words run
    1-5 characters at a large size, romaji is almost always one short word, and
@@ -679,7 +826,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 /* English: the answer column -- plain and fully legible, not muted. */
 .vocab td:nth-child(4) { color: var(--ink); position: relative; }
 
-.particle { color: var(--particle); font-weight: 700; }
+.particle { color: var(--particle); }
 
 .irregular-row td { color: var(--irregular) !important; background: var(--rose-soft) !important; }
 .irregular-row td:first-child { box-shadow: inset 3px 0 0 var(--irregular) !important; }
@@ -787,7 +934,7 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(35, 50, 65, .35);
+  background: rgba(20, 28, 34, .4);
   z-index: 1900;
 }
 
@@ -801,16 +948,15 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
     width: 82%;
     max-width: 300px;
     height: 100vh;
-    border-right: 1px solid var(--line);
-    box-shadow: 2px 0 16px rgba(35, 50, 65, .18);
+    box-shadow: 2px 0 16px rgba(31, 41, 51, .18);
     z-index: 2000;
     transform: translateX(-100%);
     transition: transform .22s ease;
   }
   .sidebar.open { transform: translateX(0); }
   body.sidebar-open .sidebar-backdrop { display: block; }
-  .app { padding: 14px 12px 48px; }
-  .site-header { margin: 0 0 10px; padding: 14px 14px 12px; }
+  .site-header, .page-overview, #vocabulary { padding-left: 14px; padding-right: 14px; }
+  .site-header { padding-top: 12px; padding-bottom: 10px; }
   .table-section { padding: 14px 12px 16px; scroll-margin-top: 190px; }
   /* Just one compact icon button lives here now -- keep it on the same row as
      the title, pinned to the right, instead of forcing it onto its own line. */
@@ -829,7 +975,8 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   .vocab th.row-num-th, .vocab td.row-num { padding-left: 6px; padding-right: 4px; }
 }
 
-:focus-visible { outline: 3px solid rgba(106, 137, 167, .55); outline-offset: 2px; }
+:focus-visible { outline: 3px solid rgba(43, 167, 160, .55); outline-offset: 2px; }
 .section-toggle:focus-visible, .sidebar-group-nav:focus-visible, .sidebar-group-chevron:focus-visible,
 .sidebar-overview:focus-visible, .sidebar-group-items a:focus-visible,
-.overview-group-nav:focus-visible, .overview-group-items a:focus-visible { outline-color: var(--accent); }
+.overview-group-nav:focus-visible, .overview-link:focus-visible,
+.overview-hide-btn:focus-visible, .overview-show-hidden:focus-visible { outline-color: var(--accent); }
