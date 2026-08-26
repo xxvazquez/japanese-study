@@ -23,6 +23,33 @@
   --rose-soft: #f6e9ed;
   --particle: #435a70;
   --irregular: var(--rose);
+
+  /* Type scale -- one set of tokens for the whole page so every tier (page
+     titles, nav, table headers, Japanese/furigana/romaji/English) stays in a
+     deliberate ratio to the others instead of drifting per breakpoint. Mobile
+     values are their own considered scale, not the desktop numbers shrunk by
+     a fixed percentage. */
+  --fs-page-title: 22px;
+  --fs-section-title: 16px;
+  --fs-nav: 14.5px;
+  --fs-nav-sub: 14px;
+  --fs-table-header: 12.5px;
+  --fs-jp: 22px;
+  --fs-romaji: 14.5px;
+  --fs-english: 14.5px;
+}
+
+@media (min-width: 761px) {
+  :root {
+    --fs-page-title: 26px;
+    --fs-section-title: 17px;
+    --fs-nav: 15.5px;
+    --fs-nav-sub: 14.5px;
+    --fs-table-header: 13px;
+    --fs-jp: 26px;
+    --fs-romaji: 17px;
+    --fs-english: 17px;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -62,8 +89,8 @@ html, body {
    long lists of tables never push the vocabulary content down the page.
    --------------------------------------------------------------------- */
 .sidebar {
-  flex: 0 0 240px;
-  width: 240px;
+  flex: 0 0 264px;
+  width: 264px;
   height: 100vh;
   position: sticky;
   top: 0;
@@ -85,7 +112,7 @@ html, body {
   padding: 7px 8px;
   border-radius: 6px;
   color: var(--ink);
-  font-size: 13px;
+  font-size: var(--fs-nav);
   font-weight: 700;
   text-decoration: none;
 }
@@ -137,14 +164,14 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ink);
-  font: 700 11.5px/1.2 Arial, Helvetica, sans-serif;
-  letter-spacing: .02em;
+  font: 700 var(--fs-nav)/1.3 Arial, Helvetica, sans-serif;
+  letter-spacing: .01em;
 }
 .sidebar-group-nav.active .cat-name { color: var(--accent-dark); }
 .cat-count {
   flex: 0 0 auto;
   color: var(--faint);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 400;
 }
 .sidebar-group-chevron {
@@ -168,12 +195,12 @@ html, body {
 .sidebar-group.collapsed .sidebar-group-items { display: none; }
 .sidebar-group-items a {
   display: block;
-  padding: 6px 8px 6px 32px;
+  padding: 7px 8px 7px 32px;
   border-radius: 6px;
   color: var(--ink);
   text-decoration: none;
-  font-size: 12.5px;
-  line-height: 1.3;
+  font-size: var(--fs-nav-sub);
+  line-height: 1.35;
 }
 .sidebar-group-items a:hover { background: var(--accent-soft); color: var(--accent-dark); }
 .sidebar-group-items a.active {
@@ -191,7 +218,7 @@ html, body {
 .page-overview h2 {
   margin: 0 0 24px;
   color: var(--ink);
-  font-size: 27px;
+  font-size: var(--fs-page-title);
   font-weight: 700;
   letter-spacing: -.2px;
 }
@@ -219,12 +246,11 @@ html, body {
   text-align: left;
 }
 .overview-group-nav:hover .cat-name { color: var(--accent-dark); }
-.overview-group-nav .cat-name { font-size: 15.5px; }
-.overview-group-items { display: flex; flex-wrap: wrap; column-gap: 20px; row-gap: 7px; }
+.overview-group-items { display: flex; flex-wrap: wrap; column-gap: 20px; row-gap: 8px; }
 .overview-group-items a {
   color: var(--muted);
   text-decoration: none;
-  font-size: 13.5px;
+  font-size: var(--fs-nav-sub);
 }
 .overview-group-items a:hover { color: var(--accent-dark); text-decoration: underline; }
 
@@ -239,7 +265,12 @@ html, body {
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 14px;
-  box-shadow: 0 2px 6px rgba(35, 50, 55, .05);
+  /* The second shadow is not decorative -- it's an opaque, page-bg-colored
+     extension covering the 10px gap between the viewport top and the sticky
+     header (created by `top: 10px`). Without it, scrolled table rows are
+     briefly visible peeking above the header card before disappearing
+     underneath it. */
+  box-shadow: 0 2px 6px rgba(35, 50, 55, .05), 0 -10px 0 0 var(--page-bg);
   margin: 0 0 22px;
   padding: 10px 16px 8px;
 }
@@ -310,32 +341,43 @@ html, body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 5px;
-  padding-left: 2px;
+  margin-top: 9px;
+  padding: 8px 2px 0;
+  border-top: 1px solid var(--line);
 }
+/* A single bordered pill groups the scope buttons into one control, reading
+   as part of the search area above rather than a loose row of text links. */
 .view-mode {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 1px;
+  padding: 2px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 8px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 12.5px;
 }
 .view-mode button {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 2px 3px;
+  padding: 4px 9px;
+  border-radius: 6px;
   font: inherit;
   cursor: pointer;
-  border-radius: 4px;
 }
-.view-mode span { color: var(--line); }
-.view-mode button:hover,
-.view-mode button.active { color: var(--accent-dark); font-weight: 700; }
+.view-mode span { display: none; }
+.view-mode button:hover { color: var(--accent-dark); }
+.view-mode button.active {
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-weight: 700;
+}
 .search-count {
   margin-left: auto;
   color: var(--muted);
-  font-size: 11.5px;
+  font-size: 12px;
   white-space: nowrap;
 }
 
@@ -382,7 +424,7 @@ html, body {
   padding: 0;
   color: var(--ink);
   font: inherit;
-  font-size: 17px;
+  font-size: var(--fs-section-title);
   line-height: 1.2;
   font-weight: 700;
   letter-spacing: -.1px;
@@ -529,18 +571,19 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   text-align: left;
   color: var(--muted);
   background: var(--surface);
-  font-size: 11.5px;
+  font-size: var(--fs-table-header);
   font-weight: 600;
-  padding: 7px 14px;
+  letter-spacing: .01em;
+  padding: 9px 14px;
   border-bottom: 1px solid var(--line);
   white-space: nowrap;
 }
 .vocab td {
-  padding: 10.5px 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
-  font-size: 13px;
-  line-height: 1.4;
+  font-size: var(--fs-english);
+  line-height: 1.45;
   color: var(--ink);
   background: #fff;
   /* table-layout: fixed already enforces each column's width; this makes sure
@@ -584,9 +627,9 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 /* Japanese: the primary column. */
 .vocab td.jp {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
-  font-size: 18px;
+  font-size: var(--fs-jp);
   font-weight: 400;
-  line-height: 1.7;
+  line-height: 1.55;
   color: var(--ink);
 }
 /* No white-space:nowrap here: each <ruby> stays intact on its own (browsers never
@@ -611,7 +654,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 .vocab td:nth-child(3) {
   color: var(--muted);
   font-style: italic;
-  font-size: 12.5px;
+  font-size: var(--fs-romaji);
 }
 
 /* English: the answer column -- plain and fully legible, not muted. */
@@ -689,11 +732,10 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
 }
 
 @media screen and (min-width: 761px) {
-  .vocab th { font-size: 13px; padding-top: 10.5px; padding-bottom: 10.5px; }
-  .vocab td { font-size: 16px; padding-top: 10.5px; padding-bottom: 10.5px; }
-  .vocab td.jp { font-size: 24px; line-height: 1.85; }
-  .furigana { font-size: .48em; }
-  .vocab td:nth-child(3) { font-size: 16px; }
+  .vocab th { padding-top: 11px; padding-bottom: 11px; }
+  .vocab td { padding-top: 12px; padding-bottom: 12px; }
+  .vocab td.jp { line-height: 1.6; }
+  .furigana { font-size: .44em; }
 }
 
 .sidebar-toggle {
@@ -754,14 +796,15 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   /* Just one compact icon button lives here now -- keep it on the same row as
      the title, pinned to the right, instead of forcing it onto its own line. */
   .section-head { margin-bottom: 10px; }
-  .vocab td.jp { font-size: 16px; }
 
-  /* Rebalance the grid for narrow screens: Japanese gets more room so short
-     unbroken katakana words (furaipan, etc.) fit on one line, romaji gets
-     enough to hold a single long word without breaking mid-word, and English
-     gives up some width since it already wraps cleanly at word boundaries. */
-  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 38%; }
-  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 29%; }
+  /* Rebalance the grid for narrow screens: Japanese carries the most weight
+     in the hierarchy so it gets the most room (short katakana loanwords like
+     furaipan still fit on one line), English keeps enough width that its
+     longest single words (e.g. "refrigerator") stay on one line, and romaji
+     takes what's left -- an occasional long romaji word wrapping across two
+     lines is a minor, expected trade-off, not a bug. */
+  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 40%; }
+  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 27%; }
   .vocab th:nth-child(4), .vocab td:nth-child(4) { width: 33%; }
   .vocab th, .vocab td { padding-left: 10px; padding-right: 10px; }
   .vocab th.row-num-th, .vocab td.row-num { padding-left: 6px; padding-right: 4px; }
