@@ -283,18 +283,16 @@ html, body {
   top: 0;
   z-index: 1000;
   will-change: transform;
-  background: var(--surface);
-  border: 0;
-  border-bottom: 1px solid var(--line);
-  border-radius: 0;
-  /* Cancel .app's own top/left/right padding so the header sits flush against
-     the viewport top and the sidebar's right edge -- a docked bar, not a
-     floating card -- then restore that inset as padding so its content still
-     lines up with the rest of .app. Docked flush at top:0 like this, there's
-     no gap above it left for scrolled content to peek through, so (unlike a
-     `top: 10px` floating card) no page-bg-colored cover shadow is needed. */
-  margin: -18px -32px 22px;
-  padding: 10px 32px 8px;
+  /* Same card language as .table-section (white, hairline border, 12px
+     radius), same width and horizontal position too -- it's a block child
+     of .app like every table card, with no width/margin override pulling it
+     out to a different shape. That's what makes it read as the first card
+     in the stack rather than a separate system bar sitting on top of it. */
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 20px 14px;
+  margin: 0 0 12px;
 }
 
 .top-row {
@@ -812,7 +810,7 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   .sidebar.open { transform: translateX(0); }
   body.sidebar-open .sidebar-backdrop { display: block; }
   .app { padding: 14px 12px 48px; }
-  .site-header { margin: -14px -12px 22px; padding: 10px 12px 8px; }
+  .site-header { margin: 0 0 10px; padding: 14px 14px 12px; }
   .table-section { padding: 14px 12px 16px; scroll-margin-top: 190px; }
   /* Just one compact icon button lives here now -- keep it on the same row as
      the title, pinned to the right, instead of forcing it onto its own line. */
