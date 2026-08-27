@@ -1,15 +1,20 @@
 // Flashcards: FSRS-6 spaced repetition on top of the existing vocabulary.
 //
-// Supabase is the sole authoritative store for learning data (which vocab
-// entries are in flashcards, their FSRS state, review history, settings).
+// Two independent ways to use this, the user's choice (see isGuestMode()):
+//   - Signed in: Supabase is the sole authoritative store for learning data
+//     (which vocab entries are in flashcards, their FSRS state, review
+//     history, settings). localStorage there is only a read-through cache
+//     (for instant UI) and an offline outbox for reviews taken without a
+//     connection -- never treated as the record of truth.
+//   - Guest mode: no account, no network at all -- localStorage *is* the
+//     record, under its own separate key (GUEST_CACHE_KEY) so it never mixes
+//     with a signed-in cache. Nothing here favors one mode over the other;
+//     every feature works the same in both.
 // This file never stores vocabulary *content* anywhere but reads it live
 // from window.vocabularyTables -- only each row's permanent `id` (see
 // data/vocabulary.js / scripts/generate-vocab-ids.js) ever leaves the
-// browser as a reference.
-//
-// localStorage here is only a read-through cache (for instant UI) and an
-// offline outbox for reviews taken without a connection -- never treated as
-// the record of truth. See sakura-flashcards-cache-v1 below.
+// browser as a reference (and in guest mode, it never even leaves the
+// browser at all).
 (function () {
   "use strict";
 
@@ -22,7 +27,31 @@
   };
   var RATING_NAMES = ["Again", "Hard", "Good", "Easy"];
   var CACHE_KEY = "sakura-flashcards-cache-v1";
+  var GUEST_CACHE_KEY = "sakura-flashcards-guest-v1";
+  var MODE_KEY = "sakura-flashcards-mode";
   var CACHE_SCHEMA_VERSION = 1;
+
+  // Two ways to use Flashcards: signed in (Supabase is authoritative, see
+  // below) or entirely on-device ("guest" mode -- localStorage only, no
+  // account, no network, nothing to set up). Guest mode is a stored
+  // preference, not a session -- it's guest mode whenever there's no active
+  // Supabase session and the user has previously chosen it.
+  //
+  // inMemoryMode is a same-pageview fallback for when localStorage itself
+  // is unavailable (private browsing in some browsers throws on any access,
+  // rather than just declining to persist) -- without it, choosing "guest
+  // mode" would silently fail to take effect at all rather than just fail
+  // to be *remembered* next visit.
+  var inMemoryMode = null;
+  function getStoredMode() {
+    try { return localStorage.getItem(MODE_KEY); } catch (e) { return inMemoryMode; }
+  }
+  function setStoredMode(m) {
+    inMemoryMode = m;
+    try { if (m) localStorage.setItem(MODE_KEY, m); else localStorage.removeItem(MODE_KEY); } catch (e) {}
+  }
+  function isGuestMode() { return !authState.session && getStoredMode() === "guest"; }
+  function hasActiveSession() { return isGuestMode() || !!authState.session; }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -206,11 +235,16 @@
     return {
       fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false,
       queue_new_cards_per_day: 20, schema_version: 1,
-      current_streak: 0, longest_streak: 0, last_study_date: null
+      current_streak: 0, longest_streak: 0, last_study_date: null,
+      // Which of the 4 directions actually get studied -- not an FSRS
+      // setting, and independent of which cards exist: turning a direction
+      // off just leaves its cards out of the queue/stats, never deletes or
+      // resets them. All on by default, same as before this setting existed.
+      enabled_directions: { "jp-en": true, "jp-ro": true, "ro-en": true, "en-ro": true }
     };
   }
   function emptyCache(userId) {
-    return { schemaVersion: CACHE_SCHEMA_VERSION, userId: userId || null, cards: {}, logsOutbox: [], settings: defaultSettings(), lastSyncedAt: null };
+    return { schemaVersion: CACHE_SCHEMA_VERSION, userId: userId || null, cards: {}, logsOutbox: [], reviewLogs: [], settings: defaultSettings(), lastSyncedAt: null };
   }
   function isValidCardRecord(c) {
     return c && typeof c.id === "string" && typeof c.vocabId === "string" && DIRECTIONS.indexOf(c.direction) !== -1 &&
@@ -228,9 +262,23 @@
     return {
       schemaVersion: raw.schemaVersion, userId: raw.userId || null, cards: cards,
       logsOutbox: raw.logsOutbox.filter(function (e) { return e && e.clientReviewId && e.cardId; }),
-      settings: raw.settings && typeof raw.settings === "object" ? Object.assign(defaultSettings(), raw.settings) : defaultSettings(),
+      // Only ever used in guest mode (signed-in mode gets its weekly-activity
+      // history from Supabase's review_logs instead) -- a plain date-per-review
+      // list for the dashboard's weekly chart, capped so it can't grow forever.
+      reviewLogs: Array.isArray(raw.reviewLogs) ? raw.reviewLogs.filter(function (e) { return e && typeof e.date === "string"; }).slice(-400) : [],
+      settings: mergeSettings(raw.settings),
       lastSyncedAt: raw.lastSyncedAt || null
     };
+  }
+  // Object.assign is shallow, which would let a stored settings blob missing
+  // (or only partially specifying) enabled_directions silently wipe out the
+  // rest of that nested object's defaults -- merge it one level deeper so an
+  // older cache (from before this setting existed) still comes back with
+  // every direction enabled, not undefined/missing ones treated as off.
+  function mergeSettings(raw) {
+    var merged = Object.assign(defaultSettings(), raw && typeof raw === "object" ? raw : {});
+    merged.enabled_directions = Object.assign({}, defaultSettings().enabled_directions, (raw && raw.enabled_directions) || {});
+    return merged;
   }
   // Slot for future cache-shape upgrades -- a no-op today, kept so a v2
   // change has somewhere to live instead of a rewrite.
@@ -239,24 +287,38 @@
     return raw; // no migrations defined yet
   }
 
+  // Guest mode and signed-in mode keep entirely separate caches (different
+  // localStorage keys) so switching between them never overwrites or mixes
+  // the other's data -- both are simply preserved, whichever you come back to.
+  function cacheKey() { return isGuestMode() ? GUEST_CACHE_KEY : CACHE_KEY; }
   var cache = null;
+  var cacheLoadedKey = null;
   function loadCache() {
+    var key = cacheKey();
     try {
-      var raw = window.localStorage && localStorage.getItem(CACHE_KEY);
+      var raw = window.localStorage && localStorage.getItem(key);
       var parsed = raw ? JSON.parse(raw) : null;
       var validated = validateCache(migrate(parsed));
       cache = validated || emptyCache();
     } catch (e) {
       cache = emptyCache();
     }
+    cacheLoadedKey = key;
     return cache;
   }
   function saveCache() {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(cache)); } catch (e) {}
+    try { localStorage.setItem(cacheKey(), JSON.stringify(cache)); } catch (e) {}
   }
-  function getCache() { return cache || loadCache(); }
+  function getCache() {
+    // Re-load if the active mode changed which key we should be reading
+    // (e.g. signing in after having used guest mode) rather than continuing
+    // to read/write the wrong one.
+    if (!cache || cacheLoadedKey !== cacheKey()) return loadCache();
+    return cache;
+  }
   function resetCacheForUser(userId) {
     cache = emptyCache(userId);
+    cacheLoadedKey = cacheKey();
     saveCache();
   }
 
@@ -342,7 +404,15 @@
       schema_version: settingsRow.schema_version,
       current_streak: settingsRow.current_streak || 0,
       longest_streak: settingsRow.longest_streak || 0,
-      last_study_date: settingsRow.last_study_date || null
+      last_study_date: settingsRow.last_study_date || null,
+      // !== false rather than a plain truthy check -- an existing Supabase
+      // project that hasn't re-run the latest supabase/schema.sql yet won't
+      // have these columns at all, and undefined should mean "on" (today's
+      // default), not "off".
+      enabled_directions: {
+        "jp-en": settingsRow.enabled_jp_en !== false, "jp-ro": settingsRow.enabled_jp_ro !== false,
+        "ro-en": settingsRow.enabled_ro_en !== false, "en-ro": settingsRow.enabled_en_ro !== false
+      }
     };
     c.userId = user.id;
     c.lastSyncedAt = new Date().toISOString();
@@ -371,9 +441,11 @@
     if (res.error) throw res.error;
     return res.data;
   }
-  async function archiveVocabRemote(vocabId) {
+  async function archiveVocabRemote(vocabId) { return archiveVocabsRemote([vocabId]); }
+  async function archiveVocabsRemote(vocabIds) {
+    if (!vocabIds.length) return;
     var client = getClient(), user = currentUser();
-    var res = await client.from("flashcards").update({ active: false }).eq("user_id", user.id).eq("vocab_id", vocabId);
+    var res = await client.from("flashcards").update({ active: false }).eq("user_id", user.id).in("vocab_id", vocabIds);
     if (res.error) throw res.error;
   }
   async function deleteHistoryForeverRemote(vocabId) {
@@ -389,6 +461,86 @@
   async function saveQueueSettingsRemote(patch) {
     return saveFsrsSettingsRemote(patch);
   }
+
+  // -----------------------------------------------------------------------
+  // Guest-mode store -- the exact same operations as above, but entirely
+  // local: no network, no account, nothing to set up. The cache itself
+  // *is* the record here (see cacheKey() picking a separate localStorage
+  // key for guest mode) rather than a disposable read-through copy of
+  // something else authoritative.
+  // -----------------------------------------------------------------------
+  function newLocalCard(vocabId, direction) {
+    var id = uuid();
+    return {
+      id: id, vocabId: vocabId, direction: direction, active: true,
+      state: 0, due: new Date().toISOString(), stability: 0, difficulty: 0,
+      scheduled_days: 0, reps: 0, lapses: 0, learning_steps: 0, last_review: null
+    };
+  }
+  function findLocalCard(c, vocabId, direction) {
+    return Object.keys(c.cards).map(function (id) { return c.cards[id]; })
+      .find(function (card) { return card.vocabId === vocabId && card.direction === direction; });
+  }
+  function addVocabsLocal(vocabIds) {
+    var c = getCache();
+    var index = getVocabIndex();
+    vocabIds.forEach(function (vocabId) {
+      var entry = index[vocabId];
+      if (!entry) return;
+      directionsForEntry(entry).forEach(function (d) {
+        var existing = findLocalCard(c, vocabId, d);
+        if (existing) existing.active = true; // restore -- FSRS state/history untouched
+        else { var card = newLocalCard(vocabId, d); c.cards[card.id] = card; }
+      });
+    });
+    saveCache();
+  }
+  function archiveVocabsLocal(vocabIds) {
+    var c = getCache();
+    Object.keys(c.cards).forEach(function (id) {
+      if (vocabIds.indexOf(c.cards[id].vocabId) !== -1) c.cards[id].active = false;
+    });
+    saveCache();
+  }
+  function deleteHistoryForeverLocal(vocabId) {
+    var c = getCache();
+    Object.keys(c.cards).forEach(function (id) { if (c.cards[id].vocabId === vocabId) delete c.cards[id]; });
+    saveCache();
+  }
+
+  // -----------------------------------------------------------------------
+  // Mode-aware entry points -- everything above this line (UI, review flow,
+  // queue/stats) calls only these, never the *Remote/*Local functions
+  // directly, so it doesn't need to know or care which mode is active.
+  // -----------------------------------------------------------------------
+  async function addVocabs(vocabIds) { return isGuestMode() ? addVocabsLocal(vocabIds) : addVocabsRemote(vocabIds); }
+  async function addVocab(vocabId) { return addVocabs([vocabId]); }
+  async function archiveVocabs(vocabIds) { return isGuestMode() ? archiveVocabsLocal(vocabIds) : archiveVocabsRemote(vocabIds); }
+  async function archiveVocab(vocabId) { return archiveVocabs([vocabId]); }
+  async function deleteHistoryForever(vocabId) { return isGuestMode() ? deleteHistoryForeverLocal(vocabId) : deleteHistoryForeverRemote(vocabId); }
+  async function saveFsrsSettings(patch) {
+    Object.assign(getCache().settings, patch);
+    saveCache();
+    if (!isGuestMode()) await saveFsrsSettingsRemote(patch);
+  }
+  async function saveQueueSettings(patch) { return saveFsrsSettings(patch); }
+  // Separate from saveFsrsSettings because the shapes differ: the cache
+  // keeps enabled directions as one nested object (for easy `enabled[dir]`
+  // lookups in buildQueue/computeStats), but Supabase stores them as 4 flat
+  // boolean columns -- same pattern (mutate cache, persist locally always,
+  // push remotely when signed in), just with that one translation.
+  async function saveDirectionSettings(enabledMap) {
+    getCache().settings.enabled_directions = enabledMap;
+    saveCache();
+    if (!isGuestMode()) {
+      await saveFsrsSettingsRemote({
+        enabled_jp_en: enabledMap["jp-en"], enabled_jp_ro: enabledMap["jp-ro"],
+        enabled_ro_en: enabledMap["ro-en"], enabled_en_ro: enabledMap["en-ro"]
+      });
+    }
+  }
+  // Guest mode has nothing to fetch -- its cache already is the record.
+  async function refreshData() { if (!isGuestMode()) await fetchAllFromServer(); }
 
   // -----------------------------------------------------------------------
   // Daily study streak -- a motivational counter, not an FSRS concept.
@@ -494,22 +646,40 @@
     var c = getCache();
     return Object.keys(c.cards).map(function (id) { return c.cards[id]; }).filter(function (card) { return card.active; });
   }
-  function statePriority(card) { return card.state === 1 || card.state === 3 ? 0 : card.state === 2 ? 1 : 2; }
+  // Cards in a direction the user has switched off in Settings (Study
+  // Directions) are left exactly as they are -- state, history, everything
+  // -- just excluded from what gets studied or counted, the same way an
+  // archived card is. Re-enabling the direction picks them back up with
+  // nothing lost.
+  function studyableCards() {
+    var enabled = getCache().settings.enabled_directions;
+    return activeCards().filter(function (card) { return enabled[card.direction] !== false; });
+  }
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  // Learning/relearning cards stay strictly ordered by due time (a card due
+  // in 1 minute genuinely should come back before one due in 10) since
+  // that's short-term reinforcement, not a memorization drill -- but which
+  // due reviews and which fresh cards come up is shuffled, so a session
+  // isn't a predictable march through the same word/direction order every
+  // time (e.g. always all 4 directions of one word back to back).
   function buildQueue(now) {
     var c = getCache();
-    var due = activeCards().filter(function (card) { return card.state !== 0 && new Date(card.due) <= now; });
-    var fresh = activeCards().filter(function (card) { return card.state === 0; })
-      .sort(function (a, b) { return new Date(a.due) - new Date(b.due); })
+    var studyable = studyableCards();
+    var learning = studyable.filter(function (card) { return (card.state === 1 || card.state === 3) && new Date(card.due) <= now; })
+      .sort(function (a, b) { return new Date(a.due) - new Date(b.due); });
+    var review = shuffle(studyable.filter(function (card) { return card.state === 2 && new Date(card.due) <= now; }));
+    var fresh = shuffle(studyable.filter(function (card) { return card.state === 0; }))
       .slice(0, Math.max(0, c.settings.queue_new_cards_per_day));
-    var combined = due.concat(fresh);
-    combined.sort(function (a, b) {
-      var p = statePriority(a) - statePriority(b);
-      return p !== 0 ? p : new Date(a.due) - new Date(b.due);
-    });
-    return combined.map(function (card) { return card.id; });
+    return learning.concat(review, fresh).map(function (card) { return card.id; });
   }
   function computeStats(now) {
-    var cards = activeCards();
+    var cards = studyableCards();
     var newCount = 0, learningCount = 0, reviewCount = 0, dueCount = 0;
     var retSum = 0, retN = 0;
     var scheduler = getScheduler(getCache().settings);
@@ -545,25 +715,19 @@
   function render() {
     var el = root();
     if (!el) return;
+    // Guest mode never needs to wait on a network auth check -- it's a
+    // stored on-device preference, not a session. Only fall through to
+    // "is there an account session?" when guest mode hasn't been chosen.
+    if (isGuestMode()) { renderShell(el); return; }
     if (!authState.ready) { el.innerHTML = "<h2>Flashcards</h2><p class=\"fc-lede\">Loading…</p>"; return; }
-    if (!configured()) { renderSetupNeeded(el); return; }
-    if (!authState.session) { renderAuthGate(el); return; }
-    renderShell(el);
-  }
-
-  function renderSetupNeeded(el) {
-    el.innerHTML = "<h2>Flashcards</h2>" +
-      '<p class="fc-lede">This feature needs a free Supabase project to store your flashcard progress. ' +
-      "See <code>SUPABASE_SETUP.md</code> in the project for a step-by-step guide, then fill in " +
-      "<code>js/supabase-config.js</code>.</p>";
+    if (authState.session) { renderShell(el); return; }
+    renderEntryChoice(el);
   }
 
   var authMode = "signin";
   var authError = "";
-  function renderAuthGate(el) {
-    el.innerHTML = "<h2>Flashcards</h2>" +
-      '<p class="fc-lede">Sign in to add vocabulary to your flashcards and track your reviews. The rest of the site works without an account.</p>' +
-      '<form class="fc-auth" id="fcAuthForm">' +
+  function authFormHtml() {
+    return '<form class="fc-auth" id="fcAuthForm">' +
       (authError ? '<div class="fc-auth-error">' + esc(authError) + "</div>" : "") +
       '<div class="fc-auth-field"><label for="fcEmail">Email</label><input id="fcEmail" type="email" required autocomplete="email"></div>' +
       '<div class="fc-auth-field"><label for="fcPassword">Password</label><input id="fcPassword" type="password" required autocomplete="' + (authMode === "signup" ? "new-password" : "current-password") + '" minlength="6"></div>' +
@@ -571,6 +735,8 @@
       '<div class="fc-auth-switch">' + (authMode === "signup" ? "Already have an account? " : "Need an account? ") +
       '<button type="button" id="fcAuthSwitch">' + (authMode === "signup" ? "Sign in" : "Sign up") + "</button></div>" +
       "</form>";
+  }
+  function bindAuthForm() {
     document.getElementById("fcAuthForm").addEventListener("submit", async function (event) {
       event.preventDefault();
       authError = "";
@@ -584,6 +750,8 @@
           authMode = "signin";
           render();
         }
+        // A successful sign-in re-renders via onAuthChange once the session
+        // lands -- nothing else to do here.
       } catch (e) {
         authError = e.message || String(e);
         render();
@@ -596,16 +764,41 @@
     });
   }
 
+  // Two equally valid ways in -- no account needed at all, or sign in for
+  // cross-device sync. Guest mode works even without a Supabase project
+  // configured; syncing obviously doesn't.
+  function renderEntryChoice(el) {
+    el.innerHTML = "<h2>Flashcards</h2>" +
+      '<p class="fc-lede">Add vocabulary to your flashcards and track your reviews. Use it right here on this device, or sign in to keep it synced everywhere.</p>' +
+      '<div class="fc-entry-grid">' +
+      '<div class="fc-entry-card"><h3>This device only</h3>' +
+      '<p class="fc-note">Stored in this browser — nothing to set up, nothing sent anywhere. Clearing site data or switching browsers loses it.</p>' +
+      '<button type="button" class="fc-btn fc-btn-primary" id="fcUseGuest">Continue without an account</button></div>' +
+      '<div class="fc-entry-card"><h3>Sync across devices</h3>' +
+      (configured()
+        ? '<p class="fc-note">Free account, backed by Supabase. Only you can see your data.</p>' + authFormHtml()
+        : '<p class="fc-note">Needs a one-time setup — see <code>SUPABASE_SETUP.md</code> in the project, then fill in <code>js/supabase-config.js</code>.</p>') +
+      "</div></div>";
+    document.getElementById("fcUseGuest").addEventListener("click", function () {
+      setStoredMode("guest");
+      render();
+    });
+    if (configured()) bindAuthForm();
+  }
+
   var initialSyncDone = false;
   function renderShell(el) {
-    if (!initialSyncDone) {
+    if (!isGuestMode() && !initialSyncDone) {
       initialSyncDone = true;
       fetchAllFromServer().then(function () { syncOutbox(); render(); }).catch(function (e) { console.error("Flashcards: could not load from Supabase", e); render(); });
     }
     var stats = computeStats(new Date());
+    var identityHtml = isGuestMode()
+      ? '<div class="fc-signed-in-as">Using this device only — not backed up <button type="button" id="fcGoAccount">Sign in to sync</button></div>'
+      : '<div class="fc-signed-in-as">Signed in as ' + esc(currentUser().email) + ' <button type="button" id="fcSignOut">Sign out</button></div>';
     el.innerHTML =
       "<h2>Flashcards</h2>" +
-      '<div class="fc-signed-in-as">Signed in as ' + esc(currentUser().email) + ' <button type="button" id="fcSignOut">Sign out</button></div>' +
+      identityHtml +
       '<div class="fc-tabs" role="tablist">' +
       ["dashboard", "manage", "settings"].map(function (t) {
         var label = t === "dashboard" ? "Dashboard" : t === "manage" ? "Manage" : "Settings";
@@ -616,7 +809,14 @@
       '<div class="fc-tabpanel"' + (activeTab === "manage" ? "" : " hidden") + ' id="fcPanelManage"></div>' +
       '<div class="fc-tabpanel"' + (activeTab === "settings" ? "" : " hidden") + ' id="fcPanelSettings"></div>';
 
-    document.getElementById("fcSignOut").addEventListener("click", function () { signOut(); });
+    if (isGuestMode()) {
+      // Leaves the guest cache exactly as it is (own localStorage key) --
+      // this only forgets the "use guest mode" preference so render() falls
+      // through to the sign-in/sign-up choice again.
+      document.getElementById("fcGoAccount").addEventListener("click", function () { setStoredMode(null); render(); });
+    } else {
+      document.getElementById("fcSignOut").addEventListener("click", function () { signOut(); });
+    }
     el.querySelectorAll(".fc-tab").forEach(function (btn) {
       btn.addEventListener("click", function () { activeTab = btn.dataset.tab; session = null; render(); });
     });
@@ -631,25 +831,104 @@
     var retentionText = stats.estimatedRetention == null ? "—" : Math.round(stats.estimatedRetention * 100) + "%";
     var settings = getCache().settings;
     var streak = settings.current_streak || 0;
+    if (weeklyActivity === null && !weeklyActivityLoading) {
+      weeklyActivityLoading = true;
+      loadWeeklyActivity().catch(function () { weeklyActivity = []; }).then(function () { weeklyActivityLoading = false; render(); });
+    }
     panel.innerHTML =
       '<div class="fc-stats-grid">' +
-      statTile(streak, streak === 1 ? "Day streak" : "Day streak", false, true) +
+      statTile(streak, "Day streak", "streak") +
       statTile(stats.total, "Total cards") +
-      statTile(stats.newCount, "New") +
-      statTile(stats.learningCount, "Learning") +
-      statTile(stats.dueCount, "Due now", true) +
+      statTile(stats.dueCount, "Due now", "due") +
       statTile(stats.reviewsCompleted, "Reviews completed") +
       statTile(retentionText, "Estimated retention") +
       "</div>" +
       (settings.longest_streak > streak ? '<p class="fc-note fc-longest-streak">Longest streak: ' + settings.longest_streak + " day" + (settings.longest_streak === 1 ? "" : "s") + ".</p>" : "") +
+      '<div class="fc-viz-grid">' +
+      '<div class="fc-viz-card"><h3 class="fc-viz-title">Card progress</h3>' + stateBreakdownChart(stats) + "</div>" +
+      '<div class="fc-viz-card"><h3 class="fc-viz-title">Reviews this week</h3>' + (weeklyActivity ? weeklyActivityChart(weeklyActivity) : '<p class="fc-note">Loading…</p>') + "</div>" +
+      "</div>" +
       '<div class="fc-cta-row"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + Math.min(stats.newCount, getCache().settings.queue_new_cards_per_day) === 0 ? " disabled" : "") + ">Study now</button>" +
       '<span class="fc-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</span></div>';
     var btn = document.getElementById("fcStudyNow");
     if (btn) btn.addEventListener("click", startSession);
   }
-  function statTile(value, label, due, streak) {
-    var cls = due ? " fc-stat-due" : streak ? " fc-stat-streak" : "";
+  function statTile(value, label, variant) {
+    var cls = variant ? " fc-stat-" + variant : "";
     return '<div class="fc-stat-tile' + cls + '"><span class="fc-stat-value">' + esc(value) + '</span><span class="fc-stat-label">' + esc(label) + "</span></div>";
+  }
+
+  // Card-state breakdown -- a single stacked bar (New/Learning/Review),
+  // colors reused from the existing palette (New: neutral faint, Learning:
+  // the site's rose accent for "in progress", Review: brand teal for
+  // "established") rather than introducing new hues. SVG attributes (not
+  // style="") so the computed widths don't run into the page's CSP.
+  function stateBreakdownChart(stats) {
+    var segs = [
+      { n: stats.newCount, cls: "fc-seg-new", label: "New" },
+      { n: stats.learningCount, cls: "fc-seg-learning", label: "Learning" },
+      { n: stats.reviewCount, cls: "fc-seg-review", label: "Review" }
+    ];
+    var total = Math.max(1, stats.newCount + stats.learningCount + stats.reviewCount);
+    var w = 400, x = 0, rects = "";
+    segs.forEach(function (s) {
+      var sw = (s.n / total) * w;
+      if (s.n > 0) rects += '<rect class="' + s.cls + '" x="' + x.toFixed(1) + '" y="0" width="' + sw.toFixed(1) + '" height="16"></rect>';
+      x += sw;
+    });
+    var legend = segs.map(function (s) {
+      return '<span class="fc-legend-item"><span class="fc-legend-dot ' + s.cls + '"></span>' + esc(s.label) + " " + s.n + "</span>";
+    }).join("");
+    return '<div class="fc-breakdown-bar-wrap"><svg viewBox="0 0 ' + w + ' 16" preserveAspectRatio="none" class="fc-breakdown-bar" role="img" aria-label="Card progress breakdown">' + rects + "</svg></div>" +
+      '<div class="fc-breakdown-legend">' + legend + "</div>";
+  }
+
+  var weeklyActivity = null; // null = not fetched yet, [] = fetched, empty
+  var weeklyActivityLoading = false;
+  function last7DaysFromCounts(counts) {
+    var days = [];
+    for (var i = 6; i >= 0; i--) {
+      var d = new Date(); d.setDate(d.getDate() - i);
+      var key = localDateStr(d);
+      days.push({ label: d.toLocaleDateString(undefined, { weekday: "short" }).slice(0, 2), count: counts[key] || 0 });
+    }
+    return days;
+  }
+  async function loadWeeklyActivity() {
+    if (isGuestMode()) {
+      var counts = {};
+      getCache().reviewLogs.forEach(function (r) { counts[r.date] = (counts[r.date] || 0) + 1; });
+      weeklyActivity = last7DaysFromCounts(counts);
+      return;
+    }
+    return fetchWeeklyActivity();
+  }
+  async function fetchWeeklyActivity() {
+    var client = getClient(), user = currentUser();
+    var since = new Date(); since.setHours(0, 0, 0, 0); since.setDate(since.getDate() - 6);
+    var res = await client.from("review_logs").select("reviewed_at").eq("user_id", user.id).gte("reviewed_at", since.toISOString());
+    if (res.error) throw res.error;
+    var counts = {};
+    res.data.forEach(function (row) {
+      var key = localDateStr(new Date(row.reviewed_at));
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    var days = last7DaysFromCounts(counts);
+    weeklyActivity = days;
+  }
+  function weeklyActivityChart(days) {
+    var max = Math.max(1, Math.max.apply(null, days.map(function (d) { return d.count; })));
+    var barW = 26, gap = 10, h = 56;
+    var width = days.length * (barW + gap) - gap;
+    var content = days.map(function (d, i) {
+      var barH = d.count ? Math.max(4, Math.round((d.count / max) * h)) : 2;
+      var x = i * (barW + gap);
+      var y = h - barH;
+      return '<rect class="fc-week-bar" x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '"></rect>' +
+        '<text class="fc-week-count" x="' + (x + barW / 2) + '" y="' + Math.max(10, y - 4) + '" text-anchor="middle">' + d.count + "</text>" +
+        '<text class="fc-week-label" x="' + (x + barW / 2) + '" y="' + (h + 14) + '" text-anchor="middle">' + esc(d.label) + "</text>";
+    }).join("");
+    return '<svg viewBox="0 0 ' + width + " " + (h + 20) + '" class="fc-week-chart" role="img" aria-label="Reviews per day over the last 7 days">' + content + "</svg>";
   }
 
   function startSession() {
@@ -681,27 +960,24 @@
     if (session.checked) {
       html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
         (session.correct ? "Correct" : "Not quite") +
-        '<span class="fc-expected">Answer: ' + esc(expectedDisplayFor(entry, card.direction)) + "</span></div>";
-      if (!session.rated) {
-        html += '<div class="fc-rating-row">' + RATING_NAMES.map(function (name, i) {
+        (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
+        '<span class="fc-expected">Answer: ' + esc(expectedDisplayFor(entry, card.direction)) + "</span></div>" +
+        '<div class="fc-rating-row">' + RATING_NAMES.map(function (name, i) {
           var p = session.preview[name];
           return '<button type="button" class="fc-rating-btn" data-rating="' + name.toLowerCase() + '"><span class="fc-rating-key">' + (i + 1) + '</span><span class="fc-rating-name">' + name + '</span><span class="fc-rating-interval">' + p.intervalLabel + "</span></button>";
         }).join("") + "</div>";
-      } else {
-        html += '<div class="fc-next-review">Next review: ' + esc(formatWhen(session.ratedDue)) + '</div>' +
-          '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcContinue">Continue</button></div>';
-      }
     }
     html += "</div>";
     panel.innerHTML = html;
 
+    var input = document.getElementById("fcAnswerInput");
+    if (input && !session.checked) input.focus();
     var form = document.getElementById("fcAnswerForm");
     if (form) form.addEventListener("submit", function (event) {
       event.preventDefault();
-      var input = document.getElementById("fcAnswerInput");
+      session.userAnswer = input.value;
       session.correct = checkAnswer(entry, card.direction, input.value);
       session.checked = true;
-      session.rated = false;
       var scheduler = getScheduler(getCache().settings);
       session.preview = previewRatings(scheduler, card, now);
       render();
@@ -709,10 +985,14 @@
     panel.querySelectorAll(".fc-rating-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { rate(btn.dataset.rating); });
     });
-    var cont = document.getElementById("fcContinue");
-    if (cont) cont.addEventListener("click", function () { session.index++; session.checked = false; session.rated = false; render(); });
   }
 
+  // Rating immediately commits the review and advances to the next card --
+  // no separate "next review" confirmation screen to click through. The
+  // interval each rating will produce is already shown on its own button
+  // (from previewRatings, before you pick), so nothing is lost by not
+  // pausing here -- and the whole session can run keyboard-only: type,
+  // Enter to check, 1-4 to rate and move on, repeat.
   function rate(ratingKey) {
     var ratingName = ratingKey.charAt(0).toUpperCase() + ratingKey.slice(1);
     var cardId = session.queue[session.index];
@@ -721,27 +1001,36 @@
     var scheduler = getScheduler(c.settings);
     var now = new Date();
     var base = fsrsRowFields(card);
+    var baseReps = card.reps; // captured before mutation -- the sync guard's version number
     var result = applyRating(scheduler, base, now, ratingName);
-    var outboxEntry = {
-      clientReviewId: uuid(), cardId: cardId, baseCard: { reps: card.reps },
-      resultCard: result.card, logFields: result.log
-    };
     Object.assign(card, result.card);
-    c.logsOutbox.push(outboxEntry);
+    if (isGuestMode()) {
+      // No server to sync to -- just keep a capped local history for the
+      // weekly-activity chart.
+      c.reviewLogs.push({ date: localDateStr(now) });
+      if (c.reviewLogs.length > 400) c.reviewLogs = c.reviewLogs.slice(-400);
+    } else {
+      c.logsOutbox.push({
+        clientReviewId: uuid(), cardId: cardId, baseCard: { reps: baseReps },
+        resultCard: result.card, logFields: result.log
+      });
+    }
     recordStudyActivity(now);
     saveCache();
-    syncOutbox();
-    session.rated = true;
-    session.ratedDue = result.card.due;
+    if (!isGuestMode()) syncOutbox();
     session.reviewedCount++;
+    session.index++;
+    session.checked = false;
+    session.userAnswer = "";
     render();
   }
 
   document.addEventListener("keydown", function (event) {
     if (!session || document.body.dataset.activePage !== "flashcards") return;
-    if (!session.checked || session.rated) return;
+    if (!session.checked) return;
     var idx = ["1", "2", "3", "4"].indexOf(event.key);
     if (idx === -1) return;
+    event.preventDefault();
     var btn = document.querySelector('.fc-rating-btn[data-rating="' + RATING_NAMES[idx].toLowerCase() + '"]');
     if (btn) btn.click();
   });
@@ -754,6 +1043,18 @@
     return "archived";
   }
 
+  // Rows currently hidden via "Manage rows" on the vocabulary page are read
+  // straight from that page's own DOM (it's always fully rendered, just
+  // hidden/shown by class -- see js/app.js) so a bulk table-add here matches
+  // the same one on the vocabulary page exactly, regardless of which page
+  // happens to be open right now.
+  function visibleVocabIdsForTable(tableId) {
+    var section = document.querySelector('.table-section[data-table="' + tableId + '"]');
+    if (!section) return [];
+    return [].slice.call(section.querySelectorAll("tbody tr:not(.row-hidden)"))
+      .map(function (tr) { return tr.dataset.vocabId; }).filter(Boolean);
+  }
+
   function renderManage(panel) {
     var index = getVocabIndex();
     var ids = Object.keys(index);
@@ -763,10 +1064,16 @@
       if (manageFilter === "archived") return state === "archived";
       return true;
     });
+    // Category > table, the same grouping the vocabulary page itself uses --
+    // tables are the natural unit to add/remove in bulk, not a flat word list.
     var byCategory = {};
     filtered.forEach(function (id) {
-      var cat = index[id].category || "Tables";
-      (byCategory[cat] = byCategory[cat] || []).push(id);
+      var entry = index[id];
+      var cat = entry.category || "Tables";
+      byCategory[cat] = byCategory[cat] || {};
+      var tables = byCategory[cat];
+      var key = entry.tableId;
+      (tables[key] = tables[key] || { title: entry.tableTitle, ids: [] }).ids.push(id);
     });
     var catNames = Object.keys(byCategory).sort(function (a, b) { return a.localeCompare(b); });
 
@@ -779,17 +1086,35 @@
       html += '<div class="fc-manage-list"><div class="fc-empty">Nothing here yet.</div></div>';
     } else {
       catNames.forEach(function (cat) {
-        html += '<details open class="fc-manage-group"><summary class="fc-manage-group-title">' + esc(cat) + '</summary><div class="fc-manage-list">';
-        byCategory[cat].forEach(function (id) {
-          var entry = index[id];
-          var state = vocabState(id);
-          html += '<div class="fc-manage-row">' +
-            '<span class="fc-jp" lang="ja">' + entry.jpHtml + "</span>" +
-            '<span class="fc-en">' + esc(entry.englishDisplay) + "</span>" +
-            (entry.romajiUsable ? "" : '<span class="fc-tag">EN only</span>') +
-            '<span class="fc-actions">' + manageActionsFor(id, state) + "</span></div>";
+        var tableIds = Object.keys(byCategory[cat]).sort(function (a, b) { return byCategory[cat][a].title.localeCompare(byCategory[cat][b].title); });
+        var totalInCategory = tableIds.reduce(function (n, k) { return n + byCategory[cat][k].ids.length; }, 0);
+        html += '<details open class="fc-manage-group"><summary class="fc-manage-group-title">' + window.categoryHeaderHtml(cat, totalInCategory) + "</summary>";
+        tableIds.forEach(function (tableId) {
+          var table = byCategory[cat][tableId];
+          var addedCount = table.ids.filter(function (id) { return vocabState(id) === "active"; }).length;
+          html += '<div class="fc-manage-table">' +
+            '<div class="fc-manage-table-head">' +
+            '<span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
+            '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span>";
+          if (manageFilter === "all") {
+            html += '<div class="fc-manage-table-actions">' +
+              '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '">Add table</button>' +
+              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '">Remove table</button>' +
+              "</div>";
+          }
+          html += "</div><div class=\"fc-manage-list\">";
+          table.ids.forEach(function (id) {
+            var entry = index[id];
+            var state = vocabState(id);
+            html += '<div class="fc-manage-row">' +
+              '<span class="fc-jp" lang="ja">' + entry.jpHtml + "</span>" +
+              '<span class="fc-en">' + esc(entry.englishDisplay) + "</span>" +
+              (entry.romajiUsable ? "" : '<span class="fc-tag">EN only</span>') +
+              '<span class="fc-actions">' + manageActionsFor(id, state) + "</span></div>";
+          });
+          html += "</div></div>";
         });
-        html += "</div></details>";
+        html += "</details>";
       });
     }
     panel.innerHTML = html;
@@ -798,6 +1123,9 @@
       btn.addEventListener("click", function () { manageFilter = btn.dataset.filter; render(); });
     });
     bindManageActionButtons(panel);
+    panel.querySelectorAll("[data-table-action]").forEach(function (btn) {
+      btn.addEventListener("click", function () { runTableAction(btn.dataset.tableAction, btn.dataset.tableId, btn); });
+    });
   }
   function manageActionsFor(vocabId, state) {
     if (state === "active") return '<button type="button" class="fc-btn" data-action="remove" data-vocab-id="' + esc(vocabId) + '">Remove</button>';
@@ -812,16 +1140,44 @@
   }
   async function runVocabAction(action, vocabId) {
     try {
-      if (action === "add" || action === "restore") await addVocabRemote(vocabId);
-      else if (action === "remove") await archiveVocabRemote(vocabId);
+      if (action === "add" || action === "restore") await addVocab(vocabId);
+      else if (action === "remove") await archiveVocab(vocabId);
       else if (action === "delete-forever") {
         if (!window.confirm("Permanently delete all learning history for this entry? This cannot be undone.")) return;
-        await deleteHistoryForeverRemote(vocabId);
+        await deleteHistoryForever(vocabId);
       }
-      await fetchAllFromServer();
+      await refreshData();
       render();
       refreshRowToggleButtons();
     } catch (e) {
+      window.alert("Couldn't update flashcards — " + (e.message || "check your connection and try again."));
+    }
+  }
+  // Table-level bulk add/remove -- the default way to build a deck, per
+  // table, rather than one word at a time. Add skips rows already hidden on
+  // the vocabulary page (Manage rows' eye icon); Remove archives every
+  // currently-active card from that table (never hard-deletes anything).
+  async function runTableAction(action, tableId, btn) {
+    var index = getVocabIndex();
+    var allIds = Object.keys(index).filter(function (id) { return String(index[id].tableId) === String(tableId); });
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = action === "add-table" ? "Adding…" : "Removing…";
+    try {
+      if (action === "add-table") {
+        var visible = visibleVocabIdsForTable(tableId);
+        var targetIds = visible.length ? visible.filter(function (id) { return allIds.indexOf(id) !== -1; }) : allIds;
+        await addVocabs(targetIds);
+      } else {
+        var activeIds = allIds.filter(function (id) { return vocabState(id) === "active"; });
+        await archiveVocabs(activeIds);
+      }
+      await refreshData();
+      render();
+      refreshRowToggleButtons();
+    } catch (e) {
+      btn.textContent = originalText;
+      btn.disabled = false;
       window.alert("Couldn't update flashcards — " + (e.message || "check your connection and try again."));
     }
   }
@@ -830,6 +1186,12 @@
   function renderSettings(panel) {
     var s = getCache().settings;
     panel.innerHTML =
+      '<div class="fc-settings-section"><h3>Study Directions</h3><p class="fc-note">Which of the 4 directions "Study now" pulls cards from — turning one off never deletes its cards or progress, it is just left out of review until you turn it back on.</p>' +
+      '<div class="fc-direction-checks">' + DIRECTIONS.map(function (d) {
+        return '<label class="fc-direction-check"><input type="checkbox" data-direction="' + d + '" class="fc-dir-checkbox" ' + (s.enabled_directions[d] !== false ? "checked" : "") + ">" + esc(DIRECTION_LABEL[d]) + "</label>";
+      }).join("") + "</div>" +
+      '<div class="fc-auth-error" id="fcDirError" hidden>At least one direction has to stay on.</div>' +
+      '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveDirections">Save</button></div></div>' +
       '<div class="fc-settings-section"><h3>FSRS Scheduling</h3><p class="fc-note">Tunable knobs FSRS-6 itself supports — the trained algorithm and its weights never change.</p>' +
       settingsField("Desired retention (%)", '<input type="number" id="fcRetention" min="70" max="99" value="' + Math.round(s.fsrs_request_retention * 100) + '">',
         "The recall probability FSRS-6 aims for when each card comes due. Higher means shorter, more frequent reviews and stronger recall; lower means longer gaps but more forgetting in between. 90% is FSRS's own recommended default.") +
@@ -843,22 +1205,28 @@
         "A cap on how many never-studied cards \"Study now\" introduces in one day, on top of anything already due for review. Doesn't affect scheduling, only pacing.") +
       '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveQueue">Save</button></div></div>';
 
+    document.getElementById("fcSaveDirections").addEventListener("click", async function () {
+      var enabledMap = {};
+      panel.querySelectorAll(".fc-dir-checkbox").forEach(function (cb) { enabledMap[cb.dataset.direction] = cb.checked; });
+      if (!DIRECTIONS.some(function (d) { return enabledMap[d]; })) {
+        document.getElementById("fcDirError").hidden = false;
+        return;
+      }
+      await saveDirectionSettings(enabledMap);
+      render();
+    });
     document.getElementById("fcSaveFsrs").addEventListener("click", async function () {
       var patch = {
         fsrs_request_retention: Math.min(0.99, Math.max(0.7, Number(document.getElementById("fcRetention").value) / 100)),
         fsrs_maximum_interval: Math.max(1, Number(document.getElementById("fcMaxInterval").value)),
         fsrs_enable_fuzz: document.getElementById("fcFuzz").checked
       };
-      await saveFsrsSettingsRemote(patch);
-      Object.assign(getCache().settings, patch);
-      saveCache();
+      await saveFsrsSettings(patch);
       render();
     });
     document.getElementById("fcSaveQueue").addEventListener("click", async function () {
       var patch = { queue_new_cards_per_day: Math.max(0, Number(document.getElementById("fcNewPerDay").value)) };
-      await saveQueueSettingsRemote(patch);
-      Object.assign(getCache().settings, patch);
-      saveCache();
+      await saveQueueSettings(patch);
       render();
     });
   }
@@ -885,7 +1253,7 @@
     var btn = event.target.closest && event.target.closest(".fc-toggle-btn");
     if (!btn) return;
     event.stopPropagation();
-    if (!configured() || !authState.session) {
+    if (!hasActiveSession()) {
       if (window.showFlashcardsPage) window.showFlashcardsPage();
       return;
     }
@@ -902,15 +1270,11 @@
     var btn = event.target.closest && event.target.closest(".fc-add-table-btn");
     if (!btn || btn.disabled) return;
     event.stopPropagation();
-    if (!configured() || !authState.session) {
+    if (!hasActiveSession()) {
       if (window.showFlashcardsPage) window.showFlashcardsPage();
       return;
     }
-    var section = document.querySelector('.table-section[data-table="' + btn.dataset.table + '"]');
-    if (!section) return;
-    var vocabIds = [].slice.call(section.querySelectorAll("tbody tr:not(.row-hidden)"))
-      .map(function (tr) { return tr.dataset.vocabId; })
-      .filter(Boolean);
+    var vocabIds = visibleVocabIdsForTable(btn.dataset.table);
     if (!vocabIds.length) return;
     var originalText = btn.textContent;
     btn.disabled = true;

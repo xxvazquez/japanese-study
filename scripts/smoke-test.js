@@ -25,7 +25,18 @@ async function main() {
     url,
     runScripts: "dangerously",
     resources: "usable",
-    pretendToBeVisual: true
+    pretendToBeVisual: true,
+    // js/supabase-config.js holds whoever's real project credentials once
+    // they've completed SUPABASE_SETUP.md -- this test needs the
+    // "not configured yet" path to be reachable regardless of what's
+    // actually committed right now. Freezing the property before any
+    // script runs makes the config file's own (non-strict-mode) assignment
+    // to it silently no-op, rather than trying to intercept the file load.
+    beforeParse(window) {
+      Object.defineProperty(window, "SUPABASE_CONFIG", {
+        value: { url: "", anonKey: "" }, writable: false, configurable: false
+      });
+    }
   });
   const { window } = dom;
   window.print = () => {}; // jsdom has no print engine
@@ -213,6 +224,75 @@ async function main() {
   check("every table has an \"Add table to flashcards\" button", !!addTableBtn && addTableBtn.dataset.table === "2");
   check("it's always visible, not gated behind Manage rows", window.getComputedStyle(addTableBtn).display !== "none");
   check("no element relies on an inline style=\"\" attribute, even after rendering the new controls", document.querySelectorAll("[style]").length === 0);
+
+  console.log("Flashcards: guest mode (no account, on-device only -- no network involved, fully testable here)");
+  // jsdom treats a bare file:// page as an opaque origin, where the spec
+  // says localStorage access itself must throw -- real browsers don't do
+  // this for file:// (and never for http/https, which is what the site
+  // actually runs as), so this is purely a sandbox artifact. The app
+  // already handles it (see getStoredMode/loadCache's own try/catch and
+  // the in-memory fallback that keeps guest mode working for the rest of
+  // this pageview regardless); this test mirrors that same defensiveness
+  // rather than asserting on window.localStorage directly.
+  function readLocalStorage(key) {
+    try { return window.localStorage.getItem(key); } catch (e) { return undefined; } // undefined = inaccessible here, not "empty"
+  }
+  const storageUsable = readLocalStorage("sakura-flashcards-mode") !== undefined;
+
+  document.querySelector(".sidebar-flashcards").click();
+  const guestBtn = document.getElementById("fcUseGuest");
+  check("a \"Continue without an account\" option is offered alongside signing in", !!guestBtn);
+  guestBtn.click();
+  check("choosing it goes straight to the Dashboard, no session needed", !!document.querySelector(".fc-stats-grid"));
+  check("it's labeled as on-device, not signed in", document.getElementById("flashcardsPage").textContent.includes("Using this device only"));
+  if (storageUsable) check("guest mode is remembered in localStorage", readLocalStorage("sakura-flashcards-mode") === "guest");
+  const totalTileBefore = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
+  check("starts with zero cards", totalTileBefore === "0");
+  document.querySelector('.fc-tab[data-tab="manage"]').click();
+  const firstAddBtn = document.querySelector('#fcPanelManage [data-action="add"]');
+  check("Manage lists addable vocabulary in guest mode too", !!firstAddBtn);
+  firstAddBtn.click();
+  document.querySelector('.fc-tab[data-tab="dashboard"]').click();
+  const totalTileAfter = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
+  check("adding a word in guest mode updates the count with zero network calls", totalTileAfter === "4");
+  if (storageUsable) check("its data actually lives in localStorage (not just in-memory)", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
+
+  console.log("Flashcards: Study Directions setting");
+  document.querySelector('.fc-tab[data-tab="settings"]').click();
+  const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];
+  check("all 4 directions are offered as a setting", dirChecks.length === 4);
+  check("all 4 are enabled by default", dirChecks.every(cb => cb.checked));
+  dirChecks.forEach(cb => { cb.checked = false; });
+  document.getElementById("fcSaveDirections").click();
+  check("saving with none enabled is rejected", document.getElementById("fcDirError").hidden === false);
+  document.querySelector('.fc-tab[data-tab="settings"]').click(); // re-render fresh
+  check("...and nothing was actually saved (still all on)", [...document.querySelectorAll(".fc-dir-checkbox")].every(cb => cb.checked));
+  document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]').checked = false;
+  document.getElementById("fcSaveDirections").click();
+  document.querySelector('.fc-tab[data-tab="settings"]').click();
+  const roEnBox = document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]');
+  check("turning off just one direction is remembered", !roEnBox.checked && document.querySelector('.fc-dir-checkbox[data-direction="jp-en"]').checked);
+  roEnBox.checked = true;
+  document.getElementById("fcSaveDirections").click(); // leave every direction enabled again for later checks
+
+  const goAccountBtn = document.getElementById("fcGoAccount");
+  check("guest mode offers a way to switch to syncing", !!goAccountBtn);
+  goAccountBtn.click();
+  check("switching to sign-in returns to the entry choice", !document.querySelector(".fc-stats-grid") && !!document.getElementById("fcUseGuest"));
+  if (storageUsable) {
+    check("...forgets the guest *preference*...", readLocalStorage("sakura-flashcards-mode") !== "guest");
+    check("...but never touches the guest data itself", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
+  } else {
+    // Without persistent storage in this sandbox, "not forgotten" shows up
+    // as the in-memory fallback instead: picking guest mode again still has
+    // the card we just added, proving setStoredMode/loadCache's in-memory
+    // fallback (not just localStorage) is what's actually keeping state.
+    document.getElementById("fcUseGuest").click();
+    document.querySelector('.fc-tab[data-tab="dashboard"]').click(); // last tab left active was Settings
+    const totalTileAgain = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
+    check("...the in-memory fallback keeps the session's guest data reachable regardless", totalTileAgain === "4");
+  }
+  document.querySelector(".sidebar-overview").click();
 
   console.log("Flashcards: answer checking and vocab index (pure-logic hooks)");
   const fc = window.__fcTestHooks;

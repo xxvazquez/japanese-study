@@ -288,6 +288,10 @@ window.addEventListener('load',updateNavOnScroll);
       '<span class="cat-name">' + esc(name) + '</span>' +
       '<span class="cat-count">' + count + '</span>';
   }
+  // Exposed so js/flashcards.js's Manage tab renders the exact same
+  // icon/color/count category header as the sidebar and Overview, instead
+  // of a plain unstyled heading of its own.
+  window.categoryHeaderHtml = categoryHeaderHtml;
   // Group tables by category (alphabetical categories, alphabetical tables
   // within each) -- shared by the sidebar and the Overview table of contents
   // so both stay in sync as tables/categories are added.

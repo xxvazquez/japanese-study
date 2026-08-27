@@ -83,15 +83,36 @@ create table if not exists public.flashcard_settings (
   updated_at timestamptz not null default now()
 );
 
+-- Schema changes after the initial release are appended here as
+-- `alter table ... add column if not exists ...` (never edited into the
+-- create table above) specifically so this whole file stays safe to paste
+-- and re-run in full any time it changes, without dropping or recreating
+-- anything -- including on a project that's already live with real data.
+--
+-- Study Directions (Settings): which of the 4 directions get studied.
+-- Independent of FSRS itself and of which cards exist -- turning one off
+-- only changes what the queue/stats pull in, never deletes or resets a
+-- card's own state or history.
+alter table public.flashcard_settings add column if not exists enabled_jp_en boolean not null default true;
+alter table public.flashcard_settings add column if not exists enabled_jp_ro boolean not null default true;
+alter table public.flashcard_settings add column if not exists enabled_ro_en boolean not null default true;
+alter table public.flashcard_settings add column if not exists enabled_en_ro boolean not null default true;
+
 alter table public.flashcards enable row level security;
 alter table public.review_logs enable row level security;
 alter table public.flashcard_settings enable row level security;
 
+-- drop-then-create (rather than a bare `create policy`) so this file can be
+-- re-run after a change like the one above without erroring on policies
+-- that already exist from a previous run.
+drop policy if exists "flashcards: owner full access" on public.flashcards;
 create policy "flashcards: owner full access" on public.flashcards
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "review_logs: owner full access" on public.review_logs;
 create policy "review_logs: owner full access" on public.review_logs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
+drop policy if exists "flashcard_settings: owner full access" on public.flashcard_settings;
 create policy "flashcard_settings: owner full access" on public.flashcard_settings
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
