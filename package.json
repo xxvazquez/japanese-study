@@ -1,10 +1,14 @@
 {
   "private": true,
   "scripts": {
-    "validate": "node scripts/validate-vocabulary.js && node --check js/app.js && node --check data/vocabulary.js",
-    "test": "node scripts/smoke-test.js"
+    "validate": "node scripts/validate-vocabulary.js && node --check js/app.js && node --check js/flashcards.js && node --check data/vocabulary.js && node --check vendor/ts-fsrs.js && node --check vendor/supabase.js",
+    "test": "node scripts/smoke-test.js",
+    "generate:vocab-ids": "node scripts/generate-vocab-ids.js",
+    "vendor:libs": "cp node_modules/ts-fsrs/dist/index.umd.js vendor/ts-fsrs.js && cp node_modules/ts-fsrs/LICENSE vendor/ts-fsrs.LICENSE.txt && cp node_modules/@supabase/supabase-js/dist/umd/supabase.js vendor/supabase.js && cp node_modules/@supabase/supabase-js/LICENSE vendor/supabase.LICENSE.txt"
   },
   "devDependencies": {
-    "jsdom": "^30.0.1"
+    "jsdom": "^30.0.1",
+    "ts-fsrs": "6.0.0-beta.7",
+    "@supabase/supabase-js": "2.112.4"
   }
 }

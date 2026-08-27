@@ -1,0 +1,97 @@
+-- sakura study: Flashcards schema
+--
+-- Run this once in your Supabase project's SQL editor (Dashboard -> SQL Editor
+-- -> New query -> paste -> Run). See SUPABASE_SETUP.md for the full setup walkthrough.
+--
+-- Supabase is the sole authoritative store for user learning data. It never
+-- holds a copy of the vocabulary itself (that stays in data/vocabulary.js, in
+-- Git) -- only a reference to each entry's permanent id ("v0001", ...) plus
+-- the per-user FSRS scheduling state, review history, and settings.
+
+create table if not exists public.flashcards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  vocab_id text not null,
+  direction text not null check (direction in ('jp-en', 'jp-ro', 'ro-en', 'en-ro')),
+  -- Removing a vocab entry from flashcards sets active = false; it is never
+  -- deleted. Re-adding the same entry flips this back to true and leaves
+  -- every FSRS field/history below untouched. Only the separate "delete
+  -- learning history permanently" action ever removes a row.
+  active boolean not null default true,
+  -- FSRS-6 Card fields (see ts-fsrs's Card type) -- state: 0 New, 1 Learning,
+  -- 2 Review, 3 Relearning.
+  state smallint not null default 0,
+  due timestamptz not null default now(),
+  stability double precision not null default 0,
+  difficulty double precision not null default 0,
+  scheduled_days integer not null default 0,
+  reps integer not null default 0,
+  lapses integer not null default 0,
+  learning_steps integer not null default 0,
+  last_review timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, vocab_id, direction)
+);
+
+create index if not exists flashcards_user_due_idx on public.flashcards (user_id, due) where active;
+create index if not exists flashcards_user_vocab_idx on public.flashcards (user_id, vocab_id);
+
+create table if not exists public.review_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  card_id uuid not null references public.flashcards (id) on delete cascade,
+  -- Client-generated UUID, one per review attempt. Lets an offline review
+  -- that gets synced more than once (a retried sync after a dropped
+  -- connection, for example) be inserted at most once.
+  client_review_id text not null,
+  -- Mirrors ts-fsrs's ReviewLog exactly (FSRS-6: no elapsed_days field --
+  -- that's a v5-era field this version doesn't produce).
+  rating smallint not null,
+  state smallint not null,
+  due timestamptz,
+  stability double precision,
+  difficulty double precision,
+  scheduled_days integer,
+  learning_steps integer,
+  reviewed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (user_id, client_review_id)
+);
+
+create index if not exists review_logs_card_idx on public.review_logs (card_id, reviewed_at);
+
+create table if not exists public.flashcard_settings (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  schema_version integer not null default 1,
+  -- FSRS scheduling settings -- the only user-tunable FSRS knobs. The
+  -- trained weights ("w") are never stored or exposed here; they always
+  -- come from ts-fsrs's own generatorParameters() defaults.
+  fsrs_request_retention double precision not null default 0.9,
+  fsrs_maximum_interval integer not null default 36500,
+  fsrs_enable_fuzz boolean not null default false,
+  -- Session/queue setting -- NOT part of FSRS itself, kept in its own
+  -- clearly-named column so it's never confused with the FSRS settings above.
+  queue_new_cards_per_day integer not null default 20,
+  -- Daily study streak -- also not an FSRS concept, just a motivational
+  -- counter of consecutive calendar days with at least one review.
+  -- last_study_date is a plain date (no time/timezone) compared against the
+  -- viewer's own local "today" client-side.
+  current_streak integer not null default 0,
+  longest_streak integer not null default 0,
+  last_study_date date,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.flashcards enable row level security;
+alter table public.review_logs enable row level security;
+alter table public.flashcard_settings enable row level security;
+
+create policy "flashcards: owner full access" on public.flashcards
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "review_logs: owner full access" on public.review_logs
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+create policy "flashcard_settings: owner full access" on public.flashcard_settings
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

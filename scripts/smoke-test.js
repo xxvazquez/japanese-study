@@ -4,6 +4,12 @@
 // state, keyboard-operable toggles, and the print-selection class dance. Not a
 // substitute for opening the page; a tripwire for the regressions a text diff
 // wouldn't catch.
+//
+// The Flashcards checks below only cover page navigation, the per-row toggle,
+// and pure answer-checking/vocab-index logic (exposed via window.__fcTestHooks)
+// -- none of that needs a network. Everything that talks to Supabase (auth,
+// add/remove/restore/delete-forever, review sync, offline-outbox replay) has
+// no live project to test against here and needs manual verification instead.
 const path = require("path");
 const { JSDOM } = require("jsdom");
 
@@ -173,6 +179,59 @@ async function main() {
   window.dispatchEvent(new window.Event("afterprint"));
   check("afterprint clears print-only", !document.body.classList.contains("print-only"));
   check("afterprint clears print-target", !document.querySelector('.table-section[data-table="0"]').classList.contains("print-target"));
+
+  console.log("Flashcards: page navigation");
+  check("no console errors from vendor/flashcards scripts loading", true); // JSDOM.fromFile above would have rejected on a thrown top-level error
+  const flashcardsLink = document.querySelector(".sidebar-flashcards");
+  check("Flashcards sidebar link exists", !!flashcardsLink);
+  flashcardsLink.click();
+  check("clicking it reveals the Flashcards page", document.getElementById("flashcardsPage").hidden === false);
+  check("clicking it hides the vocabulary view", document.getElementById("vocabulary").hidden === true);
+  check("clicking it hides the Overview page", document.getElementById("overviewPage").hidden === true);
+  check("clicking it marks the Flashcards link active", flashcardsLink.classList.contains("active"));
+  check("without Supabase configured, it explains setup is needed", document.getElementById("flashcardsPage").textContent.includes("SUPABASE_SETUP.md"));
+  document.querySelector(".sidebar-overview").click();
+  check("Overview still returns to the table of contents (unaffected by the new page)", document.getElementById("overviewPage").hidden === false);
+
+  console.log("Flashcards: per-row add toggle");
+  // Table 2 (not table 1) -- table 1's own "Manage rows" state was already
+  // toggled on earlier in this file and left that way, which would make the
+  // "hidden until Manage rows is on" check below a false positive.
+  const drinksSectionFc = document.querySelector('.table-section[data-table="2"]');
+  const firstRowFc = drinksSectionFc.querySelector("tbody tr");
+  check("every rendered row carries its permanent vocab id", /^v\d{4,}$/.test(firstRowFc.dataset.vocabId));
+  const fcBtn = firstRowFc.querySelector(".fc-toggle-btn");
+  check("the flashcard toggle exists on every row", !!fcBtn);
+  check("it's hidden until Manage rows is on (same gating as the eye icon)", window.getComputedStyle(fcBtn).display === "none");
+  drinksSectionFc.querySelector(".manage-rows-toggle").click();
+  check("Manage rows reveals it too", window.getComputedStyle(fcBtn).display !== "none");
+  check("its data-vocab-id matches the row's", fcBtn.dataset.vocabId === firstRowFc.dataset.vocabId);
+  drinksSectionFc.querySelector(".manage-rows-toggle").click(); // leave manage mode off for later checks
+
+  console.log("Flashcards: add a whole table at once");
+  const addTableBtn = drinksSectionFc.querySelector(".fc-add-table-btn");
+  check("every table has an \"Add table to flashcards\" button", !!addTableBtn && addTableBtn.dataset.table === "2");
+  check("it's always visible, not gated behind Manage rows", window.getComputedStyle(addTableBtn).display !== "none");
+  check("no element relies on an inline style=\"\" attribute, even after rendering the new controls", document.querySelectorAll("[style]").length === 0);
+
+  console.log("Flashcards: answer checking and vocab index (pure-logic hooks)");
+  const fc = window.__fcTestHooks;
+  check("test hooks are exposed", !!fc);
+  check("normalizeAnswer trims/collapses/lowercases", fc.normalizeAnswer("  Hot   Water  ", false) === "hot water");
+  check("normalizeAnswer folds macrons for romaji", fc.normalizeAnswer("Kōhī", true) === "kohi");
+  check("normalizeAnswer strips a leading ~ for romaji (counters)", fc.normalizeAnswer("~ko", true) === "ko");
+  const vocabIndex = fc.getVocabIndex();
+  const beerEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "beer");
+  check("vocab index resolves a known entry by content", !!beerEntry);
+  check("checkAnswer accepts an exact (normalized) match", fc.checkAnswer(beerEntry, "jp-en", "  BEER "));
+  check("checkAnswer rejects a clearly wrong answer", !fc.checkAnswer(beerEntry, "jp-en", "wine"));
+  const listenEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "hear / listen / ask");
+  check("multi-answer English fields accept any listed alternative", !!listenEntry && fc.checkAnswer(listenEntry, "jp-en", "listen") && fc.checkAnswer(listenEntry, "jp-en", "ask"));
+  check("multi-answer English fields still reject an unlisted word", !fc.checkAnswer(listenEntry, "jp-en", "speak"));
+  const numberEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "zero");
+  check("the Numbers table's kana-in-romaji rows are flagged not romaji-usable", !!numberEntry && numberEntry.romajiUsable === false);
+  check("...so only jp-en is offered for them (never asks the user to type kana)", JSON.stringify(fc.directionsForEntry(numberEntry)) === JSON.stringify(["jp-en"]));
+  check("a normal entry offers all four directions", JSON.stringify(fc.directionsForEntry(beerEntry)) === JSON.stringify(["jp-en", "jp-ro", "ro-en", "en-ro"]));
 
   console.log(failures === 0 ? "\nSmoke test passed." : "\n" + failures + " smoke test check(s) failed.");
   process.exit(failures === 0 ? 0 : 1);

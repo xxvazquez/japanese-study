@@ -14,7 +14,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="sakura">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; object-src 'none'; base-uri 'self'"></head><body><div class="layout">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'"></head><body><div class="layout">
 <div class="sidebar-backdrop"></div>
 <nav class="sidebar" aria-label="Table index">
   <div class="brand">
@@ -25,6 +25,7 @@
     </div>
   </div>
   <a class="sidebar-overview active" href="#overview" data-page="overview">Overview</a>
+  <a class="sidebar-flashcards" href="#flashcards" data-page="flashcards"><svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="11" height="8" rx="1.4"/><rect x="4.5" y="6" width="11" height="8" rx="1.4"/></svg>Flashcards</a>
   <div class="sidebar-groups"></div>
 </nav>
 <div class="app">
@@ -52,6 +53,9 @@
   <div class="overview-groups"></div>
 </section>
 <div id="vocabulary" hidden></div>
+<section id="flashcardsPage" class="page-flashcards" hidden>
+  <h2>Flashcards</h2>
+</section>
 </div>
 </div>
-<script src="data/vocabulary.js?v=__CACHEBUST__"></script><script src="js/app.js?v=__CACHEBUST__"></script><script src="js/sw-register.js?v=__CACHEBUST__"></script></body></html>
+<script src="data/vocabulary.js?v=__CACHEBUST__"></script><script src="js/app.js?v=__CACHEBUST__"></script><script src="vendor/ts-fsrs.js?v=__CACHEBUST__"></script><script src="vendor/supabase.js?v=__CACHEBUST__"></script><script src="js/supabase-config.js?v=__CACHEBUST__"></script><script src="js/flashcards.js?v=__CACHEBUST__"></script><script src="js/sw-register.js?v=__CACHEBUST__"></script></body></html>

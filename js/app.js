@@ -48,7 +48,9 @@ function closeSidebar() {
    category boundaries -- it un-hides matches from every category, then
    restores whichever page was active when the query is cleared. */
 function markActiveNav(categoryName, tableId) {
-  document.querySelector('.sidebar-overview').classList.toggle('active', !categoryName);
+  document.querySelector('.sidebar-overview').classList.toggle('active', !categoryName && document.body.dataset.activePage !== 'flashcards');
+  const flashcardsLink = document.querySelector('.sidebar-flashcards');
+  if (flashcardsLink) flashcardsLink.classList.toggle('active', document.body.dataset.activePage === 'flashcards');
   document.querySelectorAll('.sidebar-group-nav').forEach(b => b.classList.toggle('active', b.dataset.category === categoryName));
   document.querySelectorAll('.sidebar-group-items a').forEach(a => a.classList.toggle('active', tableId != null && a.dataset.target === String(tableId)));
 }
@@ -62,8 +64,11 @@ function showCategoryPage(name) {
   if (window.clearSearchQuery) window.clearSearchQuery();
   currentTableId = null;
   document.body.dataset.activeCategory = name;
+  document.body.dataset.activePage = 'vocabulary';
   document.getElementById('overviewPage').hidden = true;
   document.getElementById('vocabulary').hidden = false;
+  const flashcardsPage = document.getElementById('flashcardsPage');
+  if (flashcardsPage) flashcardsPage.hidden = true;
   document.querySelectorAll('.table-section').forEach(function (s) {
     const match = s.dataset.category === name;
     s.classList.toggle('page-hidden', !match);
@@ -77,12 +82,33 @@ function showOverviewPage() {
   if (window.clearSearchQuery) window.clearSearchQuery();
   currentTableId = null;
   document.body.dataset.activeCategory = '';
+  document.body.dataset.activePage = 'overview';
   document.getElementById('vocabulary').hidden = true;
   document.getElementById('overviewPage').hidden = false;
+  const flashcardsPage = document.getElementById('flashcardsPage');
+  if (flashcardsPage) flashcardsPage.hidden = true;
   markActiveNav(null, null);
   window.scrollTo({ top: 0 });
   closeSidebar();
 }
+// Flashcards is a third top-level page alongside Overview/vocabulary, added
+// by js/flashcards.js -- defined here so it can reuse the same page-hiding
+// plumbing (clearing search, resetting currentTableId, closing the mobile
+// sidebar) instead of duplicating it. flashcards.js owns everything that
+// happens *inside* #flashcardsPage once it's shown.
+window.showFlashcardsPage = function () {
+  if (window.clearSearchQuery) window.clearSearchQuery();
+  currentTableId = null;
+  document.body.dataset.activeCategory = '';
+  document.body.dataset.activePage = 'flashcards';
+  document.getElementById('vocabulary').hidden = true;
+  document.getElementById('overviewPage').hidden = true;
+  const flashcardsPage = document.getElementById('flashcardsPage');
+  if (flashcardsPage) flashcardsPage.hidden = false;
+  markActiveNav(null, null);
+  window.scrollTo({ top: 0 });
+  closeSidebar();
+};
 function goToTable(i) {
   const section=document.querySelector(`.table-section[data-table="${i}"]`);
   if (!section) return;
@@ -161,6 +187,9 @@ window.addEventListener('load',updateNavOnScroll);
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
+  // Exposed so js/flashcards.js can render the exact same furigana markup
+  // for a vocab entry's Japanese prompt instead of duplicating this logic.
+  window.jpSegmentsHtml = jpSegments;
   function jpSegments(segments) {
     return segments.map(function (seg) {
       return seg.kanji
@@ -172,7 +201,6 @@ window.addEventListener('load',updateNavOnScroll);
     var inner = row.particle
       ? '<span class="particle">' + esc(row.jp[0].text) + '</span>'
       : '<span class="jpword">' + jpSegments(row.jp) + '</span>';
-    if (row.numberValue) inner += '<span class="number-value">' + esc(row.numberValue) + '</span>';
     return '<td class="jp" lang="ja">' + inner + '</td>';
   }
   var EYE_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c1.8-3.2 4.5-4.8 7-4.8s5.2 1.6 7 4.8c-1.8 3.2-4.5 4.8-7 4.8S3.8 12.2 2 9Z"/><circle cx="9" cy="9" r="2"/></svg>';
@@ -195,14 +223,24 @@ window.addEventListener('load',updateNavOnScroll);
   function rowHideButton() {
     return '<button type="button" class="row-hide-btn" aria-label="Hide this row" title="Hide this row">' + EYE_ICON + '</button>';
   }
+  // Only emits the button + the row's permanent vocab id -- js/flashcards.js
+  // (loaded after this file) owns all of its behavior and active/removed
+  // styling, so this file's own diff for the whole flashcards feature stays
+  // this one small, self-contained button.
+  var FLASHCARD_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="11" height="8" rx="1.4"/><rect x="4.5" y="6" width="11" height="8" rx="1.4"/></svg>';
+  function flashcardToggleButton(vocabId) {
+    if (!vocabId) return '';
+    return '<button type="button" class="fc-toggle-btn" data-vocab-id="' + esc(vocabId) + '" aria-label="Add to flashcards" aria-pressed="false" title="Add to flashcards">' + FLASHCARD_ICON + '</button>';
+  }
   function wordRow(row, i) {
-    return (row.irregular ? '<tr class="irregular-row">' : '<tr>') + '<td class="row-num">' + (i + 1) + '</td>' + jpCell(row) +
-      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + rowHideButton() + '</td></tr>';
+    var openTag = '<tr data-vocab-id="' + esc(row.id || '') + '"' + (row.irregular ? ' class="irregular-row">' : '>');
+    return openTag + '<td class="row-num">' + (i + 1) + '</td>' + jpCell(row) +
+      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
   function verbPairRow(row, i) {
     var jp = row.forms.map(function (f) { return '<div class="verb-form"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f) { return '<div class="verb-form">' + esc(f.romaji) + '</div>'; }).join('');
-    return '<tr><td class="row-num">' + (i + 1) + '</td><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + rowHideButton() + '</td></tr>';
+    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="row-num">' + (i + 1) + '</td><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
   function sortHeader(label, col) {
     return '<th>' + label + '<button type="button" class="sort-button" data-sort-col="' + col + '" data-sort-dir="asc" aria-label="Sort ' + esc(label) + '">↑</button></th>';
@@ -222,6 +260,7 @@ window.addEventListener('load',updateNavOnScroll);
       '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
       '<div class="controls">' +
       '<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>' +
+      '<button type="button" class="fc-add-table-btn" data-table="' + t.id + '">Add table to flashcards</button>' +
       '<button type="button" class="manage-rows-toggle">Manage rows</button>' +
       '<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>' +
       '</div></div>' +
@@ -655,6 +694,13 @@ document.addEventListener('DOMContentLoaded', function () {
     overviewLink.addEventListener('click', function (event) {
       event.preventDefault();
       showOverviewPage();
+    });
+  }
+  const flashcardsLink = document.querySelector('.sidebar-flashcards');
+  if (flashcardsLink) {
+    flashcardsLink.addEventListener('click', function (event) {
+      event.preventDefault();
+      if (window.showFlashcardsPage) window.showFlashcardsPage();
     });
   }
   const sidebarToggle = document.querySelector('.sidebar-toggle');

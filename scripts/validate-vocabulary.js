@@ -21,6 +21,23 @@ console.log("Vocabulary and accessibility validation passed: " + rowCount + " ro
 
 const japanesePattern = /[ぁ-ゖァ-ヺ一-龯々〆ヵヶ〜]/;
 const seenVocabulary = new Set();
+const seenIds = new Set();
+const idPattern = /^v\d{4,}$/;
+
+for (const table of tableList) {
+  for (const row of table.rows) {
+    if (!row.id || !idPattern.test(row.id)) {
+      console.error("Vocabulary id validation failed: every row needs a permanent \"vNNNN\" id (" + table.title + "): " + JSON.stringify(row));
+      process.exit(1);
+    }
+    if (seenIds.has(row.id)) {
+      console.error("Vocabulary id validation failed: duplicate id " + row.id);
+      process.exit(1);
+    }
+    seenIds.add(row.id);
+  }
+}
+console.log("Vocabulary id validation passed: " + seenIds.size + " unique permanent ids.");
 
 function jpText(segments) {
   return segments.map(seg => seg.kanji ? seg.kanji + seg.reading : seg.text).join("");
