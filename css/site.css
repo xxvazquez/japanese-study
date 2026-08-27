@@ -5,9 +5,12 @@
 
 :root {
   /* "sakura study" brand palette -- Deep Teal / Teal / Soft Teal / Light Gray
-     / Text Dark / Text Muted. Plus a restrained rose, kept from the previous
-     palette purely as a functional accent (irregular rows, search-match
-     highlights) -- never decorative, never part of the brand family itself. */
+     / Text Dark / Text Muted, complemented by a dusty (never bright-pastel)
+     sakura pink family -- restrained, functional accents (irregular rows,
+     search-match highlights, incorrect-answer feedback), never decorative,
+     never part of the brand family itself. Deliberately muted/dusty tones
+     throughout -- no #FFB6C1/#FF69B4-style bright pink, which would read as
+     the generic "cute Japanese app" look this site is not going for. */
   --ink: #1f2933;
   --muted: #6b7c85;
   --faint: #97a5ac;
@@ -24,8 +27,13 @@
   --accent: #2ba7a0;
   --accent-dark: #0f6b6d;
   --accent-soft: #d6efee;
-  --rose: #b97e91;
-  --rose-soft: #f6e9ed;
+  /* Dusty Sakura ramp -- blush (barely-there wash) / soft (tint backgrounds)
+     / base ("Dusty Sakura", the accent itself) / dark ("Plum Rose", for text
+     that needs real contrast over a soft-pink background). */
+  --rose-blush: #faf1f3;
+  --rose-soft: #f4e3e8;
+  --rose: #c98296;
+  --rose-dark: #a95f78;
   --particle: #0f6b6d;
   --irregular: var(--rose);
   /* Table header: a quiet light-gray label row, not a brand-colored fill --
@@ -1062,15 +1070,18 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .page-flashcards h2 { margin: 0 0 4px; color: var(--ink); font-size: var(--fs-page-title); font-weight: 700; letter-spacing: -.2px; }
 .fc-lede { margin: 0 0 22px; color: var(--muted); font-size: var(--fs-nav-sub); max-width: 62ch; }
 
-.fc-tabs { display: flex; gap: 6px; margin-bottom: 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.fc-tabs { display: flex; gap: 20px; margin-bottom: 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .fc-tab {
   appearance: none; border: 0; background: transparent;
-  padding: 8px 4px; margin-right: 14px;
-  color: var(--muted); font: 700 12.5px/1.3 Arial, Helvetica, sans-serif;
+  padding: 8px 4px;
+  color: var(--muted); font: 400 12.5px/1.3 Arial, Helvetica, sans-serif;
   cursor: pointer; border-bottom: 2px solid transparent;
 }
 .fc-tab:hover { color: var(--ink); }
-.fc-tab.active { color: var(--accent-dark); border-bottom-color: var(--accent); }
+/* Bold marks *which one is selected* -- same convention as the header's own
+   All/Japanese/Romaji/English control (.view-mode). Every tab being bold
+   all the time was exactly the "why does this look so heavy" problem. */
+.fc-tab.active { color: var(--accent-dark); font-weight: 700; border-bottom-color: var(--accent); }
 .fc-tabpanel[hidden] { display: none; }
 
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
@@ -1090,6 +1101,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-stat-label { display: block; margin-top: 2px; color: var(--muted); font-size: 11.5px; }
 .fc-stat-tile.fc-stat-due .fc-stat-value { color: var(--accent-dark); }
 .fc-stat-tile.fc-stat-due::before { background: var(--accent); }
+.fc-stat-tile.fc-stat-streak { background: var(--rose-blush); }
 .fc-stat-tile.fc-stat-streak .fc-stat-value { color: var(--irregular); }
 .fc-stat-tile.fc-stat-streak::before { background: var(--irregular); }
 .fc-longest-streak { margin-top: -10px; margin-bottom: 16px; }
@@ -1109,10 +1121,17 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-legend-item { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
 .fc-legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
 
-.fc-week-chart { display: block; width: 100%; height: auto; overflow: visible; }
+/* Plain HTML flex columns, not one big SVG -- text sized in real CSS px
+   (predictable at any viewport) with only the bar itself as a tiny per-bar
+   SVG shape (proportional height, no inline style="" needed for the CSP,
+   and nothing inside it to be mis-scaled since it holds no text). */
+.fc-week-chart { display: flex; align-items: flex-end; gap: 8px; height: 76px; }
+.fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.fc-week-count { display: block; font: 700 10px/1.4 Arial, Helvetica, sans-serif; color: var(--ink); }
+.fc-week-barsvg { display: block; width: 100%; flex: 1 1 auto; min-height: 0; }
 .fc-week-bar { fill: var(--accent); }
-.fc-week-count { font: 700 9px/1 Arial, Helvetica, sans-serif; fill: var(--ink); }
-.fc-week-label { font: 400 9.5px/1 Arial, Helvetica, sans-serif; fill: var(--faint); }
+.fc-week-bar-empty { fill: var(--line-strong); }
+.fc-week-label { display: block; margin-top: 6px; font-size: 10.5px; color: var(--faint); }
 
 .fc-cta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .fc-cta-row-spaced { margin-top: 12px; margin-bottom: 0; }
@@ -1127,6 +1146,8 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
 .fc-btn-danger:hover { background: var(--danger-soft); color: var(--danger-dark); border-color: var(--danger-dark); }
 .fc-note { color: var(--muted); font-size: 11.5px; }
+.fc-manage-legend { margin: 10px 0 16px; max-width: 68ch; line-height: 1.5; }
+.fc-manage-legend strong { color: var(--ink); font-weight: 700; }
 
 /* Manage: reuses the overview list-row pattern. Filter pills match the
    header's All/Japanese/Romaji/English segmented control exactly (same
@@ -1137,10 +1158,10 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 }
 .fc-manage-filters button {
   appearance: none; border: 0; background: transparent; color: var(--muted);
-  font: 700 12.5px/1 Arial, Helvetica, sans-serif; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  font: 400 12.5px/1 Arial, Helvetica, sans-serif; padding: 5px 10px; border-radius: 6px; cursor: pointer;
 }
 .fc-manage-filters button:hover { color: var(--accent-dark); }
-.fc-manage-filters button.active { background: var(--accent-soft); color: var(--accent-dark); }
+.fc-manage-filters button.active { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; }
 /* Category group -- the exact same card + tinted-header pattern as
    .overview-group/.overview-group-nav (reusing .cat-icon/.cat-name/.cat-count,
    rendered by the same window.categoryHeaderHtml the sidebar/Overview use),
@@ -1170,7 +1191,19 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-manage-table { margin-bottom: 18px; }
 .fc-manage-table:last-child { margin-bottom: 0; }
 .fc-manage-table-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 12px; margin-bottom: 8px; }
-.fc-manage-table-title { color: var(--ink); font: 700 var(--fs-nav-sub)/1.3 Arial, Helvetica, sans-serif; }
+.fc-manage-table-toggle {
+  appearance: none; border: 0; background: transparent; padding: 2px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--faint); cursor: pointer; flex: 0 0 auto;
+}
+.fc-manage-table-toggle:hover { color: var(--accent-dark); }
+.fc-manage-table-toggle svg { transition: transform .15s ease; }
+.fc-manage-table:not(.fc-manage-table-collapsed) .fc-manage-table-toggle svg { transform: rotate(0deg); }
+.fc-manage-table.fc-manage-table-collapsed .fc-manage-table-toggle svg { transform: rotate(-90deg); }
+.fc-manage-table.fc-manage-table-collapsed .fc-manage-list { display: none; }
+/* Regular weight, not bold -- same as .overview-link: table *names* aren't
+   bold anywhere else in the app either, only their parent category is. */
+.fc-manage-table-title { color: var(--ink); font: 400 var(--fs-nav-sub)/1.3 Arial, Helvetica, sans-serif; }
 .fc-manage-table-progress { color: var(--muted); font-size: 11.5px; }
 .fc-manage-table-actions { margin-left: auto; display: flex; gap: 8px; }
 .fc-manage-list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
@@ -1208,7 +1241,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 }
 .fc-result.fc-correct { background: var(--accent-soft); color: var(--accent-dark); border-left-color: var(--accent); }
 .fc-result.fc-incorrect { background: var(--rose-soft); color: var(--irregular); border-left-color: var(--irregular); }
-.fc-result .fc-your-answer { display: block; margin-top: 4px; opacity: .85; }
+.fc-result .fc-your-answer { display: block; margin-top: 4px; color: var(--rose-dark); }
 .fc-result .fc-expected { display: block; margin-top: 4px; color: var(--ink); font-weight: 700; font-size: 13px; }
 .fc-rating-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .fc-rating-btn {
@@ -1259,3 +1292,9 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-settings-help { margin: 6px 0 0; color: var(--muted); font-size: 11.5px; line-height: 1.5; max-width: 56ch; }
 .fc-direction-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; }
 .fc-direction-check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 12.5px; cursor: pointer; }
+/* Native checkboxes otherwise render in whatever color the browser/platform
+   defaults to (often a blue or, in some environments, an even more
+   off-brand color) -- accent-color is the one CSS property that recolors
+   them without building a custom control from scratch. */
+.fc-direction-check input[type="checkbox"],
+.fc-settings-field input[type="checkbox"] { accent-color: var(--accent); }

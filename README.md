@@ -17,7 +17,7 @@ Live at [xxvazquez.github.io/japanese-study](https://xxvazquez.github.io/japanes
 | Text Dark | `#1F2933` | `--ink` | primary text |
 | Text Muted | `#6B7C85` | `--muted` | secondary text (romaji, counts, meta, table header labels) |
 
-A dusty rose (`--rose`, `#B97E91`) rides alongside the brand palette as the one functional, non-brand accent — irregular-verb rows and search-match highlights only, never decorative. The overall visual direction follows the "Clean Comfort" concept: a light, airy shell (white/light-gray sidebar and toolbar, not a colored panel), table chrome that stays quiet and light rather than brand-colored, and Teal reserved for exactly one job — marking the specific table you're currently on. Note that only the specific selected *table* gets the solid Teal pill; its parent category is never filled in too, even though it's also "active" in the sense of containing the current page — otherwise two different things read as selected at once.
+A dusty sakura-pink ramp rides alongside the brand palette as the one functional, non-brand accent family — never decorative, never bright/pastel (no `#FFB6C1`-style pink, which reads as the generic "cute Japanese app" look this site deliberately avoids): `--rose-blush` (`#FAF1F3`, barely-there wash), `--rose-soft` (`#F4E3E8`, tint backgrounds), `--rose` (`#C98296`, the accent itself — irregular-verb rows, search-match highlights, incorrect-answer feedback), and `--rose-dark` (`#A95F78`, for text that needs real contrast over a soft-pink background). The overall visual direction follows the "Clean Comfort" concept: a light, airy shell (white/light-gray sidebar and toolbar, not a colored panel), table chrome that stays quiet and light rather than brand-colored, and Teal reserved for exactly one job — marking the specific table you're currently on. Note that only the specific selected *table* gets the solid Teal pill; its parent category is never filled in too, even though it's also "active" in the sense of containing the current page — otherwise two different things read as selected at once.
 
 ## What's here
 
@@ -72,6 +72,74 @@ An additive feature on top of the existing vocabulary — it doesn't change or d
 - When signed in, `localStorage` is only a read-through cache and an offline outbox — reviews taken without a connection are computed locally and synced once you're back online; it's never the permanent record there.
 - Removing a vocab entry from flashcards **archives** it — its FSRS state and full review history are kept, and re-adding it later restores the same card rather than starting over. The only way to actually erase that history is the separate, clearly-marked **"Delete learning history permanently"** action on an archived entry.
 - Re-vendoring the libraries after a version bump: `npm install && npm run vendor:libs`.
+
+### Data model
+
+Vocabulary content lives only in Git; the two storage modes each hold nothing but a reference to it (`vocab_id`) plus your own learning data:
+
+```mermaid
+flowchart LR
+    subgraph git["Git — data/vocabulary.js"]
+        V["Vocabulary entries<br/>permanent id, e.g. v0001"]
+    end
+    subgraph guest["Guest mode"]
+        LS[("localStorage<br/>sakura-flashcards-guest-v1")]
+    end
+    subgraph account["Signed-in mode"]
+        SB[("Supabase Postgres<br/>flashcards / review_logs / flashcard_settings")]
+        Cache[("localStorage<br/>read-through cache + offline outbox")]
+    end
+
+    V -. "referenced by vocab_id, never copied" .-> LS
+    V -. "referenced by vocab_id, never copied" .-> SB
+    SB -- "read-through" --> Cache
+    Cache -. "queued reviews synced back when online" .-> SB
+```
+
+The Supabase schema itself (see [`supabase/schema.sql`](supabase/schema.sql) — guest mode mirrors the same shape locally instead of these tables):
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--o{ FLASHCARDS : owns
+    AUTH_USERS ||--o{ REVIEW_LOGS : owns
+    AUTH_USERS ||--|| FLASHCARD_SETTINGS : has
+    FLASHCARDS ||--o{ REVIEW_LOGS : "review history"
+
+    FLASHCARDS {
+        uuid id PK
+        uuid user_id FK
+        text vocab_id "-> data/vocabulary.js id, not a DB constraint"
+        text direction "jp-en / jp-ro / ro-en / en-ro"
+        boolean active "false = paused, never deleted"
+        smallint state "FSRS: New / Learning / Review / Relearning"
+        timestamptz due
+        double stability
+        double difficulty
+        integer reps
+        integer lapses
+    }
+    REVIEW_LOGS {
+        uuid id PK
+        uuid user_id FK
+        uuid card_id FK
+        text client_review_id "idempotent offline-sync retries"
+        smallint rating "Again / Hard / Good / Easy"
+        timestamptz reviewed_at
+    }
+    FLASHCARD_SETTINGS {
+        uuid user_id PK
+        double fsrs_request_retention "default 0.9"
+        integer fsrs_maximum_interval
+        boolean fsrs_enable_fuzz
+        integer queue_new_cards_per_day "not an FSRS setting"
+        boolean enabled_jp_en "Study Directions"
+        boolean enabled_jp_ro
+        boolean enabled_ro_en
+        boolean enabled_en_ro
+        integer current_streak
+        integer longest_streak
+    }
+```
 
 ## Running it
 

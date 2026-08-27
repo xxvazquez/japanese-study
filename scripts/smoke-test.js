@@ -18,6 +18,11 @@ function check(label, cond) {
   if (cond) { console.log("  ok  " + label); }
   else { console.error("  FAIL " + label); failures++; }
 }
+// Flashcards' click handlers are `async function`s (they await a save/fetch
+// before re-rendering) -- a plain .click() returns before that finishes, so
+// asserting on the DOM right after can read a stale render. A real macrotask
+// tick (not just a microtask) guarantees every pending render has landed.
+function flush() { return new Promise((resolve) => setTimeout(resolve, 0)); }
 
 async function main() {
   const url = "file://" + path.resolve("index.html");
@@ -249,9 +254,15 @@ async function main() {
   const totalTileBefore = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
   check("starts with zero cards", totalTileBefore === "0");
   document.querySelector('.fc-tab[data-tab="manage"]').click();
+  const firstManageTable = document.querySelector("#fcPanelManage .fc-manage-table");
+  check("each table starts collapsed (this list gets long fast otherwise)", firstManageTable.classList.contains("fc-manage-table-collapsed"));
+  check("...its row list is actually hidden, not just visually collapsed", window.getComputedStyle(firstManageTable.querySelector(".fc-manage-list")).display === "none");
+  firstManageTable.querySelector(".fc-manage-table-toggle").click(); // sync render -- re-query fresh, this reference is now stale
+  check("clicking the toggle expands just that table", !document.querySelector("#fcPanelManage .fc-manage-table").classList.contains("fc-manage-table-collapsed"));
   const firstAddBtn = document.querySelector('#fcPanelManage [data-action="add"]');
   check("Manage lists addable vocabulary in guest mode too", !!firstAddBtn);
   firstAddBtn.click();
+  await flush();
   document.querySelector('.fc-tab[data-tab="dashboard"]').click();
   const totalTileAfter = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
   check("adding a word in guest mode updates the count with zero network calls", totalTileAfter === "4");
@@ -269,11 +280,13 @@ async function main() {
   check("...and nothing was actually saved (still all on)", [...document.querySelectorAll(".fc-dir-checkbox")].every(cb => cb.checked));
   document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]').checked = false;
   document.getElementById("fcSaveDirections").click();
+  await flush();
   document.querySelector('.fc-tab[data-tab="settings"]').click();
   const roEnBox = document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]');
   check("turning off just one direction is remembered", !roEnBox.checked && document.querySelector('.fc-dir-checkbox[data-direction="jp-en"]').checked);
   roEnBox.checked = true;
   document.getElementById("fcSaveDirections").click(); // leave every direction enabled again for later checks
+  await flush();
 
   const goAccountBtn = document.getElementById("fcGoAccount");
   check("guest mode offers a way to switch to syncing", !!goAccountBtn);

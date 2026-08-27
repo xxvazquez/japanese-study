@@ -143,7 +143,13 @@
     return { text: entry.englishDisplay }; // en-ro
   }
   function askLabelFor(direction) {
-    return direction === "jp-en" || direction === "ro-en" ? "Type the English meaning" : "Type the romaji";
+    return direction === "jp-en" || direction === "ro-en" ? "Type the English meaning" : "Type the romaji reading";
+  }
+  // Same "which language" cue as the label above the prompt, but repeated
+  // right inside the input itself -- the label can be easy to skim past,
+  // and this is exactly where your eyes are when you start typing.
+  function answerPlaceholderFor(direction) {
+    return direction === "jp-en" || direction === "ro-en" ? "English…" : "Romaji…";
   }
   function expectedDisplayFor(entry, direction) {
     return direction === "jp-en" || direction === "ro-en" ? entry.englishDisplay : entry.romajiDisplay;
@@ -293,21 +299,30 @@
   function cacheKey() { return isGuestMode() ? GUEST_CACHE_KEY : CACHE_KEY; }
   var cache = null;
   var cacheLoadedKey = null;
+  // Same reasoning as inMemoryMode above: if localStorage itself is
+  // unavailable, saveCache() below still keeps a same-pageview copy here so
+  // that switching modes and back within one visit doesn't discard data
+  // that was already added -- without this, loadCache() would rebuild an
+  // empty cache from scratch every time the active key changes, even though
+  // nothing was actually lost, just never persisted anywhere to read back.
+  var inMemoryCaches = {};
   function loadCache() {
     var key = cacheKey();
     try {
       var raw = window.localStorage && localStorage.getItem(key);
       var parsed = raw ? JSON.parse(raw) : null;
       var validated = validateCache(migrate(parsed));
-      cache = validated || emptyCache();
+      cache = validated || inMemoryCaches[key] || emptyCache();
     } catch (e) {
-      cache = emptyCache();
+      cache = inMemoryCaches[key] || emptyCache();
     }
     cacheLoadedKey = key;
     return cache;
   }
   function saveCache() {
-    try { localStorage.setItem(cacheKey(), JSON.stringify(cache)); } catch (e) {}
+    var key = cacheKey();
+    inMemoryCaches[key] = cache;
+    try { localStorage.setItem(key, JSON.stringify(cache)); } catch (e) {}
   }
   function getCache() {
     // Re-load if the active mode changed which key we should be reading
@@ -708,7 +723,12 @@
   // -----------------------------------------------------------------------
   var activeTab = "dashboard";
   var manageFilter = "all"; // all | mine | archived
+  var manageExpandedTables = {}; // tableId -> true; session-only UI state, collapsed (absent) by default
   var session = null; // review session state
+  // Same chevron used for every other collapse/expand control in the app
+  // (sidebar groups, Overview rows) -- kept here rather than exported from
+  // app.js since it's a tiny, self-contained bit of markup.
+  var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
 
   function root() { return document.getElementById("flashcardsPage"); }
 
@@ -782,6 +802,7 @@
     document.getElementById("fcUseGuest").addEventListener("click", function () {
       setStoredMode("guest");
       render();
+      refreshRowToggleButtons(); // the vocabulary page's own "added" icons switch to this mode's (empty, at first) cache too
     });
     if (configured()) bindAuthForm();
   }
@@ -813,7 +834,7 @@
       // Leaves the guest cache exactly as it is (own localStorage key) --
       // this only forgets the "use guest mode" preference so render() falls
       // through to the sign-in/sign-up choice again.
-      document.getElementById("fcGoAccount").addEventListener("click", function () { setStoredMode(null); render(); });
+      document.getElementById("fcGoAccount").addEventListener("click", function () { setStoredMode(null); render(); refreshRowToggleButtons(); });
     } else {
       document.getElementById("fcSignOut").addEventListener("click", function () { signOut(); });
     }
@@ -916,19 +937,26 @@
     var days = last7DaysFromCounts(counts);
     weeklyActivity = days;
   }
+  // Labels are plain HTML, not SVG <text> -- an SVG scales *everything*
+  // inside it, text included, to fill its container (that's what stretched
+  // a 9px label into something enormous on a narrow phone screen where the
+  // chart is much wider, relative to its own coordinate system, than it is
+  // on desktop). Keeping the bar's geometry as a tiny per-bar SVG (pure
+  // shapes, no text) still gets CSP-safe proportional heights without
+  // inline style="", but the count/day labels now size the same predictable
+  // way as every other piece of text on the page.
   function weeklyActivityChart(days) {
     var max = Math.max(1, Math.max.apply(null, days.map(function (d) { return d.count; })));
-    var barW = 26, gap = 10, h = 56;
-    var width = days.length * (barW + gap) - gap;
-    var content = days.map(function (d, i) {
-      var barH = d.count ? Math.max(4, Math.round((d.count / max) * h)) : 2;
-      var x = i * (barW + gap);
-      var y = h - barH;
-      return '<rect class="fc-week-bar" x="' + x + '" y="' + y + '" width="' + barW + '" height="' + barH + '"></rect>' +
-        '<text class="fc-week-count" x="' + (x + barW / 2) + '" y="' + Math.max(10, y - 4) + '" text-anchor="middle">' + d.count + "</text>" +
-        '<text class="fc-week-label" x="' + (x + barW / 2) + '" y="' + (h + 14) + '" text-anchor="middle">' + esc(d.label) + "</text>";
+    var cols = days.map(function (d) {
+      var barH = d.count ? Math.max(6, Math.round((d.count / max) * 100)) : 3;
+      var barCls = d.count ? "fc-week-bar" : "fc-week-bar fc-week-bar-empty";
+      return '<div class="fc-week-col">' +
+        '<span class="fc-week-count">' + d.count + "</span>" +
+        '<svg viewBox="0 0 10 100" preserveAspectRatio="none" class="fc-week-barsvg" aria-hidden="true">' +
+        '<rect class="' + barCls + '" x="0" y="' + (100 - barH) + '" width="10" height="' + barH + '"></rect></svg>' +
+        '<span class="fc-week-label">' + esc(d.label) + "</span></div>";
     }).join("");
-    return '<svg viewBox="0 0 ' + width + " " + (h + 20) + '" class="fc-week-chart" role="img" aria-label="Reviews per day over the last 7 days">' + content + "</svg>";
+    return '<div class="fc-week-chart" role="img" aria-label="Reviews per day over the last 7 days">' + cols + "</div>";
   }
 
   function startSession() {
@@ -953,7 +981,7 @@
       '<div class="fc-review-meta"><span>' + esc(DIRECTION_LABEL[card.direction]) + "</span><span>" + (session.index + 1) + " / " + session.queue.length + "</span></div>" +
       '<div class="fc-prompt-label">' + esc(askLabelFor(card.direction)) + "</div>" +
       '<div class="fc-prompt"' + (prompt.lang ? ' lang="ja"' : "") + ">" + (prompt.html || esc(prompt.text)) + "</div>" +
-      '<form class="fc-answer-form" id="fcAnswerForm"><input id="fcAnswerInput" type="text" autocomplete="off" ' + (session.checked ? "disabled" : "autofocus") + '>' +
+      '<form class="fc-answer-form" id="fcAnswerForm"><input id="fcAnswerInput" type="text" autocomplete="off" placeholder="' + esc(answerPlaceholderFor(card.direction)) + '" ' + (session.checked ? "disabled" : "autofocus") + '>' +
       (session.checked ? "" : '<button type="submit" class="fc-btn fc-btn-primary">Check</button>') +
       "</form>";
 
@@ -1018,6 +1046,10 @@
     recordStudyActivity(now);
     saveCache();
     if (!isGuestMode()) syncOutbox();
+    // This review just changed today's count -- drop the cached weekly
+    // chart so the next Dashboard visit recomputes it instead of showing
+    // whatever the week looked like before this review.
+    weeklyActivity = null;
     session.reviewedCount++;
     session.index++;
     session.checked = false;
@@ -1080,7 +1112,10 @@
     var html = '<div class="fc-manage-filters">' +
       [["all", "All vocabulary"], ["mine", "My flashcards"], ["archived", "Archived"]].map(function (f) {
         return '<button type="button" data-filter="' + f[0] + '" class="' + (manageFilter === f[0] ? "active" : "") + '">' + f[1] + "</button>";
-      }).join("") + "</div>";
+      }).join("") + "</div>" +
+      '<p class="fc-note fc-manage-legend">' +
+      '<strong>Add</strong> starts studying a word. <strong>Pause</strong> stops — it keeps all its progress, and adding it back later picks up exactly where you left off. ' +
+      'Only <strong>Delete history permanently</strong> (under Archived) actually erases anything.</p>';
 
     if (!catNames.length) {
       html += '<div class="fc-manage-list"><div class="fc-empty">Nothing here yet.</div></div>';
@@ -1092,14 +1127,21 @@
         tableIds.forEach(function (tableId) {
           var table = byCategory[cat][tableId];
           var addedCount = table.ids.filter(function (id) { return vocabState(id) === "active"; }).length;
-          html += '<div class="fc-manage-table">' +
+          // Collapsed by default -- with 14 tables and a few hundred words,
+          // showing every row of every table at once makes this an
+          // enormous scroll for what's usually just a couple of clicks on
+          // "Add table". A row list is only worth expanding when actually
+          // picking through individual words, so that's opt-in per table.
+          var expanded = !!manageExpandedTables[tableId];
+          html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
             '<div class="fc-manage-table-head">' +
+            '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(table.title) + '">' + CHEVRON_ICON + "</button>" +
             '<span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
             '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span>";
           if (manageFilter === "all") {
             html += '<div class="fc-manage-table-actions">' +
-              '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '">Add table</button>' +
-              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '">Remove table</button>' +
+              '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '" title="Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)">Add table</button>' +
+              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off">Pause table</button>' +
               "</div>";
           }
           html += "</div><div class=\"fc-manage-list\">";
@@ -1126,11 +1168,22 @@
     panel.querySelectorAll("[data-table-action]").forEach(function (btn) {
       btn.addEventListener("click", function () { runTableAction(btn.dataset.tableAction, btn.dataset.tableId, btn); });
     });
+    panel.querySelectorAll(".fc-manage-table-toggle").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var id = btn.dataset.tableId;
+        manageExpandedTables[id] = !manageExpandedTables[id];
+        render();
+      });
+    });
   }
+  // "Remove"/"Remove table" archive rather than delete -- see the tooltips
+  // above and on these two buttons themselves. Only "Delete history
+  // permanently" (reachable from the Archived filter, with a confirm step)
+  // actually erases anything.
   function manageActionsFor(vocabId, state) {
-    if (state === "active") return '<button type="button" class="fc-btn" data-action="remove" data-vocab-id="' + esc(vocabId) + '">Remove</button>';
-    if (state === "archived") return '<button type="button" class="fc-btn" data-action="restore" data-vocab-id="' + esc(vocabId) + '">Restore</button>' +
-      '<button type="button" class="fc-btn fc-btn-danger" data-action="delete-forever" data-vocab-id="' + esc(vocabId) + '">Delete history permanently</button>';
+    if (state === "active") return '<button type="button" class="fc-btn" data-action="remove" data-vocab-id="' + esc(vocabId) + '" title="Keeps its progress — add it back anytime to pick up where you left off">Pause</button>';
+    if (state === "archived") return '<button type="button" class="fc-btn" data-action="restore" data-vocab-id="' + esc(vocabId) + '" title="Resumes reviewing this word with its previous progress intact">Restore</button>' +
+      '<button type="button" class="fc-btn fc-btn-danger" data-action="delete-forever" data-vocab-id="' + esc(vocabId) + '" title="Permanently erases this word’s FSRS progress and review history — cannot be undone">Delete history permanently</button>';
     return '<button type="button" class="fc-btn fc-btn-primary" data-action="add" data-vocab-id="' + esc(vocabId) + '">Add</button>';
   }
   function bindManageActionButtons(scope) {
@@ -1205,6 +1258,15 @@
         "A cap on how many never-studied cards \"Study now\" introduces in one day, on top of anything already due for review. Doesn't affect scheduling, only pacing.") +
       '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveQueue">Save</button></div></div>';
 
+    // Settings are already saved to the local cache before the remote call
+    // even goes out (see saveFsrsSettings/saveDirectionSettings), so a
+    // failed sync never loses the change -- this just makes sure a failure
+    // is actually reported instead of silently disappearing as an
+    // unhandled rejection, consistent with how add/remove/delete already
+    // surface errors.
+    function reportSettingsError(e) {
+      window.alert("Saved on this device, but couldn't sync — " + (e.message || "check your connection and try again."));
+    }
     document.getElementById("fcSaveDirections").addEventListener("click", async function () {
       var enabledMap = {};
       panel.querySelectorAll(".fc-dir-checkbox").forEach(function (cb) { enabledMap[cb.dataset.direction] = cb.checked; });
@@ -1212,7 +1274,7 @@
         document.getElementById("fcDirError").hidden = false;
         return;
       }
-      await saveDirectionSettings(enabledMap);
+      try { await saveDirectionSettings(enabledMap); } catch (e) { reportSettingsError(e); }
       render();
     });
     document.getElementById("fcSaveFsrs").addEventListener("click", async function () {
@@ -1221,12 +1283,12 @@
         fsrs_maximum_interval: Math.max(1, Number(document.getElementById("fcMaxInterval").value)),
         fsrs_enable_fuzz: document.getElementById("fcFuzz").checked
       };
-      await saveFsrsSettings(patch);
+      try { await saveFsrsSettings(patch); } catch (e) { reportSettingsError(e); }
       render();
     });
     document.getElementById("fcSaveQueue").addEventListener("click", async function () {
       var patch = { queue_new_cards_per_day: Math.max(0, Number(document.getElementById("fcNewPerDay").value)) };
-      await saveQueueSettings(patch);
+      try { await saveQueueSettings(patch); } catch (e) { reportSettingsError(e); }
       render();
     });
   }
@@ -1245,7 +1307,7 @@
       var added = state === "active";
       btn.classList.toggle("fc-added", added);
       btn.setAttribute("aria-pressed", String(added));
-      btn.title = added ? "Remove from flashcards" : "Add to flashcards";
+      btn.title = added ? "Pause (keeps its progress — add it back anytime)" : "Add to flashcards";
       btn.setAttribute("aria-label", btn.title);
     });
   }
