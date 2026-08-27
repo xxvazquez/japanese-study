@@ -19,10 +19,27 @@ function toggleSection(section) {
   section.classList.toggle('collapsed');
   const toggle=section.querySelector('.section-toggle');
   toggle.setAttribute('aria-expanded', String(!section.classList.contains('collapsed')));
+  // Accordion: opening one table in a category with several closes the others,
+  // so a multi-table category page only ever shows one open table at a time.
+  if (!section.classList.contains('collapsed')) collapseSiblingSections(section);
 }
 function expandSection(section) {
   section.classList.remove('collapsed');
   section.querySelector('.section-toggle').setAttribute('aria-expanded','true');
+}
+function collapseSection(section) {
+  section.classList.add('collapsed');
+  const toggle=section.querySelector('.section-toggle');
+  if (toggle) toggle.setAttribute('aria-expanded','false');
+}
+// Collapse every other table sharing this one's category page (search results
+// span categories and set their own state, so this only runs for normal
+// category/table navigation).
+function collapseSiblingSections(section) {
+  const category=section.dataset.category;
+  document.querySelectorAll('.table-section').forEach(function (s) {
+    if (s !== section && s.dataset.category === category) collapseSection(s);
+  });
 }
 function updateHiddenStatus(section) {
   const count = section.querySelectorAll('tbody tr.row-hidden').length;
@@ -69,11 +86,17 @@ function showCategoryPage(name) {
   document.getElementById('vocabulary').hidden = false;
   const flashcardsPage = document.getElementById('flashcardsPage');
   if (flashcardsPage) flashcardsPage.hidden = true;
+  // Accordion: on a category page with several tables, only one is open at a
+  // time. Landing on the page opens the alphabetically-first table (matching
+  // the sidebar's own order); the rest start collapsed and open when picked.
+  const matching = [...document.querySelectorAll('.table-section')].filter(function (s) { return s.dataset.category === name; });
+  const firstByTitle = matching.slice().sort(function (a, b) {
+    return (a.querySelector('.section-title-text')?.textContent || '').localeCompare(b.querySelector('.section-title-text')?.textContent || '');
+  })[0];
   document.querySelectorAll('.table-section').forEach(function (s) {
-    const match = s.dataset.category === name;
-    s.classList.toggle('page-hidden', !match);
-    if (match) expandSection(s);
+    s.classList.toggle('page-hidden', s.dataset.category !== name);
   });
+  matching.forEach(function (s) { s === firstByTitle ? expandSection(s) : collapseSection(s); });
   markActiveNav(name, null);
   window.scrollTo({ top: 0 });
   closeSidebar();
@@ -115,6 +138,7 @@ function goToTable(i) {
   showCategoryPage(section.dataset.category);
   currentTableId = i;
   expandSection(section);
+  collapseSiblingSections(section);
   section.scrollIntoView({block:'start'});
   markActiveNav(section.dataset.category, i);
 }
@@ -147,8 +171,10 @@ window.addEventListener('load',updateNavOnScroll);
   function val(cell){ return (cell?.textContent || '').trim(); }
   function key(v){
     v=v.toLowerCase().replace(/\s+/g,' ').trim();
-    const n=v.match(/^\d+(?:\.\d+)?/);
-    if(n) return [0,Number(n[0])];
+    // Leading number, allowing thousands separators ("1,000", "300,000") so
+    // the Numbers table sorts 0 → 1,000,000 rather than lexically by first digit.
+    const n=v.match(/^[\d,]*\d(?:\.\d+)?/);
+    if(n) return [0,Number(n[0].replace(/,/g,''))];
     if(v in DAYS) return [1,DAYS[v]];
     if(v in MONTHS) return [2,MONTHS[v]];
     return [3,v];
@@ -161,28 +187,37 @@ window.addEventListener('load',updateNavOnScroll);
     else c=String(x[1]).localeCompare(String(y[1]),undefined,{numeric:true,sensitivity:'base'});
     return dir==='desc' ? -c : c;
   }
+  // Shared with renderTable() (a separate IIFE below, run right after this one)
+  // so the default a-z-by-English ordering the tables render in uses the exact
+  // same comparison as the column sort buttons -- weekdays/months/numbers and
+  // all -- rather than a second, subtly different sort.
+  window.compareCellText = cmp;
+  // Arrow convention: ↓ = currently sorted A-Z (numbers low-to-high),
+  // ↑ = currently sorted Z-A (numbers high-to-low), ↕ = not the sort column.
+  const SORT_GLYPH = { asc:'↓', desc:'↑', '':'↕' };
   window.sortTableFromButton=function(button){
     const table=button.closest('table');
     const tbody=table?.querySelector('tbody');
     if(!tbody) return;
     const col=Number(button.dataset.sortCol);
-    const dir=button.dataset.sortDir || 'asc';
+    const dir=button.dataset.sortDir==='asc' ? 'desc' : 'asc';
     const rows=[...tbody.querySelectorAll('tr')];
     rows.sort((a,b)=>cmp(val(a.cells[col]),val(b.cells[col]),dir));
     rows.forEach(r=>tbody.appendChild(r));
     table.querySelectorAll('.sort-button').forEach(b=>{
       b.classList.remove('active');
-      if(b!==button){b.dataset.sortDir='asc';b.textContent='↑';}
+      b.dataset.sortDir='';
+      b.textContent=SORT_GLYPH[''];
     });
     button.classList.add('active');
-    button.textContent=dir==='asc'?'↑':'↓';
-    button.dataset.sortDir=dir==='asc'?'desc':'asc';
+    button.dataset.sortDir=dir;
+    button.textContent=SORT_GLYPH[dir];
   };
 })();
 
 /* Render the vocabulary tables from structured data (data/vocabulary.js) --
    the markup for a table/row is written once here instead of being baked,
-   repeated, and hand-edited 354 times over in the data file. */
+   repeated, and hand-edited once per row in the data file. */
 (function () {
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -237,36 +272,100 @@ window.addEventListener('load',updateNavOnScroll);
     return openTag + '<td class="row-num">' + (i + 1) + '</td>' + jpCell(row) +
       '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
+  // forms[0] is the plain/dictionary form, forms[1] the polite (-masu) form --
+  // tag each so CSS can tint the two consistently (plain vs polite) down both
+  // the Japanese and Romaji columns.
+  var VERB_FORM_CLASS = ['verb-form-plain', 'verb-form-polite'];
   function verbPairRow(row, i) {
-    var jp = row.forms.map(function (f) { return '<div class="verb-form"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
-    var romaji = row.forms.map(function (f) { return '<div class="verb-form">' + esc(f.romaji) + '</div>'; }).join('');
+    var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
+    var romaji = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '">' + esc(f.romaji) + '</div>'; }).join('');
     return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="row-num">' + (i + 1) + '</td><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
-  function sortHeader(label, col) {
-    return '<th>' + label + '<button type="button" class="sort-button" data-sort-col="' + col + '" data-sort-dir="asc" aria-label="Sort ' + esc(label) + '">↑</button></th>';
+  // isDefault marks the column the table renders sorted by (English) -- it
+  // starts active and showing ↓ (A-Z); the others start neutral (↕).
+  function sortHeader(label, col, isDefault) {
+    return '<th>' + label + '<button type="button" class="sort-button' + (isDefault ? ' active' : '') +
+      '" data-sort-col="' + col + '" data-sort-dir="' + (isDefault ? 'asc' : '') +
+      '" aria-label="Sort ' + esc(label) + '">' + (isDefault ? '↓' : '↕') + '</button></th>';
   }
   var PRINT_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V2.5h8V6"/><rect x="2.5" y="6" width="13" height="7" rx="1.2"/><path d="M5 11.5h8V15.5H5Z"/></svg>';
-  function renderTable(t) {
-    var tableClass = 'vocab' + (t.tableClass ? ' ' + t.tableClass : '');
-    var rows = t.rows.map(function (row, i) { return row.type === 'verb-pair' ? verbPairRow(row, i) : wordRow(row, i); }).join('\n    ');
-    // The row-number column is only ever as wide as the widest number it needs
-    // to hold in this particular table -- a 6-row table and a 70-row table
-    // don't need the same gutter. Width comes from a data-digits attribute
-    // (matched in CSS) rather than an inline style="" -- the page's CSP has
-    // no 'unsafe-inline' for style-src, so inline styles are silently dropped.
-    var numDigits = Math.min(String(t.rows.length).length, 6);
-    return '<section class="table-section page-hidden" data-table="' + t.id + '" data-category="' + esc(t.category || '') + '" id="table-' + t.id + '">' +
-      '<div class="section-head">' +
-      '<h2><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + t.id + '">' + esc(t.title) + '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
-      '<div class="controls">' +
-      '<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>' +
-      '<button type="button" class="fc-add-table-btn" data-table="' + t.id + '">Add table to flashcards</button>' +
-      '<button type="button" class="manage-rows-toggle">Manage rows</button>' +
-      '<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>' +
-      '</div></div>' +
-      '<table class="' + tableClass + '" id="vocab-' + t.id + '"><thead><tr><th class="row-num-th" data-digits="' + numDigits + '"></th><th>Japanese</th>' + sortHeader('Romaji', 2) + sortHeader('English', 3) + '</tr></thead><tbody>\n    ' +
-      rows + '\n  </tbody></table></section>';
+  function byEnglish(a, b) {
+    return window.compareCellText(String(a.english || ''), String(b.english || ''), 'asc');
   }
+  function rowsHtmlFor(rows) {
+    return rows.map(function (row, i) { return row.type === 'verb-pair' ? verbPairRow(row, i) : wordRow(row, i); }).join('\n    ');
+  }
+  // A compact copy of the header's All/Japanese/Romaji/English control, for a
+  // table that needs its own column-scope switch where that header control
+  // isn't on screen (Flashcards' "Words to Review", so it prints one column at
+  // a time). Same .view-mode class -> same styling and the same delegated
+  // click handler in the search module drives it.
+  function viewModeInlineHtml() {
+    var cur = document.body.classList.contains('mode-japanese') ? 'japanese'
+      : document.body.classList.contains('mode-romaji') ? 'romaji'
+      : document.body.classList.contains('mode-english') ? 'english' : 'all';
+    return '<div class="view-mode view-mode-inline" aria-label="Columns to show">' +
+      [['all', 'All'], ['japanese', 'JP'], ['romaji', 'Romaji'], ['english', 'English']].map(function (o) {
+        var on = o[0] === cur;
+        return '<button type="button"' + (on ? ' class="active"' : '') + ' data-mode="' + o[0] + '" aria-pressed="' + on + '">' + o[1] + '</button>';
+      }).join('<span aria-hidden="true">|</span>') + '</div>';
+  }
+  // Shared table-section markup. `renderTable` (the vocabulary page) and
+  // `window.buildVocabSection` (Flashcards) both go through here so a table is
+  // structurally identical wherever it appears -- same columns, sort controls,
+  // print button, furigana markup -- and every feature that keys off
+  // `.table-section` / `.vocab` (search, print, view-mode, row hiding) just works.
+  function sectionMarkup(o) {
+    var catMeta = categoryMeta(o.category || '');
+    var controls = o.controls || {};
+    // The row-number column is only ever as wide as the widest number it needs
+    // to hold in this particular table. Width comes from a data-digits
+    // attribute (matched in CSS) rather than an inline style="" -- the page's
+    // CSP has no 'unsafe-inline' for style-src, so inline styles are dropped.
+    var numDigits = Math.min(String(Math.max(1, o.rowCount || 0)).length, 6);
+    var ctrlParts = ['<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>'];
+    if (controls.columnSelect) ctrlParts.push(viewModeInlineHtml());
+    if (controls.addTable) ctrlParts.push('<button type="button" class="fc-add-table-btn" data-table="' + o.id + '" title="Add every row in this table to your flashcards">Add to flashcards</button>');
+    if (controls.manageRows) ctrlParts.push('<button type="button" class="manage-rows-toggle">Manage rows</button>');
+    if (controls.print) ctrlParts.push('<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>');
+    var defaultSort = o.defaultSort !== false;
+    return '<section class="table-section ' + (o.sectionClass || '') + '" data-table="' + o.id + '" data-category="' + esc(o.category || '') + '" id="table-' + o.id + '">' +
+      '<div class="section-head">' +
+      '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + o.id + '">' +
+      '<span class="section-title-icon ' + catMeta.cls + '">' + catMeta.icon + '</span>' +
+      '<span class="section-title-text">' + esc(o.title) + '</span>' +
+      '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
+      '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
+      '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
+      '<th class="row-num-th" data-digits="' + numDigits + '"></th><th>Japanese</th>' +
+      sortHeader('Romaji', 2, false) + sortHeader('English', 3, defaultSort) + '</tr></thead><tbody>\n    ' +
+      o.rowsHtml + '\n  </tbody></table></section>';
+  }
+  function renderTable(t) {
+    var sortedRows = t.rows.slice().sort(byEnglish);
+    return sectionMarkup({
+      id: t.id, title: t.title, category: t.category, tableClass: t.tableClass,
+      rowsHtml: rowsHtmlFor(sortedRows), rowCount: t.rows.length,
+      controls: { addTable: true, manageRows: true, print: true },
+      sectionClass: 'page-hidden', defaultSort: true
+    });
+  }
+  // Build one of the standard vocabulary table sections from an arbitrary set
+  // of rows (raw data/vocabulary.js row objects). Flashcards uses it for
+  // "Words to Review" so that list is a real, printable, sortable vocabulary
+  // table rather than a bespoke component. `presort:false` keeps the caller's
+  // order (e.g. most-missed first) and starts every sort control neutral.
+  window.buildVocabSection = function (config) {
+    var rows = (config.rows || []).filter(Boolean);
+    var ordered = config.presort === false ? rows : rows.slice().sort(byEnglish);
+    return sectionMarkup({
+      id: config.id, title: config.title, category: config.category || '', tableClass: config.tableClass,
+      rowsHtml: rowsHtmlFor(ordered), rowCount: ordered.length,
+      controls: config.controls || { print: true },
+      sectionClass: config.sectionClass || '',
+      defaultSort: config.presort !== false
+    });
+  };
 
   // Small, hand-drawn line icons -- one per category, each its own color
   // from the existing palette, purely as a fast visual anchor when scanning.
@@ -277,7 +376,8 @@ window.addEventListener('load',updateNavOnScroll);
     'Grammar': { cls: 'cat-color-a', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="12.5" y2="9"/><line x1="3" y1="13" x2="9.5" y2="13"/></svg>' },
     'Food & Ingredients': { cls: 'cat-color-b', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h12"/><path d="M3.5 7.5a5.5 5.5 0 0 0 11 0"/><path d="M9 7.5V3.8c1.4 0 2.2.9 2.2 2"/></svg>' },
     'Kitchen & Dining': { cls: 'cat-color-c', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="9.5" r="4.2"/><line x1="10.8" y1="7.2" x2="15.5" y2="4.2"/></svg>' },
-    'Numbers & Counting': { cls: 'cat-color-d', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' }
+    'Numbers & Counting': { cls: 'cat-color-d', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' },
+    'Travel': { cls: 'cat-color-e', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15.5c3-3.3 4.5-6 4.5-8.2A4.5 4.5 0 0 0 9 2.8a4.5 4.5 0 0 0-4.5 4.5c0 2.2 1.5 4.9 4.5 8.2Z"/><circle cx="9" cy="7.2" r="1.6"/></svg>' }
   };
   var DEFAULT_CATEGORY_META = { cls: 'cat-color-default', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3Z"/></svg>' };
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
@@ -393,6 +493,7 @@ window.addEventListener('load',updateNavOnScroll);
     if (window.bindSidebarEvents) window.bindSidebarEvents();
     if (window.bindOverviewEvents) window.bindOverviewEvents();
     markActiveNav(document.body.dataset.activeCategory || null, currentTableId);
+    if (window.applySidebarFilter) window.applySidebarFilter();
   };
   window.hideOverviewTable = function (id) {
     hiddenTables.add(String(id));
@@ -596,53 +697,70 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  document.querySelectorAll('.view-mode button').forEach(button => button.addEventListener('click', function () {
-    const mode = button.dataset.mode;
+  // One column-scope mode for the whole page (All/Japanese/Romaji/English).
+  // Exposed + delegated so a second .view-mode control rendered later -- e.g.
+  // the one the Flashcards "Words to Review" table carries so it can be
+  // printed a column at a time, where the header's own control is hidden --
+  // drives the exact same behavior with no extra wiring.
+  function setViewMode(mode) {
     document.body.classList.remove('mode-japanese', 'mode-romaji', 'mode-english');
     if (mode !== 'all') document.body.classList.add('mode-' + mode);
-    document.querySelectorAll('.view-mode button').forEach(b => {
-      b.classList.toggle('active', b === button);
-      b.setAttribute('aria-pressed', String(b === button));
-    });
+    syncViewModeControls();
     applyViewModeAccessibility(mode);
-    runSearch();
-  }));
+    // On the Flashcards page the vocabulary list isn't the thing on screen,
+    // and runSearch() would fight its page-visibility handling.
+    if (document.body.dataset.activePage !== 'flashcards') runSearch();
+  }
+  function syncViewModeControls() {
+    const mode = document.body.classList.contains('mode-japanese') ? 'japanese'
+      : document.body.classList.contains('mode-romaji') ? 'romaji'
+      : document.body.classList.contains('mode-english') ? 'english' : 'all';
+    document.querySelectorAll('.view-mode button').forEach(b => {
+      const on = b.dataset.mode === mode;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+  }
+  window.setVocabViewMode = setViewMode;
+  window.syncViewModeControls = syncViewModeControls;
+  document.addEventListener('click', function (event) {
+    const button = event.target.closest && event.target.closest('.view-mode button');
+    if (button) setViewMode(button.dataset.mode);
+  });
 });
 
-// CSP-safe delegated event wiring for generated vocabulary controls.
+// CSP-safe delegated event wiring for generated vocabulary controls. One
+// document-level listener (rather than a per-node forEach at load) so table
+// sections rendered later -- the Flashcards "Words to Review" table reuses the
+// exact same markup and controls -- work with no extra binding step.
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.section-toggle').forEach(function (toggle) {
-    toggle.addEventListener('click', function () { toggleSection(toggle.closest('.table-section')); });
-  });
-  document.querySelectorAll('.print-one').forEach(function (button) {
-    button.addEventListener('click', function (event) { event.stopPropagation(); printOne(button.closest('.table-section').dataset.table); });
-  });
-  document.querySelectorAll('.manage-rows-toggle').forEach(function (button) {
-    button.addEventListener('click', function (event) {
+  document.addEventListener('click', function (event) {
+    const t = event.target;
+    if (!t || !t.closest) return;
+    let el;
+    if ((el = t.closest('.section-toggle'))) {
+      toggleSection(el.closest('.table-section'));
+    } else if ((el = t.closest('.print-one'))) {
       event.stopPropagation();
-      const section = button.closest('.table-section');
-      const managing = section.classList.toggle('managing-rows');
-      button.textContent = managing ? 'Done' : 'Manage rows';
-    });
-  });
-  document.querySelectorAll('.row-hide-btn').forEach(function (button) {
-    button.addEventListener('click', function (event) {
+      printOne(el.closest('.table-section').dataset.table);
+    } else if ((el = t.closest('.manage-rows-toggle'))) {
       event.stopPropagation();
-      const section = button.closest('.table-section');
-      button.closest('tr').classList.add('row-hidden');
+      const managing = el.closest('.table-section').classList.toggle('managing-rows');
+      el.textContent = managing ? 'Done' : 'Manage rows';
+    } else if ((el = t.closest('.row-hide-btn'))) {
+      event.stopPropagation();
+      const section = el.closest('.table-section');
+      el.closest('tr').classList.add('row-hidden');
       updateHiddenStatus(section);
-    });
-  });
-  document.querySelectorAll('.show-all-rows').forEach(function (button) {
-    button.addEventListener('click', function (event) {
+    } else if ((el = t.closest('.show-all-rows'))) {
       event.stopPropagation();
-      const section = button.closest('.table-section');
+      const section = el.closest('.table-section');
       section.querySelectorAll('tbody tr.row-hidden').forEach(function (row) { row.classList.remove('row-hidden'); });
       updateHiddenStatus(section);
-    });
-  });
-  document.querySelectorAll('.sort-button').forEach(function (button) {
-    button.addEventListener('click', function (event) { event.stopPropagation(); sortTableFromButton(button); });
+    } else if ((el = t.closest('.sort-button'))) {
+      event.stopPropagation();
+      sortTableFromButton(el);
+    }
   });
   // The sidebar and Overview list both re-render themselves (hide/show-all
   // pulls a table from both at once, see window.refreshNav), which destroys
@@ -714,9 +832,64 @@ document.addEventListener('DOMContentLoaded', function () {
       else openSidebar();
     });
   }
+  // Sidebar table filter -- narrows the nav tree to tables whose name matches,
+  // hiding any category left with no matches. The input lives in static markup
+  // (index.html), but .sidebar-groups is re-rendered by refreshNav, so the
+  // filter is a re-appliable function called again at the end of every rebuild.
+  const sidebarSearchInput = document.getElementById('sidebarSearch');
+  let sidebarFilterQuery = '';
+  window.applySidebarFilter = function () {
+    const q = sidebarFilterQuery;
+    let anyVisible = false;
+    document.querySelectorAll('.sidebar-group').forEach(function (group) {
+      let groupHasMatch = false;
+      group.querySelectorAll('.sidebar-group-items a').forEach(function (link) {
+        const match = !q || link.textContent.toLowerCase().includes(q);
+        link.hidden = !match;
+        if (match) groupHasMatch = true;
+      });
+      group.hidden = !groupHasMatch;
+      if (groupHasMatch) anyVisible = true;
+      // While filtering, force groups open so matches aren't hidden inside a
+      // collapsed category; clearing the filter restores normal accordion use.
+      group.classList.toggle('filtering', Boolean(q));
+    });
+    const empty = document.querySelector('.sidebar-search-empty');
+    if (empty) empty.hidden = Boolean(!q) || anyVisible;
+  };
+  if (sidebarSearchInput) {
+    sidebarSearchInput.addEventListener('input', function () {
+      sidebarFilterQuery = sidebarSearchInput.value.trim().toLowerCase();
+      window.applySidebarFilter();
+    });
+  }
+
   const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
   if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
   document.addEventListener('keydown', function (event) {
     if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
   });
+
+  // Casual / polite: one page-wide switch. Verb tables carry both forms in the
+  // markup (unchanged row structure); body.show-polite just swaps which one is
+  // visible via CSS, so exactly one shows at a time. Rows with no distinct
+  // polite form are unaffected. Preference persists client-side.
+  const POLITE_KEY = 'sakura-show-polite';
+  const politeToggle = document.getElementById('politeToggle');
+  function applyPoliteMode(on) {
+    document.body.classList.toggle('show-polite', on);
+    if (politeToggle) {
+      politeToggle.classList.toggle('active', on);
+      politeToggle.setAttribute('aria-pressed', String(on));
+    }
+    try { localStorage.setItem(POLITE_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+  if (politeToggle) {
+    let startPolite = false;
+    try { startPolite = localStorage.getItem(POLITE_KEY) === '1'; } catch (e) {}
+    applyPoliteMode(startPolite);
+    politeToggle.addEventListener('click', function () {
+      applyPoliteMode(!document.body.classList.contains('show-polite'));
+    });
+  }
 });

@@ -56,9 +56,9 @@ async function main() {
 
   console.log("Rendering");
   const sections = document.querySelectorAll(".table-section");
-  check("renders 14 table sections", sections.length === 14);
+  check("renders 23 table sections", sections.length === 23);
   const totalRows = document.querySelectorAll(".vocab tbody tr").length;
-  check("renders 354 vocabulary rows", totalRows === 354);
+  check("renders 508 vocabulary rows", totalRows === 508);
   check("every Japanese cell is marked lang=\"ja\"", [...document.querySelectorAll("td.jp")].every(td => td.getAttribute("lang") === "ja"));
   check("section toggle is a real <button> (native keyboard activation)", document.querySelector(".section-toggle").tagName === "BUTTON");
   check("controls are siblings of the toggle, not nested inside it", !document.querySelector(".section-toggle .print-one"));
@@ -75,21 +75,21 @@ async function main() {
 
   console.log("Overview table of contents");
   const overviewGroups = document.querySelectorAll(".overview-group");
-  check("overview renders one group per category", overviewGroups.length === 4);
-  check("overview links cover every table", document.querySelectorAll(".overview-group-items a").length === 14);
+  check("overview renders one group per category", overviewGroups.length === 5);
+  check("overview links cover every table", document.querySelectorAll(".overview-group-items a").length === 23);
   const overviewNames = [...overviewGroups].map(g => g.querySelector(".cat-name").textContent.trim());
   check("overview categories are ordered alphabetically", JSON.stringify(overviewNames) === JSON.stringify([...overviewNames].sort((a, b) => a.localeCompare(b))));
 
   console.log("Sidebar table index");
   const sidebarGroups = document.querySelectorAll(".sidebar-group");
-  check("sidebar renders category groups", sidebarGroups.length === 4);
+  check("sidebar renders category groups", sidebarGroups.length === 5);
   check("each group header carries a colored icon", [...sidebarGroups].every(g => !!g.querySelector(".cat-icon svg")));
   check("each group header shows a table count", [...sidebarGroups].every(g => /^\d+$/.test(g.querySelector(".cat-count").textContent.trim())));
   const groupNames = [...sidebarGroups].map(g => g.querySelector(".cat-name").textContent.trim());
   check("categories are ordered alphabetically", JSON.stringify(groupNames) === JSON.stringify([...groupNames].sort((a, b) => a.localeCompare(b))));
   const firstGroupLinks = [...sidebarGroups[0].querySelectorAll(".sidebar-group-items a")].map(a => a.textContent.trim());
   check("tables are ordered alphabetically within a category", JSON.stringify(firstGroupLinks) === JSON.stringify([...firstGroupLinks].sort((a, b) => a.localeCompare(b))));
-  check("sidebar links cover every table", document.querySelectorAll(".sidebar-group-items a").length === 14);
+  check("sidebar links cover every table", document.querySelectorAll(".sidebar-group-items a").length === 23);
 
   console.log("Sidebar accordion (independent of which page is open)");
   const chevron = sidebarGroups[0].querySelector(".sidebar-group-chevron");
@@ -226,7 +226,7 @@ async function main() {
 
   console.log("Flashcards: add a whole table at once");
   const addTableBtn = drinksSectionFc.querySelector(".fc-add-table-btn");
-  check("every table has an \"Add table to flashcards\" button", !!addTableBtn && addTableBtn.dataset.table === "2");
+  check("every table has an \"Add to flashcards\" button", !!addTableBtn && addTableBtn.dataset.table === "2");
   check("it's always visible, not gated behind Manage rows", window.getComputedStyle(addTableBtn).display !== "none");
   check("no element relies on an inline style=\"\" attribute, even after rendering the new controls", document.querySelectorAll("[style]").length === 0);
 
@@ -321,9 +321,9 @@ async function main() {
   const listenEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "hear / listen / ask");
   check("multi-answer English fields accept any listed alternative", !!listenEntry && fc.checkAnswer(listenEntry, "jp-en", "listen") && fc.checkAnswer(listenEntry, "jp-en", "ask"));
   check("multi-answer English fields still reject an unlisted word", !fc.checkAnswer(listenEntry, "jp-en", "speak"));
-  const numberEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "zero");
-  check("the Numbers table's kana-in-romaji rows are flagged not romaji-usable", !!numberEntry && numberEntry.romajiUsable === false);
-  check("...so only jp-en is offered for them (never asks the user to type kana)", JSON.stringify(fc.directionsForEntry(numberEntry)) === JSON.stringify(["jp-en"]));
+  const numberEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "0");
+  check("the Numbers table now carries real romaji (not kana), so the row is romaji-usable", !!numberEntry && numberEntry.romajiUsable === true);
+  check("...so all four directions are offered for it", JSON.stringify(fc.directionsForEntry(numberEntry)) === JSON.stringify(["jp-en", "jp-ro", "ro-en", "en-ro"]));
   check("a normal entry offers all four directions", JSON.stringify(fc.directionsForEntry(beerEntry)) === JSON.stringify(["jp-en", "jp-ro", "ro-en", "en-ro"]));
 
   console.log(failures === 0 ? "\nSmoke test passed." : "\n" + failures + " smoke test check(s) failed.");

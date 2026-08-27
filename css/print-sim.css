@@ -3,38 +3,42 @@
   .sidebar, .page-overview { display: none !important; }
 
 
-  /* Keep the screen-style card on paper too -- a full border on every side
-     (not just the hairline under the title) and a small radius, with real
-     breathing room between the title and the grid instead of the two
-     sitting flush against each other. Keep the pagination already set on
-     .table-section above (break-before etc. are no-ops on screen, so they
-     don't need restating here). */
+  /* On paper the title is NOT part of the table box: the section wrapper
+     carries no border or background of its own, so what prints is just the
+     title, a gap, then the bordered grid. */
   .table-section {
-    border: 1px solid var(--line) !important;
+    border: 0 !important;
+    background: none !important;
     box-shadow: none !important;
-    border-radius: 8px !important;
-    padding-left: 0 !important;
-    padding-right: 0 !important;
+    border-radius: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
   }
   .table-section .controls,
   .table-section .print-one { display: none !important; }
   .table-section .section-head {
     display: block !important;
-    margin: 0 0 18px !important;
-    padding: 14px 16px 0 !important;
+    margin: 0 0 10px !important;
+    padding: 0 !important;
+    background: none !important;
     border-bottom: 0 !important;
   }
-  .table-section .section-head h2 { margin: 0 !important; padding: 0 !important; font-size: 16px !important; }
-  .table-section .section-toggle { cursor: auto; }
+  .table-section .section-head h2 { margin: 0 !important; padding: 0 !important; }
+  .table-section .section-toggle { cursor: auto; display: block !important; }
+  .table-section .section-title-icon,
   .table-section .section-toggle-icon { display: none !important; }
+  .table-section .section-title-text { font-size: 15px !important; font-weight: 700 !important; }
+  .table-section .vocab {
+    border: 1px solid var(--line) !important;
+    border-radius: 6px !important;
+    overflow: hidden !important;
+  }
 
   /* Printing one table or a selection: show only the target section(s), title + table only. */
   body.print-only .table-section:not(.print-target) { display: none !important; }
   body.print-only .table-section.print-target { display: block !important; }
   body.print-only .table-section.print-target .controls,
   body.print-only .table-section.print-target .sort-button { display: none !important; }
-  body.print-only .table-section.print-target .section-head { display: block !important; margin: 0 0 10px !important; padding: 0 !important; }
-  body.print-only .table-section.print-target .section-head h2 { margin: 0 !important; padding: 0 !important; }
 
 
   .view-mode { display: none !important; }

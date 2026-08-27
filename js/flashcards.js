@@ -268,10 +268,12 @@
     return {
       schemaVersion: raw.schemaVersion, userId: raw.userId || null, cards: cards,
       logsOutbox: raw.logsOutbox.filter(function (e) { return e && e.clientReviewId && e.cardId; }),
-      // Only ever used in guest mode (signed-in mode gets its weekly-activity
-      // history from Supabase's review_logs instead) -- a plain date-per-review
-      // list for the dashboard's weekly chart, capped so it can't grow forever.
-      reviewLogs: Array.isArray(raw.reviewLogs) ? raw.reviewLogs.filter(function (e) { return e && typeof e.date === "string"; }).slice(-400) : [],
+      // Only ever used in guest mode (signed-in mode reads its history from
+      // Supabase's review_logs instead) -- one entry per review, carrying the
+      // day plus (for the Dashboard's mistake insights) a timestamp, the
+      // vocab id, the rating and whether the typed answer was wrong. Capped so
+      // it can't grow forever; older {date}-only entries are still valid.
+      reviewLogs: Array.isArray(raw.reviewLogs) ? raw.reviewLogs.filter(function (e) { return e && typeof e.date === "string"; }).slice(-1000) : [],
       settings: mergeSettings(raw.settings),
       lastSyncedAt: raw.lastSyncedAt || null
     };
@@ -463,11 +465,6 @@
     var res = await client.from("flashcards").update({ active: false }).eq("user_id", user.id).in("vocab_id", vocabIds);
     if (res.error) throw res.error;
   }
-  async function deleteHistoryForeverRemote(vocabId) {
-    var client = getClient(), user = currentUser();
-    var res = await client.from("flashcards").delete().eq("user_id", user.id).eq("vocab_id", vocabId);
-    if (res.error) throw res.error;
-  }
   async function saveFsrsSettingsRemote(patch) {
     var client = getClient(), user = currentUser();
     var res = await client.from("flashcard_settings").update(patch).eq("user_id", user.id);
@@ -517,11 +514,6 @@
     });
     saveCache();
   }
-  function deleteHistoryForeverLocal(vocabId) {
-    var c = getCache();
-    Object.keys(c.cards).forEach(function (id) { if (c.cards[id].vocabId === vocabId) delete c.cards[id]; });
-    saveCache();
-  }
 
   // -----------------------------------------------------------------------
   // Mode-aware entry points -- everything above this line (UI, review flow,
@@ -532,7 +524,6 @@
   async function addVocab(vocabId) { return addVocabs([vocabId]); }
   async function archiveVocabs(vocabIds) { return isGuestMode() ? archiveVocabsLocal(vocabIds) : archiveVocabsRemote(vocabIds); }
   async function archiveVocab(vocabId) { return archiveVocabs([vocabId]); }
-  async function deleteHistoryForever(vocabId) { return isGuestMode() ? deleteHistoryForeverLocal(vocabId) : deleteHistoryForeverRemote(vocabId); }
   async function saveFsrsSettings(patch) {
     Object.assign(getCache().settings, patch);
     saveCache();
@@ -801,6 +792,7 @@
       "</div></div>";
     document.getElementById("fcUseGuest").addEventListener("click", function () {
       setStoredMode("guest");
+      invalidateInsights();
       render();
       refreshRowToggleButtons(); // the vocabulary page's own "added" icons switch to this mode's (empty, at first) cache too
     });
@@ -811,7 +803,7 @@
   function renderShell(el) {
     if (!isGuestMode() && !initialSyncDone) {
       initialSyncDone = true;
-      fetchAllFromServer().then(function () { syncOutbox(); render(); }).catch(function (e) { console.error("Flashcards: could not load from Supabase", e); render(); });
+      fetchAllFromServer().then(function () { invalidateInsights(); syncOutbox(); render(); }).catch(function (e) { console.error("Flashcards: could not load from Supabase", e); render(); });
     }
     var stats = computeStats(new Date());
     var identityHtml = isGuestMode()
@@ -821,20 +813,20 @@
       "<h2>Flashcards</h2>" +
       identityHtml +
       '<div class="fc-tabs" role="tablist">' +
-      ["dashboard", "manage", "settings"].map(function (t) {
-        var label = t === "dashboard" ? "Dashboard" : t === "manage" ? "Manage" : "Settings";
-        return '<button type="button" class="fc-tab' + (activeTab === t ? " active" : "") + '" data-tab="' + t + '" role="tab" aria-selected="' + (activeTab === t) + '">' + label + "</button>";
+      [["dashboard", "Dashboard"], ["manage", "Manage"], ["settings", "Settings"], ["help", "Help"]].map(function (t) {
+        return '<button type="button" class="fc-tab' + (activeTab === t[0] ? " active" : "") + '" data-tab="' + t[0] + '" role="tab" aria-selected="' + (activeTab === t[0]) + '">' + t[1] + "</button>";
       }).join("") +
       "</div>" +
       '<div class="fc-tabpanel"' + (activeTab === "dashboard" ? "" : " hidden") + ' id="fcPanelDashboard"></div>' +
       '<div class="fc-tabpanel"' + (activeTab === "manage" ? "" : " hidden") + ' id="fcPanelManage"></div>' +
-      '<div class="fc-tabpanel"' + (activeTab === "settings" ? "" : " hidden") + ' id="fcPanelSettings"></div>';
+      '<div class="fc-tabpanel"' + (activeTab === "settings" ? "" : " hidden") + ' id="fcPanelSettings"></div>' +
+      '<div class="fc-tabpanel"' + (activeTab === "help" ? "" : " hidden") + ' id="fcPanelHelp"></div>';
 
     if (isGuestMode()) {
       // Leaves the guest cache exactly as it is (own localStorage key) --
       // this only forgets the "use guest mode" preference so render() falls
       // through to the sign-in/sign-up choice again.
-      document.getElementById("fcGoAccount").addEventListener("click", function () { setStoredMode(null); render(); refreshRowToggleButtons(); });
+      document.getElementById("fcGoAccount").addEventListener("click", function () { setStoredMode(null); invalidateInsights(); render(); refreshRowToggleButtons(); });
     } else {
       document.getElementById("fcSignOut").addEventListener("click", function () { signOut(); });
     }
@@ -844,7 +836,42 @@
 
     if (activeTab === "dashboard") renderDashboard(document.getElementById("fcPanelDashboard"), stats);
     else if (activeTab === "manage") renderManage(document.getElementById("fcPanelManage"));
+    else if (activeTab === "help") renderHelp(document.getElementById("fcPanelHelp"));
     else renderSettings(document.getElementById("fcPanelSettings"));
+  }
+
+  function renderHelp(panel) {
+    panel.innerHTML =
+      '<div class="fc-settings-section"><h3>Adding &amp; pausing vocabulary</h3>' +
+      '<ul class="fc-help-list">' +
+      '<li><span class="fc-legend-term">Add</span> starts studying a word — or a whole table at once, from the Manage tab or the vocabulary page.</li>' +
+      '<li><span class="fc-legend-term">Pause</span> stops reviewing a word but keeps every bit of its progress. Add it back any time and it resumes exactly where you left off.</li>' +
+      '<li>Nothing is ever permanently deleted. A paused word keeps its full FSRS scheduling state and complete review history for good.</li>' +
+      '</ul></div>' +
+      '<div class="fc-settings-section"><h3>Status icons in Manage</h3>' +
+      '<ul class="fc-help-list fc-help-status">' +
+      '<li><span class="fc-status fc-status-none">' + STATUS_META.none.glyph + '</span> Not added</li>' +
+      '<li><span class="fc-status fc-status-active">' + STATUS_META.active.glyph + '</span> In flashcards</li>' +
+      '<li><span class="fc-status fc-status-due">' + STATUS_META.due.glyph + '</span> Due for review now</li>' +
+      '</ul></div>' +
+      '<div class="fc-settings-section"><h3>Review keyboard shortcuts</h3>' +
+      '<ul class="fc-help-list">' +
+      '<li><kbd>Space</kbd> or <kbd>Enter</kbd> — check your answer</li>' +
+      '<li><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> — rate Again / Hard / Good / Easy (only after the answer is checked)</li>' +
+      '</ul></div>' +
+      '<div class="fc-settings-section"><h3>Dashboard</h3>' +
+      '<ul class="fc-help-list">' +
+      '<li><span class="fc-legend-term">Today</span> — cards reviewed today against your daily target (New cards per day, under Settings → Daily Session).</li>' +
+      '<li><span class="fc-legend-term">Next review</span> — when the next scheduled card is due, taken straight from the FSRS schedule.</li>' +
+      '<li><span class="fc-legend-term">Recent mistakes</span> — words you missed today. Click one to practice it right away.</li>' +
+      '<li><span class="fc-legend-term">Words to Review</span> — words you get wrong repeatedly over time, shown as a normal vocabulary table you can sort and print.</li>' +
+      '</ul></div>' +
+      '<div class="fc-settings-section"><h3>Casual &amp; polite forms</h3>' +
+      '<p class="fc-note">On the vocabulary tables, the <span class="fc-legend-term">Show polite</span> toggle switches verb columns between the plain / dictionary form and the polite <span lang="ja">〜ます</span> form. One form is shown at a time. Words with no distinct polite form are left unchanged.</p>' +
+      '</div>' +
+      '<div class="fc-settings-section"><h3>Study directions</h3>' +
+      '<p class="fc-note">Settings → Study Directions turns any of the four review directions on or off. Turning one off never deletes its cards or progress — it just leaves that direction out of review until you turn it back on.</p>' +
+      '</div>';
   }
 
   function renderDashboard(panel, stats) {
@@ -852,11 +879,18 @@
     var retentionText = stats.estimatedRetention == null ? "—" : Math.round(stats.estimatedRetention * 100) + "%";
     var settings = getCache().settings;
     var streak = settings.current_streak || 0;
+    var now = new Date();
     if (weeklyActivity === null && !weeklyActivityLoading) {
       weeklyActivityLoading = true;
       loadWeeklyActivity().catch(function () { weeklyActivity = []; }).then(function () { weeklyActivityLoading = false; render(); });
     }
+    if (reviewInsights === null && !reviewInsightsLoading) {
+      reviewInsightsLoading = true;
+      loadReviewInsights().catch(function () { reviewInsights = emptyInsights(); }).then(function () { reviewInsightsLoading = false; render(); });
+    }
+    var newInSession = Math.min(stats.newCount, Math.max(0, settings.queue_new_cards_per_day));
     panel.innerHTML =
+      '<div class="fc-top-row">' + nextReviewHtml(now) + todayProgressHtml() + "</div>" +
       '<div class="fc-stats-grid">' +
       statTile(streak, "Day streak", "streak") +
       statTile(stats.total, "Total cards") +
@@ -868,15 +902,130 @@
       '<div class="fc-viz-grid">' +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Card progress</h3>' + stateBreakdownChart(stats) + "</div>" +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Reviews this week</h3>' + (weeklyActivity ? weeklyActivityChart(weeklyActivity) : '<p class="fc-note">Loading…</p>') + "</div>" +
+      '<div class="fc-viz-card"><h3 class="fc-viz-title">Recent mistakes</h3>' + recentMistakesHtml() + "</div>" +
       "</div>" +
-      '<div class="fc-cta-row"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + Math.min(stats.newCount, getCache().settings.queue_new_cards_per_day) === 0 ? " disabled" : "") + ">Study now</button>" +
-      '<span class="fc-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</span></div>';
+      '<div class="fc-cta-row"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + newInSession === 0 ? " disabled" : "") + ">Study now</button>" +
+      '<span class="fc-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</span></div>' +
+      '<div id="fcWordsToReview"></div>';
     var btn = document.getElementById("fcStudyNow");
     if (btn) btn.addEventListener("click", startSession);
+    renderWordsToReview();
   }
   function statTile(value, label, variant) {
     var cls = variant ? " fc-stat-" + variant : "";
     return '<div class="fc-stat-tile' + cls + '"><span class="fc-stat-value">' + esc(value) + '</span><span class="fc-stat-label">' + esc(label) + "</span></div>";
+  }
+
+  // --- Dashboard: Today's progress, Next review, Recent mistakes, Words to Review ---
+
+  function todayProgressHtml() {
+    var target = Math.max(0, getCache().settings.queue_new_cards_per_day || 0);
+    var done = reviewInsights ? reviewInsights.reviewedToday : 0;
+    var pct = target > 0 ? Math.min(100, Math.round(done / target * 100)) : (done > 0 ? 100 : 0);
+    return '<div class="fc-today">' +
+      '<div class="fc-today-head"><span class="fc-today-label">Today</span>' +
+      '<span class="fc-today-count">' + done + " / " + target + " cards</span>" +
+      '<span class="fc-today-pct">' + pct + '%</span></div>' +
+      '<div class="fc-progress"><svg viewBox="0 0 100 6" preserveAspectRatio="none" class="fc-progress-svg" aria-hidden="true">' +
+      '<rect class="fc-progress-track" x="0" y="0" width="100" height="6"></rect>' +
+      '<rect class="fc-progress-fill" x="0" y="0" width="' + pct + '" height="6"></rect></svg></div></div>';
+  }
+
+  // "in 8 minutes" for something imminent, "Tomorrow at 09:30" for something
+  // further out -- both straight off each card's real FSRS `due`.
+  function verboseUntil(now, ts) {
+    var ms = ts - now.getTime();
+    if (ms <= 0) return "now";
+    var mins = Math.round(ms / 60000);
+    if (mins < 60) return "in " + Math.max(1, mins) + " minute" + (mins === 1 ? "" : "s");
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return "in " + hrs + " hour" + (hrs === 1 ? "" : "s");
+    var days = Math.round(hrs / 24);
+    return "in " + days + " day" + (days === 1 ? "" : "s");
+  }
+  function friendlyWhen(now, ts) {
+    var d = new Date(ts);
+    var time = d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false });
+    var startToday = new Date(now); startToday.setHours(0, 0, 0, 0);
+    var dStart = new Date(ts); dStart.setHours(0, 0, 0, 0);
+    var dayDiff = Math.round((dStart.getTime() - startToday.getTime()) / 86400000);
+    if (dayDiff <= 0) return "Today at " + time;
+    if (dayDiff === 1) return "Tomorrow at " + time;
+    if (dayDiff < 7) return d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " at " + time;
+  }
+  function nextReviewHtml(now) {
+    var scheduled = studyableCards().filter(function (c) { return c.state !== 0; });
+    var endToday = new Date(now); endToday.setHours(23, 59, 59, 999);
+    var dueToday = scheduled.filter(function (c) { return new Date(c.due) <= endToday; }).length;
+    var futureTs = scheduled
+      .map(function (c) { return new Date(c.due).getTime(); })
+      .filter(function (t) { return t > now.getTime(); })
+      .sort(function (a, b) { return a - b; });
+    var nextTs = futureTs.length ? futureTs[0] : null;
+    var title, sub, variant;
+    if (dueToday > 0) {
+      variant = "due";
+      title = dueToday + " card" + (dueToday === 1 ? "" : "s") + " due today";
+      sub = "Next review: " + (nextTs ? verboseUntil(now, nextTs) : "now");
+    } else {
+      variant = "clear";
+      title = "All caught up";
+      sub = "Next review: " + (nextTs ? friendlyWhen(now, nextTs) : "no cards scheduled yet");
+    }
+    return '<div class="fc-next-review fc-next-review-' + variant + '">' +
+      '<span class="fc-next-review-title">' + esc(title) + "</span>" +
+      '<span class="fc-next-review-sub">' + esc(sub) + "</span></div>";
+  }
+
+  function recentMistakesHtml() {
+    if (!reviewInsights) return '<p class="fc-note">Loading…</p>';
+    var list = reviewInsights.recentMistakes;
+    if (!list.length) return '<p class="fc-note">No mistakes today.</p>';
+    var idx = getVocabIndex();
+    return '<ul class="fc-mini-list">' + list.map(function (m) {
+      var e = idx[m.vocabId];
+      if (!e) return "";
+      return '<li><button type="button" class="fc-mini-row" data-review-vocab="' + esc(m.vocabId) + '">' +
+        '<span class="fc-mini-word">' +
+        '<span class="fc-jp" lang="ja">' + e.jpHtml + "</span>" +
+        '<span class="fc-mini-ro">' + esc(e.romajiDisplay) + "</span>" +
+        '<span class="fc-mini-en">' + esc(e.englishDisplay) + "</span>" +
+        "</span>" +
+        '<span class="fc-mini-meta">' + m.count + " mistake" + (m.count === 1 ? "" : "s") + " today</span>" +
+        "</button></li>";
+    }).join("") + "</ul>";
+  }
+
+  var rawRowById = null;
+  function getRawVocabRow(vocabId) {
+    if (!rawRowById) {
+      rawRowById = {};
+      (window.vocabularyTables || []).forEach(function (t) {
+        t.rows.forEach(function (r) { if (r.id) rawRowById[r.id] = r; });
+      });
+    }
+    return rawRowById[vocabId] || null;
+  }
+  // "Words to Review" is one of the standard vocabulary table sections
+  // (window.buildVocabSection) filled with the entries missed most often --
+  // so it sorts, prints and view-mode-filters exactly like every other table.
+  function renderWordsToReview() {
+    var host = document.getElementById("fcWordsToReview");
+    if (!host) return;
+    if (!reviewInsights) { host.innerHTML = '<p class="fc-note">Loading…</p>'; return; }
+    var rows = reviewInsights.wordsToReview.map(function (m) { return getRawVocabRow(m.vocabId); }).filter(Boolean);
+    if (!rows.length || !window.buildVocabSection) {
+      host.innerHTML = '<div class="fc-viz-card"><h3 class="fc-viz-title">Words to Review</h3>' +
+        '<p class="fc-note">Nothing stands out yet — words you miss more than once collect here so you can drill and print them.</p></div>';
+      return;
+    }
+    host.innerHTML = window.buildVocabSection({
+      id: "wtr", title: "Words to Review", rows: rows, presort: false,
+      controls: { columnSelect: true, print: true }
+    });
+    refreshRowToggleButtons();
+    if (window.syncViewModeControls) window.syncViewModeControls();
   }
 
   // Card-state breakdown -- a single stacked bar (New/Learning/Review),
@@ -906,6 +1055,81 @@
 
   var weeklyActivity = null; // null = not fetched yet, [] = fetched, empty
   var weeklyActivityLoading = false;
+
+  // -----------------------------------------------------------------------
+  // Review insights (Dashboard): reviewed-today count, "Words to Review"
+  // (missed repeatedly, over time) and "Recent mistakes" (missed today).
+  // All derived from actual review history -- the guest cache's reviewLogs
+  // or Supabase's review_logs -- never estimated. `reviewEvents` caches the
+  // raw per-review list so the two derived views recompute cheaply (e.g.
+  // when pausing a word changes which entries still count as active).
+  // -----------------------------------------------------------------------
+  var reviewInsights = null;
+  var reviewInsightsLoading = false;
+  var reviewEvents = null; // [{ vocabId, wrong, ts }]
+  function emptyInsights() { return { reviewedToday: 0, wordsToReview: [], recentMistakes: [] }; }
+  function invalidateInsights() { reviewInsights = null; reviewEvents = null; reviewInsightsLoading = false; }
+
+  function computeInsights(events) {
+    var todayStr = localDateStr(new Date());
+    var agg = {};
+    var reviewedToday = 0;
+    events.forEach(function (e) {
+      if (!e.vocabId) return;
+      var a = agg[e.vocabId] || (agg[e.vocabId] = { reviews: 0, mistakes: 0, todayMistakes: 0, lastMistakeTs: 0 });
+      var isToday = localDateStr(new Date(e.ts)) === todayStr;
+      a.reviews++;
+      if (isToday) reviewedToday++;
+      if (e.wrong) {
+        a.mistakes++;
+        if (e.ts > a.lastMistakeTs) a.lastMistakeTs = e.ts;
+        if (isToday) a.todayMistakes++;
+      }
+    });
+    var activeVocab = {};
+    Object.keys(getCache().cards).forEach(function (id) {
+      var c = getCache().cards[id];
+      if (c.active) activeVocab[c.vocabId] = true;
+    });
+    // Words to Review: missed at least twice (not a one-off slip) and still
+    // being studied. Ranked by mistake count, then by miss rate.
+    var wordsToReview = Object.keys(agg)
+      .filter(function (v) { return agg[v].mistakes >= 2 && activeVocab[v]; })
+      .map(function (v) { return { vocabId: v, mistakes: agg[v].mistakes, reviews: agg[v].reviews }; })
+      .sort(function (a, b) { return b.mistakes - a.mistakes || (b.mistakes / b.reviews) - (a.mistakes / a.reviews); })
+      .slice(0, 20);
+    // Recent mistakes: whatever was missed today, most-missed first.
+    var recentMistakes = Object.keys(agg)
+      .filter(function (v) { return agg[v].todayMistakes >= 1; })
+      .map(function (v) { return { vocabId: v, count: agg[v].todayMistakes, lastTs: agg[v].lastMistakeTs }; })
+      .sort(function (a, b) { return b.count - a.count || b.lastTs - a.lastTs; })
+      .slice(0, 6);
+    return { reviewedToday: reviewedToday, wordsToReview: wordsToReview, recentMistakes: recentMistakes };
+  }
+  async function fetchReviewEvents() {
+    if (isGuestMode()) {
+      return getCache().reviewLogs.map(function (r) {
+        return {
+          vocabId: r.vocabId || null,
+          wrong: r.wrong === true || r.rating === 1,
+          ts: typeof r.ts === "number" ? r.ts : (Date.parse(r.date + "T12:00:00") || Date.now())
+        };
+      });
+    }
+    var client = getClient(), user = currentUser();
+    var since = new Date(); since.setDate(since.getDate() - 120);
+    var res = await client.from("review_logs").select("card_id, rating, reviewed_at").eq("user_id", user.id).gte("reviewed_at", since.toISOString());
+    if (res.error) throw res.error;
+    var cards = getCache().cards;
+    return res.data.map(function (row) {
+      var card = cards[row.card_id];
+      return { vocabId: card ? card.vocabId : null, wrong: row.rating === 1, ts: new Date(row.reviewed_at).getTime() };
+    });
+  }
+  async function loadReviewInsights() {
+    if (!reviewEvents) reviewEvents = await fetchReviewEvents();
+    reviewInsights = computeInsights(reviewEvents);
+  }
   function last7DaysFromCounts(counts) {
     var days = [];
     for (var i = 6; i >= 0; i--) {
@@ -963,6 +1187,29 @@
     session = { queue: buildQueue(new Date()), index: 0, checked: false, preview: null, correct: null, reviewedCount: 0 };
     render();
   }
+  // Practice one word now (from "Recent mistakes") -- all of its active cards,
+  // regardless of whether they're due yet.
+  function startSessionForVocab(vocabId) {
+    var ids = studyableCards().filter(function (c) { return c.vocabId === vocabId; }).map(function (c) { return c.id; });
+    if (!ids.length) return;
+    activeTab = "dashboard";
+    session = { queue: shuffle(ids), index: 0, checked: false, preview: null, correct: null, reviewedCount: 0 };
+    render();
+  }
+  // Extracted so the keyboard shortcut and the form's own submit both check
+  // through one path. Never rates -- only reveals the answer + rating buttons.
+  function submitCheck() {
+    if (!session || session.checked) return;
+    var card = getCache().cards[session.queue[session.index]];
+    var entry = card && getVocabIndex()[card.vocabId];
+    var input = document.getElementById("fcAnswerInput");
+    if (!card || !entry || !input) return;
+    session.userAnswer = input.value;
+    session.correct = checkAnswer(entry, card.direction, input.value);
+    session.checked = true;
+    session.preview = previewRatings(getScheduler(getCache().settings), card, new Date());
+    render();
+  }
 
   function renderReview(panel) {
     if (!session.queue.length || session.index >= session.queue.length) {
@@ -1003,12 +1250,7 @@
     var form = document.getElementById("fcAnswerForm");
     if (form) form.addEventListener("submit", function (event) {
       event.preventDefault();
-      session.userAnswer = input.value;
-      session.correct = checkAnswer(entry, card.direction, input.value);
-      session.checked = true;
-      var scheduler = getScheduler(getCache().settings);
-      session.preview = previewRatings(scheduler, card, now);
-      render();
+      submitCheck();
     });
     panel.querySelectorAll(".fc-rating-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { rate(btn.dataset.rating); });
@@ -1023,6 +1265,7 @@
   // Enter to check, 1-4 to rate and move on, repeat.
   function rate(ratingKey) {
     var ratingName = ratingKey.charAt(0).toUpperCase() + ratingKey.slice(1);
+    var ratingNum = RATING_NAMES.indexOf(ratingName) + 1; // Again = 1 … Easy = 4
     var cardId = session.queue[session.index];
     var c = getCache();
     var card = c.cards[cardId];
@@ -1033,10 +1276,15 @@
     var result = applyRating(scheduler, base, now, ratingName);
     Object.assign(card, result.card);
     if (isGuestMode()) {
-      // No server to sync to -- just keep a capped local history for the
-      // weekly-activity chart.
-      c.reviewLogs.push({ date: localDateStr(now) });
-      if (c.reviewLogs.length > 400) c.reviewLogs = c.reviewLogs.slice(-400);
+      // No server -- keep a capped local history. Beyond the day (for the
+      // weekly chart) each entry carries what the Dashboard's mistake
+      // insights need: which word, the rating, and whether the typed answer
+      // was wrong (rating "Again" or a failed check both count as a miss).
+      c.reviewLogs.push({
+        date: localDateStr(now), ts: now.getTime(), vocabId: card.vocabId,
+        rating: ratingNum, wrong: ratingNum === 1 || session.correct === false
+      });
+      if (c.reviewLogs.length > 1000) c.reviewLogs = c.reviewLogs.slice(-1000);
     } else {
       c.logsOutbox.push({
         clientReviewId: uuid(), cardId: cardId, baseCard: { reps: baseReps },
@@ -1046,10 +1294,10 @@
     recordStudyActivity(now);
     saveCache();
     if (!isGuestMode()) syncOutbox();
-    // This review just changed today's count -- drop the cached weekly
-    // chart so the next Dashboard visit recomputes it instead of showing
-    // whatever the week looked like before this review.
+    // This review changed today's counts -- drop the cached weekly chart and
+    // mistake insights so the Dashboard recomputes them on the next visit.
     weeklyActivity = null;
+    invalidateInsights();
     session.reviewedCount++;
     session.index++;
     session.checked = false;
@@ -1057,9 +1305,24 @@
     render();
   }
 
+  // Review keyboard shortcuts. Space / Enter check the answer (Space is left
+  // alone while the answer field is focused so it can still be typed into
+  // answers like "hot water"); once checked, only 1-4 rate. Nothing here can
+  // pick a rating before the answer has been checked, or skip the check.
   document.addEventListener("keydown", function (event) {
     if (!session || document.body.dataset.activePage !== "flashcards") return;
-    if (!session.checked) return;
+    var isSubmitKey = event.key === "Enter" || event.key === " ";
+
+    var backBtn = document.getElementById("fcBackToDashboard");
+    if (backBtn) { // session-complete screen
+      if (isSubmitKey) { event.preventDefault(); backBtn.click(); }
+      return;
+    }
+    var typing = document.activeElement === document.getElementById("fcAnswerInput");
+    if (!session.checked) {
+      if (isSubmitKey && !typing) { event.preventDefault(); submitCheck(); }
+      return;
+    }
     var idx = ["1", "2", "3", "4"].indexOf(event.key);
     if (idx === -1) return;
     event.preventDefault();
@@ -1067,12 +1330,44 @@
     if (btn) btn.click();
   });
 
-  // --- Manage: browse every vocab entry, add/remove/restore/delete-forever ---
+  // Practice a word straight from the Dashboard's "Recent mistakes" list.
+  document.addEventListener("click", function (event) {
+    var btn = event.target.closest && event.target.closest("[data-review-vocab]");
+    if (!btn) return;
+    startSessionForVocab(btn.dataset.reviewVocab);
+  });
+
+  // --- Manage: browse every vocab entry, add / pause / restore ---
+  function cardsForVocab(vocabId) {
+    return Object.keys(getCache().cards).map(function (id) { return getCache().cards[id]; }).filter(function (c) { return c.vocabId === vocabId; });
+  }
   function vocabState(vocabId) {
-    var cards = Object.keys(getCache().cards).map(function (id) { return getCache().cards[id]; }).filter(function (c) { return c.vocabId === vocabId; });
+    var cards = cardsForVocab(vocabId);
     if (!cards.length) return "none";
     if (cards.some(function (c) { return c.active; })) return "active";
     return "archived";
+  }
+  // A finer status for the Manage list's per-row indicator: like vocabState
+  // but splitting "active" into whether anything is actually due right now.
+  function vocabStatus(vocabId) {
+    var state = vocabState(vocabId);
+    if (state !== "active") return state; // none | archived
+    var now = new Date();
+    var due = cardsForVocab(vocabId).some(function (c) {
+      return c.active && c.state !== 0 && new Date(c.due) <= now;
+    });
+    return due ? "due" : "active";
+  }
+  var STATUS_META = {
+    none: { glyph: "○", label: "Not added" },
+    active: { glyph: "●", label: "In flashcards" },
+    due: { glyph: "◷", label: "Due for review" },
+    archived: { glyph: "◌", label: "Paused" }
+  };
+  function statusIndicatorHtml(vocabId) {
+    var s = vocabStatus(vocabId);
+    var m = STATUS_META[s] || STATUS_META.none;
+    return '<span class="fc-status fc-status-' + s + '" title="' + esc(m.label) + '" aria-label="' + esc(m.label) + '">' + m.glyph + '</span>';
   }
 
   // Rows currently hidden via "Manage rows" on the vocabulary page are read
@@ -1112,10 +1407,7 @@
     var html = '<div class="fc-manage-filters">' +
       [["all", "All vocabulary"], ["mine", "My flashcards"], ["archived", "Archived"]].map(function (f) {
         return '<button type="button" data-filter="' + f[0] + '" class="' + (manageFilter === f[0] ? "active" : "") + '">' + f[1] + "</button>";
-      }).join("") + "</div>" +
-      '<p class="fc-note fc-manage-legend">' +
-      '<strong>Add</strong> starts studying a word. <strong>Pause</strong> stops — it keeps all its progress, and adding it back later picks up exactly where you left off. ' +
-      'Only <strong>Delete history permanently</strong> (under Archived) actually erases anything.</p>';
+      }).join("") + "</div>";
 
     if (!catNames.length) {
       html += '<div class="fc-manage-list"><div class="fc-empty">Nothing here yet.</div></div>';
@@ -1138,10 +1430,21 @@
             '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(table.title) + '">' + CHEVRON_ICON + "</button>" +
             '<span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
             '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span>";
+          // Table-level actions per filter: "all" gets both add + pause;
+          // "My flashcards" gets Pause table (the whole point of that view);
+          // "Archived" gets Restore table.
           if (manageFilter === "all") {
             html += '<div class="fc-manage-table-actions">' +
               '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '" title="Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)">Add table</button>' +
-              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off">Pause table</button>' +
+              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off"' + (addedCount ? "" : " disabled") + '>Pause table</button>' +
+              "</div>";
+          } else if (manageFilter === "mine" && addedCount) {
+            html += '<div class="fc-manage-table-actions">' +
+              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Pauses every word in this table — keeps all progress, add the table back anytime to resume">Pause table</button>' +
+              "</div>";
+          } else if (manageFilter === "archived") {
+            html += '<div class="fc-manage-table-actions">' +
+              '<button type="button" class="fc-btn" data-table-action="restore-table" data-table-id="' + tableId + '" title="Resumes reviewing every paused word in this table with its previous progress intact">Restore table</button>' +
               "</div>";
           }
           html += "</div><div class=\"fc-manage-list\">";
@@ -1149,9 +1452,13 @@
             var entry = index[id];
             var state = vocabState(id);
             html += '<div class="fc-manage-row">' +
+              statusIndicatorHtml(id) +
+              '<span class="fc-manage-word">' +
               '<span class="fc-jp" lang="ja">' + entry.jpHtml + "</span>" +
+              '<span class="fc-ro">' + esc(entry.romajiDisplay) + "</span>" +
               '<span class="fc-en">' + esc(entry.englishDisplay) + "</span>" +
               (entry.romajiUsable ? "" : '<span class="fc-tag">EN only</span>') +
+              "</span>" +
               '<span class="fc-actions">' + manageActionsFor(id, state) + "</span></div>";
           });
           html += "</div></div>";
@@ -1176,14 +1483,12 @@
       });
     });
   }
-  // "Remove"/"Remove table" archive rather than delete -- see the tooltips
-  // above and on these two buttons themselves. Only "Delete history
-  // permanently" (reachable from the Archived filter, with a confirm step)
-  // actually erases anything.
+  // Pause / Pause table only archive (active = false) -- nothing here ever
+  // deletes a card or its history. A paused word keeps its full FSRS state
+  // and review log, and Restore brings it back exactly as it was.
   function manageActionsFor(vocabId, state) {
     if (state === "active") return '<button type="button" class="fc-btn" data-action="remove" data-vocab-id="' + esc(vocabId) + '" title="Keeps its progress — add it back anytime to pick up where you left off">Pause</button>';
-    if (state === "archived") return '<button type="button" class="fc-btn" data-action="restore" data-vocab-id="' + esc(vocabId) + '" title="Resumes reviewing this word with its previous progress intact">Restore</button>' +
-      '<button type="button" class="fc-btn fc-btn-danger" data-action="delete-forever" data-vocab-id="' + esc(vocabId) + '" title="Permanently erases this word’s FSRS progress and review history — cannot be undone">Delete history permanently</button>';
+    if (state === "archived") return '<button type="button" class="fc-btn" data-action="restore" data-vocab-id="' + esc(vocabId) + '" title="Resumes reviewing this word with its previous progress intact">Restore</button>';
     return '<button type="button" class="fc-btn fc-btn-primary" data-action="add" data-vocab-id="' + esc(vocabId) + '">Add</button>';
   }
   function bindManageActionButtons(scope) {
@@ -1195,11 +1500,8 @@
     try {
       if (action === "add" || action === "restore") await addVocab(vocabId);
       else if (action === "remove") await archiveVocab(vocabId);
-      else if (action === "delete-forever") {
-        if (!window.confirm("Permanently delete all learning history for this entry? This cannot be undone.")) return;
-        await deleteHistoryForever(vocabId);
-      }
       await refreshData();
+      invalidateInsights();
       render();
       refreshRowToggleButtons();
     } catch (e) {
@@ -1215,17 +1517,20 @@
     var allIds = Object.keys(index).filter(function (id) { return String(index[id].tableId) === String(tableId); });
     var originalText = btn.textContent;
     btn.disabled = true;
-    btn.textContent = action === "add-table" ? "Adding…" : "Removing…";
+    btn.textContent = action === "remove-table" ? "Pausing…" : action === "restore-table" ? "Restoring…" : "Adding…";
     try {
       if (action === "add-table") {
         var visible = visibleVocabIdsForTable(tableId);
         var targetIds = visible.length ? visible.filter(function (id) { return allIds.indexOf(id) !== -1; }) : allIds;
         await addVocabs(targetIds);
+      } else if (action === "restore-table") {
+        await addVocabs(allIds.filter(function (id) { return vocabState(id) === "archived"; }));
       } else {
         var activeIds = allIds.filter(function (id) { return vocabState(id) === "active"; });
         await archiveVocabs(activeIds);
       }
       await refreshData();
+      invalidateInsights();
       render();
       refreshRowToggleButtons();
     } catch (e) {
@@ -1344,6 +1649,7 @@
     try {
       await addVocabsRemote(vocabIds);
       await fetchAllFromServer();
+      invalidateInsights();
       refreshRowToggleButtons();
       if (activeTab === "dashboard" || activeTab === "manage") render();
       btn.textContent = "Added " + vocabIds.length + " word" + (vocabIds.length === 1 ? "" : "s");
@@ -1355,7 +1661,7 @@
     }
   });
 
-  onAuthChange(function () { render(); refreshRowToggleButtons(); });
+  onAuthChange(function () { invalidateInsights(); render(); refreshRowToggleButtons(); });
 
   document.addEventListener("DOMContentLoaded", function () {
     loadCache();

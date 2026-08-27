@@ -13,10 +13,9 @@ create table if not exists public.flashcards (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   vocab_id text not null,
   direction text not null check (direction in ('jp-en', 'jp-ro', 'ro-en', 'en-ro')),
-  -- Removing a vocab entry from flashcards sets active = false; it is never
+  -- Removing ("pausing") a vocab entry sets active = false; a row is never
   -- deleted. Re-adding the same entry flips this back to true and leaves
-  -- every FSRS field/history below untouched. Only the separate "delete
-  -- learning history permanently" action ever removes a row.
+  -- every FSRS field and its review history below untouched.
   active boolean not null default true,
   -- FSRS-6 Card fields (see ts-fsrs's Card type) -- state: 0 New, 1 Learning,
   -- 2 Review, 3 Relearning.
