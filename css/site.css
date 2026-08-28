@@ -258,8 +258,8 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ink);
-  font: 700 var(--fs-nav)/1.3 Arial, Helvetica, sans-serif;
-  letter-spacing: .01em;
+  font: 600 var(--fs-nav)/1.3 Arial, Helvetica, sans-serif;
+  letter-spacing: 0;
 }
 .cat-count {
   flex: 0 0 auto;
@@ -319,7 +319,7 @@ html, body {
   margin: 0 0 24px;
   color: var(--ink);
   font-size: var(--fs-page-title);
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: -.2px;
 }
 .overview-groups { display: flex; flex-direction: column; gap: 24px; }
@@ -646,13 +646,22 @@ html, body {
 .section-head {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 10px 16px;
+  gap: 12px;
   padding: 12px 18px;
   background: var(--surface);
   border-bottom: 1px solid var(--line-strong);
 }
+/* One line: the title shrinks (and truncates) first, controls stay pinned
+   right and never wrap. Only below 430px does the head wrap, so a phone-width
+   title stays whole with the controls dropping beneath it, right-aligned. */
 .section-head h2 { margin: 0; flex: 0 1 auto; min-width: 0; }
+.section-toggle { min-width: 0; }
+.section-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 430px) {
+  .section-head { flex-wrap: wrap; }
+  .section-head h2 { flex-basis: 100%; }
+  .section-title-text { white-space: normal; }
+}
 .section-toggle {
   appearance: none;
   border: 0;
@@ -682,10 +691,13 @@ html, body {
   background: var(--paper);
   border: 1px solid var(--line);
 }
+/* Deliberately medium weight, not bold -- the icon chip and the tinted strip
+   already mark this as the table's heading, so the type itself can stay light
+   and in keeping with the (400-weight, rounded) brand mark. */
 .section-title-text {
   font-size: var(--fs-section-title);
-  font-weight: 700;
-  letter-spacing: .01em;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--ink);
 }
 .section-toggle-icon {
@@ -697,33 +709,19 @@ html, body {
 .table-section.collapsed .section-toggle-icon { transform: rotate(-90deg); }
 .table-section:not(.collapsed) .section-toggle-icon { transform: rotate(0deg); }
 
-/* One tidy row of controls, right-aligned. Below ~900px it drops to its own
-   full-width line under the title (see the media query lower down) rather than
-   splitting button-by-button next to a squeezed heading. */
+/* Controls: a single non-wrapping group pinned to the right of the title. */
 .controls {
   margin-left: auto;
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 6px;
 }
-/* Every control in the strip is the same height and vertically centred so the
-   pills line up with the title text and with each other. */
-.controls > button { min-height: 28px; }
-
-/* Not enough room for the title and the controls side by side: drop the whole
-   control strip onto its own line under the title, left-aligned, as one
-   coherent row -- not individual buttons wrapping around a squeezed heading. */
-@media (max-width: 900px) {
-  .section-head { align-items: flex-start; }
-  .section-head h2 { flex-basis: 100%; }
-  .controls {
-    margin-left: 0;
-    flex-basis: 100%;
-    justify-content: flex-start;
-  }
-}
+.controls > button { min-height: 26px; }
+/* Quiet, compact controls -- small text, hairline border, so the whole group
+   fits beside the title instead of pushing itself onto its own row. */
 .print-one {
   appearance: none;
   border: 1px solid var(--line);
@@ -731,50 +729,38 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
   color: var(--muted);
   cursor: pointer;
+  flex: 0 0 auto;
 }
 .print-one:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
 
-.manage-rows-toggle {
-  appearance: none;
-  border: 1px solid var(--line);
-  background: var(--paper);
-  color: var(--muted);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  padding: 0 12px;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-}
-.manage-rows-toggle:hover { color: var(--accent-dark); background: var(--accent-soft); border-color: var(--accent); }
-.table-section.managing-rows .manage-rows-toggle {
-  color: var(--paper);
-  background: var(--accent-dark);
-  border-color: var(--accent-dark);
-}
-
+.manage-rows-toggle,
 .fc-add-table-btn {
   appearance: none;
   border: 1px solid var(--line);
   background: var(--paper);
   color: var(--muted);
-  font-size: var(--fs-micro);
-  font-weight: 700;
-  padding: 0 12px;
+  font-size: 11px;
+  font-weight: 400;
+  padding: 0 8px;
   border-radius: 6px;
   cursor: pointer;
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  flex: 0 0 auto;
 }
+.manage-rows-toggle:hover,
 .fc-add-table-btn:hover { color: var(--accent-dark); background: var(--accent-soft); border-color: var(--accent); }
+.table-section.managing-rows .manage-rows-toggle {
+  color: var(--paper);
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
+}
 .fc-add-table-btn[disabled] { opacity: .6; cursor: default; }
 
 .rows-hidden-status {
@@ -849,7 +835,7 @@ html, body {
   .table-section .section-toggle { cursor: auto; display: block !important; }
   .table-section .section-title-icon,
   .table-section .section-toggle-icon { display: none !important; }
-  .table-section .section-title-text { font-size: 15px !important; font-weight: 700 !important; }
+  .table-section .section-title-text { font-size: 15px !important; font-weight: 600 !important; }
   /* The grid is the only thing that keeps a border on paper. */
   .table-section .vocab {
     border: 1px solid var(--line) !important;
@@ -940,6 +926,14 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
+}
+
+/* Grayscale antialiasing takes a touch of weight off the CJK glyphs, which
+   otherwise read heavier than the Latin text next to them. Applied to every
+   Japanese run (all are marked lang="ja"). */
+[lang="ja"] {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Japanese: the primary column. */
@@ -1201,7 +1195,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .table-section.managing-rows .fc-toggle-btn { display: flex; }
 .table-section.managing-rows .vocab tbody td:last-child { padding-right: 54px; }
 
-.page-flashcards h2 { margin: 0 0 4px; color: var(--ink); font-size: var(--fs-page-title); font-weight: 700; letter-spacing: -.2px; }
+.page-flashcards h2 { margin: 0 0 4px; color: var(--ink); font-size: var(--fs-page-title); font-weight: 600; letter-spacing: -.2px; }
 .fc-lede { margin: 0 0 22px; color: var(--muted); font-size: var(--fs-nav-sub); max-width: 62ch; }
 
 .fc-tabs { display: flex; gap: 20px; margin-bottom: 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
@@ -1244,7 +1238,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
    page (no shadows/gradients), colors reused from the existing palette. */
 .fc-viz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
 .fc-viz-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
-.fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-section-title); }
+.fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
 
 .fc-breakdown-bar-wrap { border-radius: 8px; overflow: hidden; background: var(--surface); }
 .fc-breakdown-bar { display: block; width: 100%; height: 16px; }
@@ -1427,7 +1421,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
    the "real" one and the other as a fallback. */
 .fc-entry-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 8px; }
 .fc-entry-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; }
-.fc-entry-card h3 { margin: 0 0 8px; color: var(--ink); font-size: var(--fs-section-title); }
+.fc-entry-card h3 { margin: 0 0 8px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
 .fc-entry-card .fc-note { margin: 0 0 16px; }
 .fc-entry-card .fc-auth { max-width: none; margin: 0; }
 
@@ -1447,7 +1441,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 
 /* Settings */
 .fc-settings-section { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
-.fc-settings-section h3 { margin: 0 0 2px; font-size: var(--fs-section-title); color: var(--ink); }
+.fc-settings-section h3 { margin: 0 0 2px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 600; }
 .fc-settings-section p.fc-note { margin: 0 0 14px; }
 .fc-settings-field { padding: 10px 0; border-top: 1px solid var(--line); }
 .fc-settings-field:first-of-type { border-top: 0; }
