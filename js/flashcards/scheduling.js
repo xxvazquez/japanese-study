@@ -117,21 +117,41 @@ window.SakuraStudy.flashcards.scheduling = (function () {
     }
     return arr;
   }
-  // Learning/relearning cards stay strictly ordered by due time (a card due
-  // in 1 minute genuinely should come back before one due in 10) since
-  // that's short-term reinforcement, not a memorization drill -- but which
-  // due reviews and which fresh cards come up is shuffled, so a session
-  // isn't a predictable march through the same word/direction order every
-  // time (e.g. always all 4 directions of one word back to back).
+  // Spread a word's own cards apart: with 4 directions per word, a flat
+  // shuffle still routinely lands "English meaning of X" right next to
+  // "romaji of X". Deal the cards out round-robin by word instead, so the
+  // same word's directions are always (# of remaining words) apart. Order
+  // within each word, and the order words first appear, both come from the
+  // caller's shuffle, so it stays different every session.
+  function spaceByVocab(cards) {
+    var groups = {}, order = [];
+    cards.forEach(function (card) {
+      if (!groups[card.vocabId]) { groups[card.vocabId] = []; order.push(card.vocabId); }
+      groups[card.vocabId].push(card);
+    });
+    var out = [], dealt = true;
+    while (dealt) {
+      dealt = false;
+      for (var k = 0; k < order.length; k++) {
+        var g = groups[order[k]];
+        if (g.length) { out.push(g.shift()); dealt = true; }
+      }
+    }
+    return out;
+  }
+  // The queue keeps its learning -> review -> new priority, but every bucket
+  // is shuffled (so no two sessions march through the same order) and then
+  // spaced by word (so you never get the same word twice in a row while its
+  // other directions are still available).
   function buildQueue(now) {
     var c = getCache();
     var studyable = studyableCards();
-    var learning = studyable.filter(function (card) { return (card.state === 1 || card.state === 3) && new Date(card.due) <= now; })
-      .sort(function (a, b) { return new Date(a.due) - new Date(b.due); });
+    var learning = shuffle(studyable.filter(function (card) { return (card.state === 1 || card.state === 3) && new Date(card.due) <= now; }));
     var review = shuffle(studyable.filter(function (card) { return card.state === 2 && new Date(card.due) <= now; }));
     var fresh = shuffle(studyable.filter(function (card) { return card.state === 0; }))
       .slice(0, Math.max(0, c.settings.queue_new_cards_per_day));
-    return learning.concat(review, fresh).map(function (card) { return card.id; });
+    return spaceByVocab(learning).concat(spaceByVocab(review), spaceByVocab(fresh))
+      .map(function (card) { return card.id; });
   }
   function computeStats(now) {
     var cards = studyableCards();
