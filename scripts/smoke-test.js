@@ -93,11 +93,13 @@ async function main() {
 
   console.log("Sidebar accordion (independent of which page is open)");
   const chevron = sidebarGroups[0].querySelector(".sidebar-group-chevron");
+  check("groups start collapsed on the Overview page (only the active category expands)", sidebarGroups[0].classList.contains("collapsed"));
   chevron.click();
-  check("clicking a chevron collapses that group", sidebarGroups[0].classList.contains("collapsed"));
-  check("aria-expanded tracks the collapsed state", chevron.getAttribute("aria-expanded") === "false");
+  check("clicking a chevron expands that group", !sidebarGroups[0].classList.contains("collapsed"));
+  check("aria-expanded tracks the expanded state", chevron.getAttribute("aria-expanded") === "true");
+  check("expanding one group collapses the others (true accordion)", [...sidebarGroups].slice(1).every(g => g.classList.contains("collapsed")));
   chevron.click();
-  check("clicking it again re-expands the group", !sidebarGroups[0].classList.contains("collapsed"));
+  check("clicking it again re-collapses the group", sidebarGroups[0].classList.contains("collapsed"));
 
   console.log("Categories behave like separate pages");
   const grammarNav = document.querySelector('.sidebar-group-nav[data-category="Grammar"]');
@@ -141,12 +143,12 @@ async function main() {
   const japaneseModeBtn = document.querySelector('.view-mode button[data-mode="japanese"]');
   japaneseModeBtn.click();
   check("active view-mode button reports aria-pressed=true", japaneseModeBtn.getAttribute("aria-pressed") === "true");
-  const hiddenEnglishCell = document.querySelector(".vocab td:nth-child(4)");
+  const hiddenEnglishCell = document.querySelector(".vocab td:nth-child(3)");
   check("hidden column cells are aria-hidden (accessible state matches the visual)", hiddenEnglishCell.getAttribute("aria-hidden") === "true");
-  const hiddenSortButton = document.querySelector(".vocab th:nth-child(4) .sort-button");
+  const hiddenSortButton = document.querySelector(".vocab th:nth-child(3) .sort-button");
   check("sort control in a hidden column is disabled, not just invisible", hiddenSortButton.disabled === true);
   document.querySelector('.view-mode button[data-mode="all"]').click();
-  check("switching back to All clears aria-hidden", document.querySelector(".vocab td:nth-child(4)").getAttribute("aria-hidden") === null);
+  check("switching back to All clears aria-hidden", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
 
   console.log("Keyboard-operable table toggle");
   const grammarSection = document.querySelector('.table-section[data-category="Grammar"]');
@@ -155,11 +157,11 @@ async function main() {
   check("clicking the toggle (the same activation a native button gets from Enter/Space) flips collapsed state", grammarSection.classList.contains("collapsed") !== wasCollapsed);
   check("aria-expanded tracks the toggle", grammarSection.querySelector(".section-toggle").getAttribute("aria-expanded") === String(!grammarSection.classList.contains("collapsed")));
 
-  console.log("Row numbers");
+  console.log("Table columns");
   const countersSection = document.querySelector('.table-section[data-table="0"]');
-  const countersNums = [...countersSection.querySelectorAll("tbody td.row-num")].map(td => td.textContent);
-  check("each row is numbered sequentially from 1", countersNums.every((n, i) => Number(n) === i + 1));
-  check("the number column header is sized to that table's own row count", document.querySelector('.table-section[data-table="0"] .row-num-th').dataset.digits === "1");
+  check("there is no row-number column — Japanese leads the table", !countersSection.querySelector("td.row-num, .row-num-th"));
+  const headerLabels = [...countersSection.querySelectorAll("thead th")].map(th => th.textContent.replace(/[↕↓↑]/g, "").trim());
+  check("columns are Japanese → Romaji → English", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "English"]));
 
   console.log("Manage rows");
   const drinksSectionManage = document.querySelector('.table-section[data-table="1"]');
@@ -186,8 +188,9 @@ async function main() {
   check("no table-pick checkboxes", !document.querySelector(".table-pick"));
 
   console.log("Print this table (icon button)");
-  const printOneBtn = document.querySelector('.table-section[data-table="0"] .print-one');
+  const printOneBtn = document.querySelector('.table-section[data-table="0"] .print-icon-btn');
   check("print-one is icon-only with an accessible label", printOneBtn.getAttribute("aria-label") === "Print this table" && printOneBtn.textContent.trim() === "");
+  check("narrow screens also get a Print entry inside the overflow menu", !!document.querySelector('.table-section[data-table="0"] .section-menu-list .print-menu-item'));
   printOneBtn.click();
   check("clicking it marks body.print-only", document.body.classList.contains("print-only"));
   check("clicking it marks its own table as the print target", document.querySelector('.table-section[data-table="0"]').classList.contains("print-target"));
@@ -225,9 +228,16 @@ async function main() {
   drinksSectionFc.querySelector(".manage-rows-toggle").click(); // leave manage mode off for later checks
 
   console.log("Flashcards: add a whole table at once");
-  const addTableBtn = drinksSectionFc.querySelector(".fc-add-table-btn");
-  check("every table has an \"Add to flashcards\" button", !!addTableBtn && addTableBtn.dataset.table === "2");
-  check("it's always visible, not gated behind Manage rows", window.getComputedStyle(addTableBtn).display !== "none");
+  const fcMenuBtn = drinksSectionFc.querySelector(".section-menu-btn");
+  check("secondary table actions sit behind one overflow menu button", !!fcMenuBtn && fcMenuBtn.getAttribute("aria-haspopup") === "true");
+  check("the menu starts closed", drinksSectionFc.querySelector(".section-menu-list").hidden === true);
+  fcMenuBtn.click();
+  check("clicking the menu button opens it", drinksSectionFc.querySelector(".section-menu-list").hidden === false && fcMenuBtn.getAttribute("aria-expanded") === "true");
+  const addTableBtn = drinksSectionFc.querySelector(".section-menu-list .fc-add-table-btn");
+  check("the menu holds an \"Add to flashcards\" action for this table", !!addTableBtn && addTableBtn.dataset.table === "2");
+  check("the menu also holds \"Manage rows\"", !!drinksSectionFc.querySelector(".section-menu-list .manage-rows-toggle"));
+  document.body.click();
+  check("clicking elsewhere dismisses the menu", drinksSectionFc.querySelector(".section-menu-list").hidden === true);
   check("no element relies on an inline style=\"\" attribute, even after rendering the new controls", document.querySelectorAll("[style]").length === 0);
 
   console.log("Flashcards: guest mode (no account, on-device only -- no network involved, fully testable here)");

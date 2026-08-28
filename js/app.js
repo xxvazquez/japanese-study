@@ -47,6 +47,21 @@ function updateHiddenStatus(section) {
   status.hidden = count === 0;
   status.querySelector('.rows-hidden-count').textContent = count + ' row' + (count === 1 ? '' : 's') + ' hidden';
 }
+// Close every open per-table overflow menu, resetting its button's aria state.
+// `.table-section` normally clips to its rounded corners (overflow:hidden), so
+// the open menu also toggles `.menu-open` on the section to let the popover show.
+function closeSectionMenus(except) {
+  document.querySelectorAll('.section-menu-list:not([hidden])').forEach(function (list) {
+    if (list === except) return;
+    list.hidden = true;
+    const btn = list.parentElement && list.parentElement.querySelector('.section-menu-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  });
+  document.querySelectorAll('.table-section.menu-open').forEach(function (section) {
+    if (except && section.contains(except)) return;
+    section.classList.remove('menu-open');
+  });
+}
 function openSidebar() {
   document.querySelector('.sidebar').classList.add('open');
   document.body.classList.add('sidebar-open');
@@ -70,6 +85,20 @@ function markActiveNav(categoryName, tableId) {
   if (flashcardsLink) flashcardsLink.classList.toggle('active', document.body.dataset.activePage === 'flashcards');
   document.querySelectorAll('.sidebar-group-nav').forEach(b => b.classList.toggle('active', b.dataset.category === categoryName));
   document.querySelectorAll('.sidebar-group-items a').forEach(a => a.classList.toggle('active', tableId != null && a.dataset.target === String(tableId)));
+  syncSidebarAccordion(categoryName);
+}
+// True accordion: only the active category's group is expanded. On Overview /
+// Flashcards (no active category) every group collapses, keeping the rail short.
+// The sidebar table filter forces its own groups open via the .filtering class,
+// which wins over .collapsed in CSS, so this is safe to run while filtering too.
+function syncSidebarAccordion(categoryName) {
+  document.querySelectorAll('.sidebar-group').forEach(function (group) {
+    const nav = group.querySelector('.sidebar-group-nav');
+    const isActive = !!categoryName && nav && nav.dataset.category === categoryName;
+    group.classList.toggle('collapsed', !isActive);
+    const chevron = group.querySelector('.sidebar-group-chevron');
+    if (chevron) chevron.setAttribute('aria-expanded', String(isActive));
+  });
 }
 // Tracks whichever table is currently the active page, independent of the
 // sidebar's own DOM -- the sidebar gets fully re-rendered whenever a table
@@ -267,19 +296,19 @@ window.addEventListener('load',updateNavOnScroll);
     if (!vocabId) return '';
     return '<button type="button" class="fc-toggle-btn" data-vocab-id="' + esc(vocabId) + '" aria-label="Add to flashcards" aria-pressed="false" title="Add to flashcards">' + FLASHCARD_ICON + '</button>';
   }
-  function wordRow(row, i) {
+  function wordRow(row) {
     var openTag = '<tr data-vocab-id="' + esc(row.id || '') + '"' + (row.irregular ? ' class="irregular-row">' : '>');
-    return openTag + '<td class="row-num">' + (i + 1) + '</td>' + jpCell(row) +
+    return openTag + jpCell(row) +
       '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
   // forms[0] is the plain/dictionary form, forms[1] the polite (-masu) form --
   // tag each so CSS can tint the two consistently (plain vs polite) down both
   // the Japanese and Romaji columns.
   var VERB_FORM_CLASS = ['verb-form-plain', 'verb-form-polite'];
-  function verbPairRow(row, i) {
+  function verbPairRow(row) {
     var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '">' + esc(f.romaji) + '</div>'; }).join('');
-    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="row-num">' + (i + 1) + '</td><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
+    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }
   // isDefault marks the column the table renders sorted by (English) -- it
   // starts active and showing ↓ (A-Z); the others start neutral (↕).
@@ -289,45 +318,38 @@ window.addEventListener('load',updateNavOnScroll);
       '" aria-label="Sort ' + esc(label) + '">' + (isDefault ? '↓' : '↕') + '</button></th>';
   }
   var PRINT_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6V2.5h8V6"/><rect x="2.5" y="6" width="13" height="7" rx="1.2"/><path d="M5 11.5h8V15.5H5Z"/></svg>';
+  var MENU_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="currentColor" aria-hidden="true"><circle cx="9" cy="4" r="1.45"/><circle cx="9" cy="9" r="1.45"/><circle cx="9" cy="14" r="1.45"/></svg>';
   function byEnglish(a, b) {
     return window.compareCellText(String(a.english || ''), String(b.english || ''), 'asc');
   }
   function rowsHtmlFor(rows) {
-    return rows.map(function (row, i) { return row.type === 'verb-pair' ? verbPairRow(row, i) : wordRow(row, i); }).join('\n    ');
+    return rows.map(function (row) { return row.type === 'verb-pair' ? verbPairRow(row) : wordRow(row); }).join('\n    ');
   }
-  // A compact copy of the header's All/Japanese/Romaji/English control, for a
-  // table that needs its own column-scope switch where that header control
-  // isn't on screen (Flashcards' "Words to Review", so it prints one column at
-  // a time). Same .view-mode class -> same styling and the same delegated
-  // click handler in the search module drives it.
-  function viewModeInlineHtml() {
-    var cur = document.body.classList.contains('mode-japanese') ? 'japanese'
-      : document.body.classList.contains('mode-romaji') ? 'romaji'
-      : document.body.classList.contains('mode-english') ? 'english' : 'all';
-    return '<div class="view-mode view-mode-inline" aria-label="Columns to show">' +
-      [['all', 'All'], ['japanese', 'JP'], ['romaji', 'Romaji'], ['english', 'English']].map(function (o) {
-        var on = o[0] === cur;
-        return '<button type="button"' + (on ? ' class="active"' : '') + ' data-mode="' + o[0] + '" aria-pressed="' + on + '">' + o[1] + '</button>';
-      }).join('<span aria-hidden="true">|</span>') + '</div>';
-  }
-  // Shared table-section markup. `renderTable` (the vocabulary page) and
-  // `window.buildVocabSection` (Flashcards) both go through here so a table is
-  // structurally identical wherever it appears -- same columns, sort controls,
-  // print button, furigana markup -- and every feature that keys off
-  // `.table-section` / `.vocab` (search, print, view-mode, row hiding) just works.
+  // Shared table-section markup -- every vocabulary table on the page goes
+  // through here so it's structurally identical: same columns, sort controls,
+  // print button, furigana markup, and every feature that keys off
+  // `.table-section` / `.vocab` (search, print, view-mode, row hiding).
   function sectionMarkup(o) {
     var catMeta = categoryMeta(o.category || '');
     var controls = o.controls || {};
-    // The row-number column is only ever as wide as the widest number it needs
-    // to hold in this particular table. Width comes from a data-digits
-    // attribute (matched in CSS) rather than an inline style="" -- the page's
-    // CSP has no 'unsafe-inline' for style-src, so inline styles are dropped.
-    var numDigits = Math.min(String(Math.max(1, o.rowCount || 0)).length, 6);
-    var ctrlParts = ['<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>'];
-    if (controls.columnSelect) ctrlParts.push(viewModeInlineHtml());
-    if (controls.addTable) ctrlParts.push('<button type="button" class="fc-add-table-btn" data-table="' + o.id + '" title="Add every row in this table to your flashcards">Add to flashcards</button>');
-    if (controls.manageRows) ctrlParts.push('<button type="button" class="manage-rows-toggle">Manage rows</button>');
-    if (controls.print) ctrlParts.push('<button type="button" class="print-one" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>');
+    var ctrlParts =['<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>'];
+    // Secondary actions collapse into a quiet overflow menu so only its icon
+    // sits next to the title. Print is a standalone icon on desktop, but on
+    // narrow screens the full title takes priority, so print folds into the
+    // menu there too (the .print-menu-item copy, CSS-toggled by width) and the
+    // standalone icon is hidden.
+    var menuItems = [];
+    if (controls.addTable) menuItems.push('<button type="button" class="fc-add-table-btn" role="menuitem" data-table="' + o.id + '" title="Add every row in this table to your flashcards">Add to flashcards</button>');
+    if (controls.manageRows) menuItems.push('<button type="button" class="manage-rows-toggle" role="menuitem">Manage rows</button>');
+    // Only fold print into the menu when the menu already exists for other
+    // reasons -- a table whose only control is print keeps just the icon.
+    if (controls.print && menuItems.length) menuItems.push('<button type="button" class="print-one print-menu-item" role="menuitem" aria-label="Print this table">Print</button>');
+    if (menuItems.length) {
+      ctrlParts.push('<div class="section-menu">' +
+        '<button type="button" class="section-menu-btn" aria-haspopup="true" aria-expanded="false" aria-label="Table options" title="Table options">' + MENU_ICON + '</button>' +
+        '<div class="section-menu-list" role="menu" hidden>' + menuItems.join('') + '</div></div>');
+    }
+    if (controls.print) ctrlParts.push('<button type="button" class="print-one print-icon-btn" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>');
     var defaultSort = o.defaultSort !== false;
     return '<section class="table-section ' + (o.sectionClass || '') + '" data-table="' + o.id + '" data-category="' + esc(o.category || '') + '" id="table-' + o.id + '">' +
       '<div class="section-head">' +
@@ -337,30 +359,30 @@ window.addEventListener('load',updateNavOnScroll);
       '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
       '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
       '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
-      '<th class="row-num-th" data-digits="' + numDigits + '"></th><th>Japanese</th>' +
-      sortHeader('Romaji', 2, false) + sortHeader('English', 3, defaultSort) + '</tr></thead><tbody>\n    ' +
+      '<th>Japanese</th>' +
+      sortHeader('Romaji', 1, false) + sortHeader('English', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
       o.rowsHtml + '\n  </tbody></table></section>';
   }
   function renderTable(t) {
     var sortedRows = t.rows.slice().sort(byEnglish);
     return sectionMarkup({
       id: t.id, title: t.title, category: t.category, tableClass: t.tableClass,
-      rowsHtml: rowsHtmlFor(sortedRows), rowCount: t.rows.length,
+      rowsHtml: rowsHtmlFor(sortedRows),
       controls: { addTable: true, manageRows: true, print: true },
       sectionClass: 'page-hidden', defaultSort: true
     });
   }
-  // Build one of the standard vocabulary table sections from an arbitrary set
-  // of rows (raw data/vocabulary.js row objects). Flashcards uses it for
-  // "Words to Review" so that list is a real, printable, sortable vocabulary
-  // table rather than a bespoke component. `presort:false` keeps the caller's
-  // order (e.g. most-missed first) and starts every sort control neutral.
+  // Build a standard vocabulary table section from an arbitrary set of rows
+  // (raw data/vocabulary.js row objects). Flashcards' "Words to Review" uses it
+  // so that list is a real, sortable, printable table rather than a bespoke
+  // component. `presort:false` keeps the caller's order (e.g. most-missed
+  // first) and starts every sort control neutral.
   window.buildVocabSection = function (config) {
     var rows = (config.rows || []).filter(Boolean);
     var ordered = config.presort === false ? rows : rows.slice().sort(byEnglish);
     return sectionMarkup({
       id: config.id, title: config.title, category: config.category || '', tableClass: config.tableClass,
-      rowsHtml: rowsHtmlFor(ordered), rowCount: ordered.length,
+      rowsHtml: rowsHtmlFor(ordered),
       controls: config.controls || { print: true },
       sectionClass: config.sectionClass || '',
       defaultSort: config.presort !== false
@@ -418,10 +440,13 @@ window.addEventListener('load',updateNavOnScroll);
       var links = visible.map(function (t) {
         return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
       }).join('');
-      return '<div class="sidebar-group">' +
+      // Accordion: every group renders collapsed; syncSidebarAccordion() (via
+      // markActiveNav) opens just the active category. Category name + count
+      // stay visible in the head either way.
+      return '<div class="sidebar-group collapsed">' +
         '<div class="sidebar-group-head">' +
         '<button type="button" class="sidebar-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, visible.length) + '</button>' +
-        '<button type="button" class="sidebar-group-chevron" aria-expanded="true" aria-label="Toggle ' + esc(g.name) + '">' + CHEVRON_ICON + '</button>' +
+        '<button type="button" class="sidebar-group-chevron" aria-expanded="false" aria-label="Toggle ' + esc(g.name) + '">' + CHEVRON_ICON + '</button>' +
         '</div>' +
         '<div class="sidebar-group-items">' + links + '</div></div>';
     }).join('');
@@ -477,19 +502,10 @@ window.addEventListener('load',updateNavOnScroll);
   // `currentTableId` (tracked in goToTable/showCategoryPage/showOverviewPage)
   // since the freshly-rendered nodes start with no .active class of their own.
   window.refreshNav = function () {
-    var collapsedCategories = new Set(
-      [...document.querySelectorAll('.sidebar-group.collapsed .sidebar-group-nav')]
-        .map(function (nav) { return nav.dataset.category; })
-    );
     if (sidebarHost) sidebarHost.innerHTML = renderSidebar(window.vocabularyTables, hiddenTables);
     if (overviewHost) overviewHost.innerHTML = renderOverview(window.vocabularyTables, hiddenTables);
-    document.querySelectorAll('.sidebar-group').forEach(function (group) {
-      var nav = group.querySelector('.sidebar-group-nav');
-      if (!nav || !collapsedCategories.has(nav.dataset.category)) return;
-      group.classList.add('collapsed');
-      var chevronBtn = group.querySelector('.sidebar-group-chevron');
-      if (chevronBtn) chevronBtn.setAttribute('aria-expanded', 'false');
-    });
+    // markActiveNav() below re-runs syncSidebarAccordion(), so the freshly
+    // rendered groups end up with exactly the active category expanded.
     if (window.bindSidebarEvents) window.bindSidebarEvents();
     if (window.bindOverviewEvents) window.bindOverviewEvents();
     markActiveNav(document.body.dataset.activeCategory || null, currentTableId);
@@ -547,12 +563,12 @@ document.addEventListener('DOMContentLoaded', function () {
   function fieldsForFilter(row, filter) {
     const fields = [];
     if (filter === 'all' || filter === 'japanese') {
-      const jp = jpFields(row.cells[1]);
-      fields.push({ cell: row.cells[1], text: jp.kanji });
-      fields.push({ cell: row.cells[1], text: jp.furigana });
+      const jp = jpFields(row.cells[0]);
+      fields.push({ cell: row.cells[0], text: jp.kanji });
+      fields.push({ cell: row.cells[0], text: jp.furigana });
     }
-    if (filter === 'all' || filter === 'romaji') fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
-    if (filter === 'all' || filter === 'english') fields.push({ cell: row.cells[3], text: row.cells[3].textContent });
+    if (filter === 'all' || filter === 'romaji') fields.push({ cell: row.cells[1], text: row.cells[1].textContent });
+    if (filter === 'all' || filter === 'english') fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
     return fields;
   }
 
@@ -683,10 +699,11 @@ document.addEventListener('DOMContentLoaded', function () {
   // reader and its sort button focusable. Mark the hidden columns aria-hidden and
   // disable their sort control so the accessible state matches what's visually shown.
   function applyViewModeAccessibility(mode) {
-    const hiddenByMode = { japanese: [3, 4], romaji: [2, 4], english: [2, 3] };
+    // Columns: 1 = Japanese, 2 = Romaji, 3 = English.
+    const hiddenByMode = { japanese: [2, 3], romaji: [1, 3], english: [1, 2] };
     const hidden = hiddenByMode[mode] || [];
     document.querySelectorAll('.vocab').forEach(function (table) {
-      [2, 3, 4].forEach(function (col) {
+      [1, 2, 3].forEach(function (col) {
         const isHidden = hidden.indexOf(col) !== -1;
         table.querySelectorAll('th:nth-child(' + col + '), td:nth-child(' + col + ')').forEach(function (cell) {
           if (isHidden) cell.setAttribute('aria-hidden', 'true'); else cell.removeAttribute('aria-hidden');
@@ -697,11 +714,8 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // One column-scope mode for the whole page (All/Japanese/Romaji/English).
-  // Exposed + delegated so a second .view-mode control rendered later -- e.g.
-  // the one the Flashcards "Words to Review" table carries so it can be
-  // printed a column at a time, where the header's own control is hidden --
-  // drives the exact same behavior with no extra wiring.
+  // One column-scope mode for the whole page (All/Japanese/Romaji/English),
+  // driven by the header's segmented control via a delegated click handler.
   function setViewMode(mode) {
     document.body.classList.remove('mode-japanese', 'mode-romaji', 'mode-english');
     if (mode !== 'all') document.body.classList.add('mode-' + mode);
@@ -729,24 +743,37 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// CSP-safe delegated event wiring for generated vocabulary controls. One
-// document-level listener (rather than a per-node forEach at load) so table
-// sections rendered later -- the Flashcards "Words to Review" table reuses the
-// exact same markup and controls -- work with no extra binding step.
+// CSP-safe delegated event wiring for the generated vocabulary controls -- one
+// document-level listener rather than a per-node forEach at load.
 document.addEventListener('DOMContentLoaded', function () {
   document.addEventListener('click', function (event) {
     const t = event.target;
     if (!t || !t.closest) return;
+    // Any click outside a menu (button + popover) dismisses open menus.
+    if (!t.closest('.section-menu')) closeSectionMenus();
     let el;
+    if ((el = t.closest('.section-menu-btn'))) {
+      event.stopPropagation();
+      const list = el.parentElement.querySelector('.section-menu-list');
+      const willOpen = list.hidden;
+      closeSectionMenus();
+      list.hidden = !willOpen;
+      el.setAttribute('aria-expanded', String(willOpen));
+      const section = el.closest('.table-section');
+      if (section) section.classList.toggle('menu-open', willOpen);
+      return;
+    }
     if ((el = t.closest('.section-toggle'))) {
       toggleSection(el.closest('.table-section'));
     } else if ((el = t.closest('.print-one'))) {
       event.stopPropagation();
+      closeSectionMenus();
       printOne(el.closest('.table-section').dataset.table);
     } else if ((el = t.closest('.manage-rows-toggle'))) {
       event.stopPropagation();
       const managing = el.closest('.table-section').classList.toggle('managing-rows');
       el.textContent = managing ? 'Done' : 'Manage rows';
+      closeSectionMenus();
     } else if ((el = t.closest('.row-hide-btn'))) {
       event.stopPropagation();
       const section = el.closest('.table-section');
@@ -760,7 +787,18 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if ((el = t.closest('.sort-button'))) {
       event.stopPropagation();
       sortTableFromButton(el);
+    } else if (t.closest('.fc-add-table-btn')) {
+      // Handled in js/flashcards.js -- just dismiss the menu it lives in.
+      closeSectionMenus();
     }
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    const open = document.querySelector('.section-menu-list:not([hidden])');
+    if (!open) return;
+    const btn = open.parentElement.querySelector('.section-menu-btn');
+    closeSectionMenus();
+    if (btn) btn.focus();
   });
   // The sidebar and Overview list both re-render themselves (hide/show-all
   // pulls a table from both at once, see window.refreshNav), which destroys
@@ -770,8 +808,18 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.sidebar-group-chevron').forEach(function (button) {
       button.addEventListener('click', function () {
         const group = button.closest('.sidebar-group');
-        const collapsed = group.classList.toggle('collapsed');
-        button.setAttribute('aria-expanded', String(!collapsed));
+        const willExpand = group.classList.contains('collapsed');
+        // True accordion: expanding one group collapses the others.
+        if (willExpand) {
+          document.querySelectorAll('.sidebar-group').forEach(function (other) {
+            if (other === group) return;
+            other.classList.add('collapsed');
+            const c = other.querySelector('.sidebar-group-chevron');
+            if (c) c.setAttribute('aria-expanded', 'false');
+          });
+        }
+        group.classList.toggle('collapsed', !willExpand);
+        button.setAttribute('aria-expanded', String(willExpand));
       });
     });
     document.querySelectorAll('.sidebar-group-nav').forEach(function (button) {

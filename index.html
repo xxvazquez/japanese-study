@@ -44,13 +44,15 @@
     </label>
   </div>
   <div class="search-meta">
-    <div class="view-mode" aria-label="Search scope">
-      <button type="button" class="active" data-mode="all" aria-pressed="true">All</button><span aria-hidden="true">|</span>
-      <button type="button" data-mode="japanese" aria-pressed="false">Japanese</button><span aria-hidden="true">|</span>
-      <button type="button" data-mode="romaji" aria-pressed="false">Romaji</button><span aria-hidden="true">|</span>
-      <button type="button" data-mode="english" aria-pressed="false">English</button>
+    <div class="search-tools">
+      <div class="view-mode" aria-label="Search scope">
+        <button type="button" class="active" data-mode="all" aria-pressed="true">All</button><span aria-hidden="true">|</span>
+        <button type="button" data-mode="japanese" aria-pressed="false">Japanese</button><span aria-hidden="true">|</span>
+        <button type="button" data-mode="romaji" aria-pressed="false">Romaji</button><span aria-hidden="true">|</span>
+        <button type="button" data-mode="english" aria-pressed="false">English</button>
+      </div>
+      <button type="button" class="polite-toggle" id="politeToggle" aria-pressed="false" title="Switch verb tables between the plain form and the polite 〜ます form">Show polite</button>
     </div>
-    <button type="button" class="polite-toggle" id="politeToggle" aria-pressed="false" title="Switch verb tables between the plain form and the polite 〜ます form">Show polite</button>
     <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
   </div>
 </header>

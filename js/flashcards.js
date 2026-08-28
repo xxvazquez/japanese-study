@@ -109,6 +109,10 @@
           entry.jpHtml = row.forms.map(function (f) {
             return '<div class="verb-form"><span class="jpword">' + jpHtmlFn(f.jp) + "</span></div>";
           }).join("");
+          // Same forms on one line ("plain / polite"), for compact lists.
+          entry.jpInlineHtml = row.forms.map(function (f) {
+            return '<span class="jpword">' + jpHtmlFn(f.jp) + "</span>";
+          }).join('<span class="fc-jp-slash"> / </span>');
           entry.jpPlain = row.forms.map(function (f) { return jpPlainOf(f.jp); }).join(" / ");
           entry.romajiDisplay = row.forms.map(function (f) { return f.romaji; }).join(" / ");
           entry.romajiUsable = row.forms.every(function (f) { return isRomajiUsable(f.romaji); });
@@ -117,6 +121,7 @@
             : [];
         } else {
           entry.jpHtml = '<span class="jpword">' + jpHtmlFn(row.jp) + "</span>";
+          entry.jpInlineHtml = entry.jpHtml;
           entry.jpPlain = jpPlainOf(row.jp);
           entry.romajiDisplay = row.romaji;
           entry.romajiUsable = isRomajiUsable(row.romaji);
@@ -863,7 +868,7 @@
       '<ul class="fc-help-list">' +
       '<li><span class="fc-legend-term">Today</span> — cards reviewed today against your daily target (New cards per day, under Settings → Daily Session).</li>' +
       '<li><span class="fc-legend-term">Next review</span> — when the next scheduled card is due, taken straight from the FSRS schedule.</li>' +
-      '<li><span class="fc-legend-term">Recent mistakes</span> — words you missed today. Click one to practice it right away.</li>' +
+      '<li><span class="fc-legend-term">Missed today</span> — words you missed in today\'s reviews, most-missed first. Click one to practice it right away.</li>' +
       '<li><span class="fc-legend-term">Words to Review</span> — words you get wrong repeatedly over time, shown as a normal vocabulary table you can sort and print.</li>' +
       '</ul></div>' +
       '<div class="fc-settings-section"><h3>Casual &amp; polite forms</h3>' +
@@ -889,23 +894,25 @@
       loadReviewInsights().catch(function () { reviewInsights = emptyInsights(); }).then(function () { reviewInsightsLoading = false; render(); });
     }
     var newInSession = Math.min(stats.newCount, Math.max(0, settings.queue_new_cards_per_day));
+    // Order matches the way you actually use this page: read the due / next-review
+    // summary, act on it (Study now), then the slower-moving context below --
+    // stat tiles, charts, and finally the Words to Review table.
     panel.innerHTML =
       '<div class="fc-top-row">' + nextReviewHtml(now) + todayProgressHtml() + "</div>" +
+      '<div class="fc-cta-row fc-cta-row-primary"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + newInSession === 0 ? " disabled" : "") + ">Study now</button></div>" +
       '<div class="fc-stats-grid">' +
       statTile(streak, "Day streak", "streak") +
       statTile(stats.total, "Total cards") +
-      statTile(stats.dueCount, "Due now", "due") +
       statTile(stats.reviewsCompleted, "Reviews completed") +
       statTile(retentionText, "Estimated retention") +
       "</div>" +
       (settings.longest_streak > streak ? '<p class="fc-note fc-longest-streak">Longest streak: ' + settings.longest_streak + " day" + (settings.longest_streak === 1 ? "" : "s") + ".</p>" : "") +
+      '<p class="fc-note fc-retention-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</p>' +
       '<div class="fc-viz-grid">' +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Card progress</h3>' + stateBreakdownChart(stats) + "</div>" +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Reviews this week</h3>' + (weeklyActivity ? weeklyActivityChart(weeklyActivity) : '<p class="fc-note">Loading…</p>') + "</div>" +
-      '<div class="fc-viz-card"><h3 class="fc-viz-title">Recent mistakes</h3>' + recentMistakesHtml() + "</div>" +
+      '<div class="fc-viz-card fc-viz-wide"><h3 class="fc-viz-title">Missed today</h3>' + missedTodayHtml() + "</div>" +
       "</div>" +
-      '<div class="fc-cta-row"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + newInSession === 0 ? " disabled" : "") + ">Study now</button>" +
-      '<span class="fc-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</span></div>' +
       '<div id="fcWordsToReview"></div>';
     var btn = document.getElementById("fcStudyNow");
     if (btn) btn.addEventListener("click", startSession);
@@ -916,7 +923,7 @@
     return '<div class="fc-stat-tile' + cls + '"><span class="fc-stat-value">' + esc(value) + '</span><span class="fc-stat-label">' + esc(label) + "</span></div>";
   }
 
-  // --- Dashboard: Today's progress, Next review, Recent mistakes, Words to Review ---
+  // --- Dashboard: Today's progress, Next review, Missed today, Words to Review ---
 
   function todayProgressHtml() {
     var target = Math.max(0, getCache().settings.queue_new_cards_per_day || 0);
@@ -936,8 +943,8 @@
   function verboseUntil(now, ts) {
     var ms = ts - now.getTime();
     if (ms <= 0) return "now";
-    var mins = Math.round(ms / 60000);
-    if (mins < 60) return "in " + Math.max(1, mins) + " minute" + (mins === 1 ? "" : "s");
+    var mins = Math.max(1, Math.round(ms / 60000));
+    if (mins < 60) return "in " + mins + " minute" + (mins === 1 ? "" : "s");
     var hrs = Math.round(mins / 60);
     if (hrs < 24) return "in " + hrs + " hour" + (hrs === 1 ? "" : "s");
     var days = Math.round(hrs / 24);
@@ -978,21 +985,26 @@
       '<span class="fc-next-review-sub">' + esc(sub) + "</span></div>";
   }
 
-  function recentMistakesHtml() {
+  // "Missed today" -- a calm shortlist of words to revisit. One row per word:
+  // the Japanese pair (strongest), a single supporting "romaji · english" line,
+  // and a compact "N× today" badge. The whole row is the control (tap to
+  // practice that word now); no per-row buttons.
+  function missedTodayHtml() {
     if (!reviewInsights) return '<p class="fc-note">Loading…</p>';
     var list = reviewInsights.recentMistakes;
-    if (!list.length) return '<p class="fc-note">No mistakes today.</p>';
+    if (!list.length) return '<p class="fc-note">Nothing missed today.</p>';
     var idx = getVocabIndex();
-    return '<ul class="fc-mini-list">' + list.map(function (m) {
+    return '<ul class="fc-missed-list">' + list.map(function (m) {
       var e = idx[m.vocabId];
       if (!e) return "";
-      return '<li><button type="button" class="fc-mini-row" data-review-vocab="' + esc(m.vocabId) + '">' +
-        '<span class="fc-mini-word">' +
-        '<span class="fc-jp" lang="ja">' + e.jpHtml + "</span>" +
-        '<span class="fc-mini-ro">' + esc(e.romajiDisplay) + "</span>" +
-        '<span class="fc-mini-en">' + esc(e.englishDisplay) + "</span>" +
+      return '<li><button type="button" class="fc-missed-row" data-review-vocab="' + esc(m.vocabId) + '" title="Practice this word now">' +
+        '<span class="fc-missed-jp" lang="ja">' + e.jpInlineHtml + "</span>" +
+        '<span class="fc-missed-gloss">' +
+        '<span class="fc-missed-ro">' + esc(e.romajiDisplay) + "</span>" +
+        '<span class="fc-missed-sep"> · </span>' +
+        '<span class="fc-missed-en">' + esc(e.englishDisplay) + "</span>" +
         "</span>" +
-        '<span class="fc-mini-meta">' + m.count + " mistake" + (m.count === 1 ? "" : "s") + " today</span>" +
+        '<span class="fc-missed-badge">' + m.count + "× today</span>" +
         "</button></li>";
     }).join("") + "</ul>";
   }
@@ -1009,7 +1021,9 @@
   }
   // "Words to Review" is one of the standard vocabulary table sections
   // (window.buildVocabSection) filled with the entries missed most often --
-  // so it sorts, prints and view-mode-filters exactly like every other table.
+  // so it sorts and prints exactly like every other table. Scoped CSS on
+  // #fcWordsToReview keeps its header quiet so it reads as a dashboard card,
+  // not a full vocabulary-page section.
   function renderWordsToReview() {
     var host = document.getElementById("fcWordsToReview");
     if (!host) return;
@@ -1022,10 +1036,9 @@
     }
     host.innerHTML = window.buildVocabSection({
       id: "wtr", title: "Words to Review", rows: rows, presort: false,
-      controls: { columnSelect: true, print: true }
+      controls: { print: true }
     });
     refreshRowToggleButtons();
-    if (window.syncViewModeControls) window.syncViewModeControls();
   }
 
   // Card-state breakdown -- a single stacked bar (New/Learning/Review),
@@ -1058,7 +1071,7 @@
 
   // -----------------------------------------------------------------------
   // Review insights (Dashboard): reviewed-today count, "Words to Review"
-  // (missed repeatedly, over time) and "Recent mistakes" (missed today).
+  // (missed repeatedly, over time) and "Missed today" (missed today).
   // All derived from actual review history -- the guest cache's reviewLogs
   // or Supabase's review_logs -- never estimated. `reviewEvents` caches the
   // raw per-review list so the two derived views recompute cheaply (e.g.
@@ -1098,7 +1111,7 @@
       .map(function (v) { return { vocabId: v, mistakes: agg[v].mistakes, reviews: agg[v].reviews }; })
       .sort(function (a, b) { return b.mistakes - a.mistakes || (b.mistakes / b.reviews) - (a.mistakes / a.reviews); })
       .slice(0, 20);
-    // Recent mistakes: whatever was missed today, most-missed first.
+    // Missed today: whatever was missed today, most-missed first.
     var recentMistakes = Object.keys(agg)
       .filter(function (v) { return agg[v].todayMistakes >= 1; })
       .map(function (v) { return { vocabId: v, count: agg[v].todayMistakes, lastTs: agg[v].lastMistakeTs }; })
@@ -1187,7 +1200,7 @@
     session = { queue: buildQueue(new Date()), index: 0, checked: false, preview: null, correct: null, reviewedCount: 0 };
     render();
   }
-  // Practice one word now (from "Recent mistakes") -- all of its active cards,
+  // Practice one word now (from "Missed today") -- all of its active cards,
   // regardless of whether they're due yet.
   function startSessionForVocab(vocabId) {
     var ids = studyableCards().filter(function (c) { return c.vocabId === vocabId; }).map(function (c) { return c.id; });
@@ -1234,9 +1247,11 @@
 
     if (session.checked) {
       html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
-        (session.correct ? "Correct" : "Not quite") +
+        '<span class="fc-result-label">' + (session.correct ? "Correct" : "Not quite") + "</span>" +
         (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
-        '<span class="fc-expected">Answer: ' + esc(expectedDisplayFor(entry, card.direction)) + "</span></div>" +
+        "</div>" +
+        '<div class="fc-answer-reveal"><span class="fc-answer-reveal-label">Answer</span>' +
+        '<span class="fc-expected">' + esc(expectedDisplayFor(entry, card.direction)) + "</span></div>" +
         '<div class="fc-rating-row">' + RATING_NAMES.map(function (name, i) {
           var p = session.preview[name];
           return '<button type="button" class="fc-rating-btn" data-rating="' + name.toLowerCase() + '"><span class="fc-rating-key">' + (i + 1) + '</span><span class="fc-rating-name">' + name + '</span><span class="fc-rating-interval">' + p.intervalLabel + "</span></button>";
@@ -1330,7 +1345,7 @@
     if (btn) btn.click();
   });
 
-  // Practice a word straight from the Dashboard's "Recent mistakes" list.
+  // Practice a word straight from the Dashboard's "Missed today" list.
   document.addEventListener("click", function (event) {
     var btn = event.target.closest && event.target.closest("[data-review-vocab]");
     if (!btn) return;

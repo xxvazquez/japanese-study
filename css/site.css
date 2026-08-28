@@ -70,13 +70,20 @@
   --fs-nav-sub: 13.5px;
   --fs-table-header: 12px;
   --fs-jp: 19px;
-  --fs-romaji: 13.5px;
+  --fs-romaji: 13px;
   --fs-english: 13.5px;
-  /* Two shared small tiers so labels, notes, counts and captions stop drifting
-     between 11px / 11.5px / 12px / 12.5px ad hoc -- one step down from body
-     text, and one step below that for the genuinely peripheral bits. */
+  /* One secondary-text size for every label, note, count, caption and compact
+     control (--fs-small); --fs-micro is only a hair below it and reserved for
+     genuinely peripheral numerics (row numbers, chart ticks, kbd) -- nothing
+     drops below this ~12px readable floor any more. */
   --fs-small: 12.5px;
-  --fs-micro: 11.5px;
+  --fs-micro: 12px;
+
+  /* Latin / UI typeface -- the platform's own system sans (SF on Apple, Segoe
+     UI on Windows), which reads clean, friendly and softly rounded without a
+     downloaded web font. Japanese vocabulary and furigana keep their own
+     dedicated CJK stack (see .vocab td.jp / .furigana) and never use this. */
+  --font-ui: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 @media (min-width: 761px) {
@@ -87,10 +94,10 @@
     --fs-nav-sub: 14px;
     --fs-table-header: 12px;
     --fs-jp: 20px;
-    --fs-romaji: 15px;
+    --fs-romaji: 14px;
     --fs-english: 15px;
     --fs-small: 12.5px;
-    --fs-micro: 11.5px;
+    --fs-micro: 12px;
   }
 }
 
@@ -105,7 +112,7 @@ html, body {
      is a deliberate flat surface rather than cards adrift on open canvas. */
   background-color: var(--page-bg);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .layout {
@@ -258,7 +265,7 @@ html, body {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--ink);
-  font: 600 var(--fs-nav)/1.3 Arial, Helvetica, sans-serif;
+  font: 600 var(--fs-nav)/1.3 var(--font-ui);
   letter-spacing: 0;
 }
 .cat-count {
@@ -316,26 +323,27 @@ html, body {
    --------------------------------------------------------------------- */
 .page-overview { padding-top: 20px; padding-bottom: 40px; }
 .page-overview h2 {
-  margin: 0 0 24px;
+  margin: 0 0 16px;
   color: var(--ink);
   font-size: var(--fs-page-title);
   font-weight: 600;
   letter-spacing: -.2px;
 }
-.overview-groups { display: flex; flex-direction: column; gap: 24px; }
-
-/* Each category is its own quiet card -- a light surface and a hairline
-   border do the grouping instead of a divider rule under every heading. */
+/* One intentional directory, not a grid of floating cards: a single column of
+   full-width category sections, divided by a hairline rule rather than each
+   getting its own border. */
+.overview-groups { display: flex; flex-direction: column; }
 .overview-group {
-  background: var(--paper);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 16px 18px;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
+  padding: 16px 0 18px;
 }
-/* A permanent, very light teal wash (not just on hover) plus real breathing
-   room below it -- the category needs to read as the parent grouping at a
-   glance, before you even start scanning table names. Still just a tint,
-   not a filled/bordered button. */
+.overview-group:first-child { border-top: 0; padding-top: 4px; }
+
+/* One quiet category header -- icon, name, count -- with a very light teal
+   wash so the parent grouping reads at a glance without a hard border. */
 .overview-group-nav {
   appearance: none;
   border: 0;
@@ -343,31 +351,30 @@ html, body {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
-  margin: -9px -10px 16px;
-  width: calc(100% + 20px);
+  width: 100%;
+  padding: 8px 10px;
+  margin: 0 0 8px;
   border-radius: 8px;
   cursor: pointer;
   text-align: left;
 }
 .overview-group-nav:hover { background: rgba(43, 167, 160, .14); }
 .overview-group-nav:hover .cat-name { color: var(--accent-dark); }
-/* A single vertical list, not wrapped inline text -- each table reads as
-   its own clickable row (name left, chevron right), like a reference
-   book's table of contents rather than a loose cluster of tags. Table
-   names are deliberately lighter (--muted) than the category title
-   (--ink, bold) above, so the parent/child weight reads clearly. */
-.overview-group-items { display: flex; flex-direction: column; }
+
+/* The category's table links fill the section's full width -- 2-3 columns on
+   wide desktop, one on mobile -- so a big category (Travel, Food) uses its
+   width instead of becoming a tall narrow column. Multi-column (not grid) so
+   the list reads alphabetically DOWN each column, then across. */
+.overview-group-items {
+  columns: 264px;
+  column-gap: 22px;
+}
 .overview-row {
+  break-inside: avoid;
   display: flex;
   align-items: center;
-  /* Negative side margins match .overview-group's own padding, so the row
-     spans the full width of the card, edge to edge -- not just a small
-     hit-area around the text. */
-  margin: 0 -18px;
   border-top: 1px solid var(--line);
 }
-.overview-row:first-child { border-top: 0; }
 .overview-link {
   flex: 1 1 auto;
   min-width: 0;
@@ -375,10 +382,11 @@ html, body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 11px 18px;
+  padding: 7px 6px 7px 8px;
   color: var(--muted);
   text-decoration: none;
   font-size: var(--fs-nav-sub);
+  border-radius: 6px;
 }
 .overview-row:hover, .overview-row:focus-within { background: var(--accent-soft); }
 .overview-row:hover .overview-link, .overview-row:focus-within .overview-link { color: var(--accent-dark); }
@@ -404,9 +412,9 @@ html, body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  margin-right: 10px;
+  width: 24px;
+  height: 24px;
+  margin: 0 2px 0 2px;
   border-radius: 6px;
   color: var(--faint);
   cursor: pointer;
@@ -426,8 +434,8 @@ html, body {
   display: flex;
   align-items: center;
   gap: 6px;
-  margin: 4px -18px -16px;
-  padding: 10px 18px;
+  margin: 8px 0 0;
+  padding: 8px 8px 0;
   border-top: 1px solid var(--line);
   color: var(--faint);
   font-size: var(--fs-small);
@@ -438,7 +446,7 @@ html, body {
   background: transparent;
   color: var(--accent-dark);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0;
   cursor: pointer;
 }
@@ -460,8 +468,8 @@ html, body {
   border: 0;
   border-bottom: 1px solid var(--line-strong);
   border-radius: 0;
-  padding-top: 16px;
-  padding-bottom: 14px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 .top-row {
@@ -481,7 +489,7 @@ html, body {
 .brand-text { display: flex; flex-direction: column; gap: 1px; line-height: 1; }
 .brand-title {
   margin: 0;
-  font-family: "Kosugi Maru", Arial, Helvetica, sans-serif;
+  font-family: "Kosugi Maru", var(--font-ui);
   font-size: 19px;
   font-weight: 400;
   line-height: 1.1;
@@ -500,7 +508,7 @@ html, body {
   display: flex;
   align-items: center;
   min-width: 0;
-  height: 34px;
+  height: 32px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 9px;
@@ -539,10 +547,17 @@ html, body {
 .search-meta {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 9px;
-  padding: 8px 2px 0;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 7px 2px 0;
   border-top: 1px solid var(--line);
+}
+/* Scope control + "Show polite" read as one toolbar: same height, border,
+   radius and baseline, kept together with a tight gap. */
+.search-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 /* A single bordered pill groups the scope buttons into one control, reading
    as part of the search area above rather than a loose row of text links. */
@@ -550,7 +565,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 1px;
-  padding: 2px;
+  height: 28px;
+  padding: 0 2px;
   background: var(--paper);
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -561,7 +577,10 @@ html, body {
   border: 0;
   background: transparent;
   color: var(--muted);
-  padding: 4px 9px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 9px;
   border-radius: 6px;
   font: inherit;
   cursor: pointer;
@@ -571,11 +590,11 @@ html, body {
 .view-mode button.active {
   background: var(--accent-soft);
   color: var(--accent-dark);
-  font-weight: 700;
+  font-weight: 600;
 }
 
-/* Casual / polite switch -- a single pill toggle sitting beside the column
-   scope control, same visual family. */
+/* Casual / polite switch -- dimensionally identical to .view-mode (same
+   height / border / radius / baseline), sitting beside it in .search-tools. */
 .polite-toggle {
   appearance: none;
   border: 1px solid var(--line);
@@ -583,7 +602,10 @@ html, body {
   color: var(--muted);
   font: inherit;
   font-size: var(--fs-small);
-  padding: 4px 10px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
@@ -593,7 +615,7 @@ html, body {
   background: var(--accent-soft);
   color: var(--accent-dark);
   border-color: var(--accent);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .search-count {
@@ -636,7 +658,7 @@ html, body {
   page-break-before: always;
 }
 .table-section:first-of-type { break-before: auto; page-break-before: auto; }
-.table-section { scroll-margin-top: 130px; }
+.table-section { scroll-margin-top: 116px; }
 
 /* The title, row-management control and print action read as one table
    toolbar -- a strip capping the card, ruled off from the grid below it,
@@ -651,16 +673,28 @@ html, body {
   background: var(--surface);
   border-bottom: 1px solid var(--line-strong);
 }
-/* One line: the title shrinks (and truncates) first, controls stay pinned
-   right and never wrap. Only below 430px does the head wrap, so a phone-width
-   title stays whole with the controls dropping beneath it, right-aligned. */
+/* Desktop: one line -- the title shrinks (and truncates with an ellipsis)
+   first; the compact icon controls stay pinned right and never wrap. */
 .section-head h2 { margin: 0; flex: 0 1 auto; min-width: 0; }
 .section-toggle { min-width: 0; }
 .section-title-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 430px) {
-  .section-head { flex-wrap: wrap; }
-  .section-head h2 { flex-basis: 100%; }
-  .section-title-text { white-space: normal; }
+/* Mobile: the full title is the priority orientation cue, so it is never
+   truncated -- it takes the available width and wraps (to a second line if it
+   must). The collapse chevron stays with it; print has already folded into the
+   overflow menu at this width (see .print-menu-item), leaving just one icon. */
+@media (max-width: 700px) {
+  .section-head { align-items: flex-start; }
+  .section-head h2 { flex: 1 1 auto; }
+  .section-toggle { align-items: flex-start; }
+  .section-title-icon, .section-toggle-icon { margin-top: -1px; }
+  .section-title-text {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: break-word;
+    padding-top: 2px;
+  }
+  .controls { margin-top: 1px; }
 }
 .section-toggle {
   appearance: none;
@@ -700,14 +734,28 @@ html, body {
   letter-spacing: 0;
   color: var(--ink);
 }
+/* The disclosure control: an unmistakable little button (bordered chip, accent
+   glyph), not a bare chevron -- the whole title row toggles the table, and this
+   marks where that happens. Same collapse model as the sidebar accordion, so
+   there's just one "click a header to open/close it" interaction on the page. */
 .section-toggle-icon {
   display: inline-flex;
-  vertical-align: -1px;
-  color: var(--accent);
-  transition: transform .15s ease;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  margin-left: 3px;
+  border-radius: 6px;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  color: var(--accent-dark);
+  transition: background .15s ease, border-color .15s ease;
 }
-.table-section.collapsed .section-toggle-icon { transform: rotate(-90deg); }
-.table-section:not(.collapsed) .section-toggle-icon { transform: rotate(0deg); }
+.section-toggle-icon svg { transition: transform .15s ease; }
+.section-toggle:hover .section-toggle-icon { background: var(--accent-soft); border-color: var(--accent); }
+.table-section.collapsed .section-toggle-icon svg { transform: rotate(-90deg); }
+.table-section:not(.collapsed) .section-toggle-icon svg { transform: rotate(0deg); }
 
 /* Controls: a single non-wrapping group pinned to the right of the title. */
 .controls {
@@ -738,30 +786,77 @@ html, body {
 }
 .print-one:hover { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
 
-.manage-rows-toggle,
-.fc-add-table-btn {
+/* Secondary table actions ("Add to flashcards", "Manage rows") recede into a
+   quiet overflow menu -- only its icon sits beside the title, so the table
+   name and vocabulary stay the primary focus. Print keeps its own icon button. */
+.section-menu { position: relative; flex: 0 0 auto; }
+.section-menu-btn {
   appearance: none;
   border: 1px solid var(--line);
   background: var(--paper);
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 400;
-  padding: 0 8px;
-  border-radius: 6px;
-  cursor: pointer;
-  white-space: nowrap;
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  color: var(--muted);
+  cursor: pointer;
   flex: 0 0 auto;
 }
-.manage-rows-toggle:hover,
-.fc-add-table-btn:hover { color: var(--accent-dark); background: var(--accent-soft); border-color: var(--accent); }
-.table-section.managing-rows .manage-rows-toggle {
-  color: var(--paper);
-  background: var(--accent-dark);
-  border-color: var(--accent-dark);
+.section-menu-btn:hover,
+.section-menu-btn[aria-expanded="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-dark); }
+.section-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 60;
+  min-width: 178px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(31, 41, 51, .14);
 }
-.fc-add-table-btn[disabled] { opacity: .6; cursor: default; }
+.section-menu-list[hidden] { display: none; }
+/* The card clips to its rounded corners; lift that only while its menu is open
+   so the popover isn't cut off. */
+.table-section.menu-open { overflow: visible; }
+.section-menu-list .manage-rows-toggle,
+.section-menu-list .fc-add-table-btn,
+.section-menu-list .print-menu-item {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  width: 100%;
+  height: auto;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 6px;
+  color: var(--ink);
+  font: 400 var(--fs-small)/1.3 var(--font-ui);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.section-menu-list .manage-rows-toggle:hover,
+.section-menu-list .fc-add-table-btn:hover,
+.section-menu-list .print-menu-item:hover { background: var(--accent-soft); color: var(--accent-dark); }
+.table-section.managing-rows .section-menu-list .manage-rows-toggle { color: var(--accent-dark); font-weight: 600; }
+/* A quiet hint that this table is in a mode, without reopening the menu. */
+.table-section.managing-rows .section-menu-btn { border-color: var(--accent); color: var(--accent-dark); }
+.section-menu-list .fc-add-table-btn[disabled] { opacity: .55; cursor: default; }
+
+/* Print is a standalone icon on desktop; on narrow screens, when the header
+   also carries an overflow menu, print folds into that menu so the full table
+   title keeps priority. A table whose only control is print keeps the icon. */
+.section-menu-list .print-menu-item { display: none; }
+@media (max-width: 700px) {
+  .controls .section-menu ~ .print-icon-btn { display: none; }
+  .section-menu-list .print-menu-item { display: block; }
+}
 
 .rows-hidden-status {
   display: flex;
@@ -778,7 +873,7 @@ html, body {
   background: transparent;
   color: var(--accent-dark);
   font: inherit;
-  font-weight: 700;
+  font-weight: 600;
   padding: 0;
   cursor: pointer;
 }
@@ -801,7 +896,7 @@ html, body {
 }
 .row-hide-btn:hover { color: var(--accent-dark) !important; }
 .table-section.managing-rows .row-hide-btn { display: flex; }
-.table-section.managing-rows .vocab tbody td:last-child { padding-right: 30px; }
+.table-section.managing-rows .vocab tbody td:last-child { padding-right: 28px; }
 .vocab tbody tr.row-hidden { display: none; }
 
 .table-section.collapsed .vocab { display: none; }
@@ -896,37 +991,15 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 .vocab tbody tr:hover td:first-child { box-shadow: inset 3px 0 0 var(--accent); }
 /* A rule after the Japanese column -- the dominant column gets its own
    clear boundary, like a headword column in a dictionary layout. */
-.vocab td:nth-child(2) { border-right: 1px solid var(--line); }
-.vocab th:nth-child(2) { border-right: 1px solid var(--classic-band-line); }
+.vocab td:nth-child(1) { border-right: 1px solid var(--line); }
+.vocab th:nth-child(1) { border-right: 1px solid var(--classic-band-line); }
 
 /* Widths are weighted by what each column actually holds: Japanese words run
    1-5 characters at a large size, romaji is almost always one short word, and
-   English is the one that runs to full phrases and wraps -- so it gets the room.
-   The row-number column (nth-child(1)) is sized per table by its own row
-   count via a data-digits attribute (see renderTable() in app.js) -- not an
-   inline style="", since the page's CSP has no 'unsafe-inline' for style-src. */
-.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 32%; }
-.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 24%; }
-.vocab th:nth-child(4), .vocab td:nth-child(4) { width: 44%; }
-
-.vocab th.row-num-th[data-digits="1"] { width: calc(1ch + 20px); }
-.vocab th.row-num-th[data-digits="2"] { width: calc(2ch + 20px); }
-.vocab th.row-num-th[data-digits="3"] { width: calc(3ch + 20px); }
-.vocab th.row-num-th[data-digits="4"] { width: calc(4ch + 20px); }
-.vocab th.row-num-th[data-digits="5"] { width: calc(5ch + 20px); }
-.vocab th.row-num-th[data-digits="6"] { width: calc(6ch + 20px); }
-
-/* Row numbers: a quiet ledger column, never competing with the actual content. */
-.vocab th.row-num-th { padding-left: 10px; padding-right: 6px; }
-.vocab td.row-num {
-  padding-left: 10px;
-  padding-right: 6px;
-  color: var(--faint);
-  font-size: var(--fs-micro);
-  font-variant-numeric: tabular-nums;
-  text-align: right;
-  white-space: nowrap;
-}
+   English is the one that runs to full phrases and wraps -- so it gets the room. */
+.vocab th:nth-child(1), .vocab td:nth-child(1) { width: 34%; }
+.vocab th:nth-child(2), .vocab td:nth-child(2) { width: 24%; }
+.vocab th:nth-child(3), .vocab td:nth-child(3) { width: 42%; }
 
 /* Grayscale antialiasing takes a touch of weight off the CJK glyphs, which
    otherwise read heavier than the Latin text next to them. Applied to every
@@ -978,20 +1051,23 @@ body.show-polite .verb-form-polite { display: block; }
 }
 
 /* Romaji: third tier -- muted and set in italics, like a phonetic gloss. */
-.vocab td:nth-child(3) {
+.vocab td:nth-child(2) {
   color: var(--muted);
   font-style: italic;
   font-size: var(--fs-romaji);
 }
 
 /* English: the answer column -- plain and fully legible, not muted. */
-.vocab td:nth-child(4) { color: var(--ink); position: relative; }
+.vocab td:nth-child(3) { color: var(--ink); position: relative; }
 
 .particle { color: var(--particle); }
 
 .irregular-row td { color: var(--irregular) !important; background: var(--rose-soft) !important; }
 .irregular-row td:first-child { box-shadow: inset 3px 0 0 var(--irregular) !important; }
-.irregular-row .furigana { color: var(--irregular) !important; opacity: .75; }
+/* One de-emphasis mechanism only: the irregular rows already carry a colour
+   shift, so furigana here just takes that same colour -- never colour + a
+   reduced opacity stacked together. */
+.irregular-row .furigana { color: var(--irregular) !important; }
 .irregular-row .irr { font-weight: 700; }
 
 /* Search-match highlight -- the one place the rose accent does real work. */
@@ -1025,24 +1101,24 @@ mark.search-hit {
 
 /* Japanese/English/Romaji filters hide the TEXT of the other columns only -- the column,
    its border, its header/zebra background, and the sort control all stay exactly as they are. */
+body.mode-japanese .vocab th:nth-child(2), body.mode-japanese .vocab th:nth-child(2) *,
+body.mode-japanese .vocab td:nth-child(2), body.mode-japanese .vocab td:nth-child(2) *,
 body.mode-japanese .vocab th:nth-child(3), body.mode-japanese .vocab th:nth-child(3) *,
 body.mode-japanese .vocab td:nth-child(3), body.mode-japanese .vocab td:nth-child(3) *,
-body.mode-japanese .vocab th:nth-child(4), body.mode-japanese .vocab th:nth-child(4) *,
-body.mode-japanese .vocab td:nth-child(4), body.mode-japanese .vocab td:nth-child(4) *,
-body.mode-romaji .vocab th:nth-child(2), body.mode-romaji .vocab th:nth-child(2) *,
-body.mode-romaji .vocab td:nth-child(2), body.mode-romaji .vocab td:nth-child(2) *,
-body.mode-romaji .vocab th:nth-child(4), body.mode-romaji .vocab th:nth-child(4) *,
-body.mode-romaji .vocab td:nth-child(4), body.mode-romaji .vocab td:nth-child(4) *,
+body.mode-romaji .vocab th:nth-child(1), body.mode-romaji .vocab th:nth-child(1) *,
+body.mode-romaji .vocab td:nth-child(1), body.mode-romaji .vocab td:nth-child(1) *,
+body.mode-romaji .vocab th:nth-child(3), body.mode-romaji .vocab th:nth-child(3) *,
+body.mode-romaji .vocab td:nth-child(3), body.mode-romaji .vocab td:nth-child(3) *,
+body.mode-english .vocab th:nth-child(1), body.mode-english .vocab th:nth-child(1) *,
+body.mode-english .vocab td:nth-child(1), body.mode-english .vocab td:nth-child(1) *,
 body.mode-english .vocab th:nth-child(2), body.mode-english .vocab th:nth-child(2) *,
-body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) *,
-body.mode-english .vocab th:nth-child(3), body.mode-english .vocab th:nth-child(3) *,
-body.mode-english .vocab td:nth-child(3), body.mode-english .vocab td:nth-child(3) * {
+body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) * {
   color: transparent !important;
 }
 /* The row-hide toggle is a control, not content -- it stays usable even when
    its column's text is dimmed by a Japanese/Romaji-only view filter. */
-body.mode-japanese .vocab td:nth-child(4) .row-hide-btn,
-body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
+body.mode-japanese .vocab td:nth-child(3) .row-hide-btn,
+body.mode-romaji .vocab td:nth-child(3) .row-hide-btn {
   color: var(--faint) !important;
 }
 
@@ -1060,7 +1136,7 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   .vocab th { padding-top: 11px; padding-bottom: 11px; }
   .vocab td { padding-top: 12px; padding-bottom: 12px; }
   .vocab td.jp { line-height: 1.6; }
-  .furigana { font-size: .44em; }
+  .furigana { font-size: .46em; }
 }
 
 .sidebar-toggle {
@@ -1115,8 +1191,8 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
   .sidebar.open { transform: translateX(0); }
   body.sidebar-open .sidebar-backdrop { display: block; }
   .site-header, .page-overview, #vocabulary, #flashcardsPage { padding-left: 14px; padding-right: 14px; }
-  .site-header { padding-top: 12px; padding-bottom: 10px; }
-  .table-section { padding: 14px 12px 16px; scroll-margin-top: 190px; }
+  .site-header { padding-top: 8px; padding-bottom: 8px; }
+  .table-section { padding: 14px 12px 16px; scroll-margin-top: 172px; }
   /* Just one compact icon button lives here now -- keep it on the same row as
      the title, pinned to the right, instead of forcing it onto its own line. */
   .section-head { margin-bottom: 10px; }
@@ -1127,11 +1203,10 @@ body.mode-romaji .vocab td:nth-child(4) .row-hide-btn {
      longest single words (e.g. "refrigerator") stay on one line, and romaji
      takes what's left -- an occasional long romaji word wrapping across two
      lines is a minor, expected trade-off, not a bug. */
-  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 40%; }
-  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 27%; }
-  .vocab th:nth-child(4), .vocab td:nth-child(4) { width: 33%; }
+  .vocab th:nth-child(1), .vocab td:nth-child(1) { width: 42%; }
+  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 25%; }
+  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 33%; }
   .vocab th, .vocab td { padding-left: 10px; padding-right: 10px; }
-  .vocab th.row-num-th, .vocab td.row-num { padding-left: 6px; padding-right: 4px; }
 }
 
 :focus-visible { outline: 3px solid rgba(43, 167, 160, .55); outline-offset: 2px; }
@@ -1180,7 +1255,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-toggle-btn {
   display: none;
   position: absolute;
-  right: 32px;
+  right: 28px;
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
@@ -1193,7 +1268,16 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-toggle-btn:hover { color: var(--accent-dark) !important; }
 .fc-toggle-btn[aria-pressed="true"] { color: var(--accent) !important; }
 .table-section.managing-rows .fc-toggle-btn { display: flex; }
-.table-section.managing-rows .vocab tbody td:last-child { padding-right: 54px; }
+.table-section.managing-rows .vocab tbody td:last-child { padding-right: 50px; }
+/* Manage mode overlays two action icons on the English column; on narrow
+   screens give that column extra room (borrowed from romaji) so its text
+   never gets crushed into a sliver behind the icons. */
+@media (max-width: 700px) {
+  .table-section.managing-rows .vocab th:nth-child(2),
+  .table-section.managing-rows .vocab td:nth-child(2) { width: 19%; }
+  .table-section.managing-rows .vocab th:nth-child(3),
+  .table-section.managing-rows .vocab td:nth-child(3) { width: 39%; }
+}
 
 .page-flashcards h2 { margin: 0 0 4px; color: var(--ink); font-size: var(--fs-page-title); font-weight: 600; letter-spacing: -.2px; }
 .fc-lede { margin: 0 0 22px; color: var(--muted); font-size: var(--fs-nav-sub); max-width: 62ch; }
@@ -1202,14 +1286,14 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-tab {
   appearance: none; border: 0; background: transparent;
   padding: 8px 4px;
-  color: var(--muted); font: 400 var(--fs-small)/1.3 Arial, Helvetica, sans-serif;
+  color: var(--muted); font: 400 var(--fs-small)/1.3 var(--font-ui);
   cursor: pointer; border-bottom: 2px solid transparent;
 }
 .fc-tab:hover { color: var(--ink); }
 /* Bold marks *which one is selected* -- same convention as the header's own
    All/Japanese/Romaji/English control (.view-mode). Every tab being bold
    all the time was exactly the "why does this look so heavy" problem. */
-.fc-tab.active { color: var(--accent-dark); font-weight: 700; border-bottom-color: var(--accent); }
+.fc-tab.active { color: var(--accent-dark); font-weight: 600; border-bottom-color: var(--accent); }
 .fc-tabpanel[hidden] { display: none; }
 
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
@@ -1227,18 +1311,30 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 }
 .fc-stat-value { display: block; font-size: 20px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 .fc-stat-label { display: block; margin-top: 2px; color: var(--muted); font-size: var(--fs-micro); }
-.fc-stat-tile.fc-stat-due .fc-stat-value { color: var(--accent-dark); }
-.fc-stat-tile.fc-stat-due::before { background: var(--accent); }
-.fc-stat-tile.fc-stat-streak { background: var(--rose-blush); }
-.fc-stat-tile.fc-stat-streak .fc-stat-value { color: var(--irregular); }
-.fc-stat-tile.fc-stat-streak::before { background: var(--irregular); }
+/* The streak tile is a neutral stat like the others -- rose/red is reserved for
+   mistakes and warnings, and a day streak is neither. A quiet teal accent bar
+   marks it as a positive running count without shouting. */
+.fc-stat-tile.fc-stat-streak::before { background: var(--accent); }
 .fc-longest-streak { margin-top: -10px; margin-bottom: 16px; }
 
 /* Dashboard visualizations -- kept flat/bordered like everything else on the
-   page (no shadows/gradients), colors reused from the existing palette. */
-.fc-viz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-bottom: 20px; }
+   page (no shadows/gradients), colors reused from the existing palette.
+   The two compact charts share the top row; the mistakes list, which grows,
+   spans the full width below so cards size to their content instead of the
+   short ones stretching to leave dead white space. */
+.fc-viz-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  align-items: start;
+  margin-bottom: 20px;
+}
 .fc-viz-card { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; }
+.fc-viz-card.fc-viz-wide { grid-column: 1 / -1; }
 .fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
+@media (max-width: 560px) {
+  .fc-viz-grid { grid-template-columns: 1fr; }
+}
 
 .fc-breakdown-bar-wrap { border-radius: 8px; overflow: hidden; background: var(--surface); }
 .fc-breakdown-bar { display: block; width: 100%; height: 16px; }
@@ -1255,17 +1351,26 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
    and nothing inside it to be mis-scaled since it holds no text). */
 .fc-week-chart { display: flex; align-items: flex-end; gap: 8px; height: 76px; }
 .fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
-.fc-week-count { display: block; font: 700 10px/1.4 Arial, Helvetica, sans-serif; color: var(--ink); }
+.fc-week-count { display: block; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
 .fc-week-barsvg { display: block; width: 100%; flex: 1 1 auto; min-height: 0; }
 .fc-week-bar { fill: var(--accent); }
 .fc-week-bar-empty { fill: var(--line-strong); }
-.fc-week-label { display: block; margin-top: 6px; font-size: 10.5px; color: var(--faint); }
+.fc-week-label { display: block; margin-top: 6px; font-size: var(--fs-micro); color: var(--faint); }
 
 .fc-cta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
 .fc-cta-row-spaced { margin-top: 12px; margin-bottom: 0; }
+/* The dashboard's primary action, sitting right under the due / next-review
+   summary -- a little room below it before the slower stat tiles begin. */
+.fc-cta-row-primary { margin-bottom: 18px; }
+.fc-cta-row-primary .fc-btn { min-height: 34px; padding: 6px 20px; }
+/* A one-sentence system note, not prose -- it spans the dashboard content
+   width and stays on one line at normal desktop widths rather than wrapping
+   into a narrow block. (Genuine explanatory prose still gets a reading-width
+   cap; a short note like this does not.) */
+.fc-retention-note { margin: 2px 0 16px; max-width: none; }
 .fc-btn {
   appearance: none; border: 1px solid var(--line); background: var(--paper); color: var(--muted);
-  font: 700 var(--fs-micro)/1 Arial, Helvetica, sans-serif;
+  font: 600 var(--fs-small)/1 var(--font-ui);
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 28px; padding: 4px 12px; border-radius: 6px; cursor: pointer; white-space: nowrap;
 }
@@ -1275,7 +1380,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-btn-primary:hover { background: var(--accent); border-color: var(--accent); color: var(--paper); }
 .fc-btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
 .fc-btn-danger:hover { background: var(--danger-soft); color: var(--danger-dark); border-color: var(--danger-dark); }
-.fc-note { color: var(--muted); font-size: var(--fs-micro); }
+.fc-note { color: var(--muted); font-size: var(--fs-small); }
 /* Instructions: a short list, not a dense paragraph. Terms are set apart by
    color (accent), never bold -- the page already carries enough weight. */
 .fc-manage-legend {
@@ -1309,10 +1414,10 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 }
 .fc-manage-filters button {
   appearance: none; border: 0; background: transparent; color: var(--muted);
-  font: 400 var(--fs-small)/1 Arial, Helvetica, sans-serif; padding: 5px 10px; border-radius: 6px; cursor: pointer;
+  font: 400 var(--fs-small)/1 var(--font-ui); padding: 5px 10px; border-radius: 6px; cursor: pointer;
 }
 .fc-manage-filters button:hover { color: var(--accent-dark); }
-.fc-manage-filters button.active { background: var(--accent-soft); color: var(--accent-dark); font-weight: 700; }
+.fc-manage-filters button.active { background: var(--accent-soft); color: var(--accent-dark); font-weight: 600; }
 /* Category group -- the exact same card + tinted-header pattern as
    .overview-group/.overview-group-nav (reusing .cat-icon/.cat-name/.cat-count,
    rendered by the same window.categoryHeaderHtml the sidebar/Overview use),
@@ -1354,7 +1459,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-manage-table.fc-manage-table-collapsed .fc-manage-list { display: none; }
 /* Regular weight, not bold -- same as .overview-link: table *names* aren't
    bold anywhere else in the app either, only their parent category is. */
-.fc-manage-table-title { color: var(--ink); font: 400 var(--fs-nav-sub)/1.3 Arial, Helvetica, sans-serif; }
+.fc-manage-table-title { color: var(--ink); font: 400 var(--fs-nav-sub)/1.3 var(--font-ui); }
 .fc-manage-table-progress { color: var(--muted); font-size: var(--fs-micro); }
 .fc-manage-table-actions { margin-left: auto; display: flex; gap: 8px; }
 .fc-manage-list { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; }
@@ -1382,7 +1487,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
   border-radius: 12px; padding: 24px 22px;
 }
 .fc-review-meta { display: flex; justify-content: space-between; color: var(--faint); font-size: var(--fs-micro); margin-bottom: 16px; }
-.fc-prompt-label { color: var(--muted); font-size: var(--fs-micro); font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+.fc-prompt-label { color: var(--muted); font-size: var(--fs-micro); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
 .fc-prompt { font-size: 21px; line-height: 1.4; margin-bottom: 18px; color: var(--ink); }
 .fc-prompt .jpword ruby { ruby-position: over; ruby-align: start; }
 .fc-answer-form { display: flex; gap: 8px; margin-bottom: 14px; }
@@ -1391,25 +1496,43 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
   padding: 0 11px; font-size: 14px; color: var(--ink); background: var(--surface);
 }
 .fc-answer-form input:focus-visible { border-color: var(--accent); }
-/* Correct/incorrect read as a quiet left-accent stripe, not a loud fill --
-   incorrect uses the same muted rose the rest of the site already reserves
-   for exactly this (irregular-row/search-match), never a harsh red. */
+/* Answer feedback is a restrained status line, never a filled panel: a thin
+   left rule + a small label. Rose is reserved for a wrong answer / mistake;
+   a correct answer gets the teal accent instead. */
 .fc-result {
-  padding: 10px 12px; border-radius: 6px; margin-bottom: 16px; font-size: var(--fs-small);
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
+  margin-bottom: 10px; padding-left: 10px;
   border-left: 3px solid transparent;
+  font-size: var(--fs-small);
 }
-.fc-result.fc-correct { background: var(--accent-soft); color: var(--accent-dark); border-left-color: var(--accent); }
-.fc-result.fc-incorrect { background: var(--rose-soft); color: var(--irregular); border-left-color: var(--irregular); }
-.fc-result .fc-your-answer { display: block; margin-top: 4px; color: var(--rose-dark); }
-.fc-result .fc-expected { display: block; margin-top: 4px; color: var(--ink); font-weight: 700; font-size: 13px; }
+.fc-result.fc-correct { border-left-color: var(--accent); }
+.fc-result.fc-incorrect { border-left-color: var(--rose); }
+.fc-result-label { font-weight: 600; }
+.fc-result.fc-correct .fc-result-label { color: var(--accent-dark); }
+.fc-result.fc-incorrect .fc-result-label { color: var(--rose-dark); }
+.fc-result .fc-your-answer { color: var(--muted); }
+
+/* The correct answer sits in its own clean, neutral area beneath the status
+   line -- no colour, just a quiet surface panel. */
+.fc-answer-reveal {
+  display: flex; align-items: baseline; gap: 10px;
+  margin-bottom: 16px; padding: 10px 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+}
+.fc-answer-reveal-label {
+  flex: 0 0 auto;
+  font-size: var(--fs-micro); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em; color: var(--faint);
+}
+.fc-answer-reveal .fc-expected { color: var(--ink); font-weight: 600; font-size: var(--fs-nav-sub); }
 .fc-rating-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .fc-rating-btn {
   appearance: none; border: 1px solid var(--line); background: var(--paper); border-radius: 7px;
   padding: 8px 4px; text-align: center; cursor: pointer; color: var(--ink);
   transition: border-color .12s ease, background .12s ease;
 }
-.fc-rating-btn .fc-rating-key { display: block; font-size: 10.5px; color: var(--faint); }
-.fc-rating-btn .fc-rating-name { display: block; font: 700 var(--fs-small)/1.3 Arial, Helvetica, sans-serif; margin: 2px 0; }
+.fc-rating-btn .fc-rating-key { display: block; font-size: var(--fs-micro); color: var(--faint); }
+.fc-rating-btn .fc-rating-name { display: block; font: 600 var(--fs-small)/1.3 var(--font-ui); margin: 2px 0; }
 .fc-rating-btn .fc-rating-interval { display: block; font-size: var(--fs-micro); color: var(--muted); }
 .fc-rating-btn:hover:not([disabled]) { border-color: var(--accent); background: var(--accent-soft); }
 .fc-rating-btn[disabled] { opacity: .45; cursor: not-allowed; }
@@ -1428,16 +1551,16 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 /* Sign-in gate */
 .fc-auth { max-width: 380px; margin: 40px auto 0; }
 .fc-auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.fc-auth-field label { font-size: var(--fs-small); font-weight: 700; color: var(--muted); }
+.fc-auth-field label { font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
 .fc-auth-field input {
   height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px;
   font-size: 14px; color: var(--ink); background: var(--surface);
 }
 .fc-auth-error { color: var(--danger); font-size: var(--fs-small); margin-bottom: 10px; }
 .fc-auth-switch { margin-top: 12px; font-size: var(--fs-small); color: var(--muted); }
-.fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 700; padding: 0; cursor: pointer; }
+.fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; padding: 0; cursor: pointer; }
 .fc-signed-in-as { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: var(--muted); font-size: var(--fs-small); }
-.fc-signed-in-as button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 700; padding: 0; cursor: pointer; }
+.fc-signed-in-as button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; padding: 0; cursor: pointer; }
 
 /* Settings */
 .fc-settings-section { background: var(--paper); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px; }
@@ -1446,7 +1569,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-settings-field { padding: 10px 0; border-top: 1px solid var(--line); }
 .fc-settings-field:first-of-type { border-top: 0; }
 .fc-settings-field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fc-settings-field label { color: var(--ink); font: 700 var(--fs-small)/1.3 Arial, Helvetica, sans-serif; }
+.fc-settings-field label { color: var(--ink); font: 600 var(--fs-small)/1.3 var(--font-ui); }
 .fc-settings-field input[type="number"] { width: 80px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font-size: var(--fs-small); }
 .fc-settings-help { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; max-width: 56ch; }
 .fc-direction-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; }
@@ -1460,7 +1583,7 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 
 /* ---------------------------------------------------------------------
    Flashcards additions: Help tab, Manage status dots, and the Dashboard's
-   Today / Next review / Recent mistakes / Words to Review sections. All
+   Today / Next review / Missed today / Words to Review sections. All
    reuse the existing card, list and palette language.
    --------------------------------------------------------------------- */
 
@@ -1537,8 +1660,10 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
 .fc-progress-track { fill: var(--surface); }
 .fc-progress-fill { fill: var(--accent); }
 
-/* Next review -- a bordered card with a coloured left edge: rose while
-   something is due (act now), teal once the queue is clear (all done). */
+/* Next review -- a bordered card with a coloured left edge. Having cards due is
+   an actionable study state, not an error, so it uses the teal/action colour
+   (the Study now button right below is the primary signal); an empty queue is
+   the quiet, nothing-to-do state. Rose is never used here. */
 .fc-next-review {
   display: flex; flex-direction: column; gap: 3px;
   padding: 12px 14px 12px 16px;
@@ -1546,34 +1671,85 @@ body[data-active-page="flashcards"] .search-meta { display: none; }
   border-left-width: 4px;
   border-radius: 12px;
 }
-.fc-next-review-due { border-left-color: var(--rose); background: var(--rose-blush); }
-.fc-next-review-clear { border-left-color: var(--accent); background: var(--accent-soft); }
+.fc-next-review-due { border-left-color: var(--accent); background: var(--accent-soft); }
+.fc-next-review-clear { border-left-color: var(--line-strong); background: var(--surface); }
 .fc-next-review-title { font-weight: 700; font-size: var(--fs-nav-sub); }
-.fc-next-review-due .fc-next-review-title { color: var(--rose-dark); }
-.fc-next-review-clear .fc-next-review-title { color: var(--accent-dark); }
+.fc-next-review-due .fc-next-review-title { color: var(--accent-dark); }
+.fc-next-review-clear .fc-next-review-title { color: var(--ink); }
 .fc-next-review-sub { color: var(--muted); font-size: var(--fs-small); }
 
-/* Recent mistakes -- compact tappable list inside a viz card. Japanese +
-   romaji + English on one line, mistake count pinned right. */
-.fc-mini-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 1px; }
-.fc-mini-row {
+/* "Missed today" -- a calm shortlist of words to revisit. Each row is one
+   unit: the Japanese pair (strongest), one "romaji · english" supporting
+   line, and a small "N× today" badge. The whole row is the tap target. */
+.fc-missed-list { margin: 0; padding: 0; list-style: none; }
+/* The three parts sit next to each other and hug their content (no flexible
+   middle column that would open a void before the badge); a long row just
+   wraps. */
+.fc-missed-row {
   width: 100%;
-  display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: 10px; row-gap: 1px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 3px 14px;
   appearance: none; border: 0; background: transparent;
-  padding: 7px 8px; border-radius: 7px;
+  border-top: 1px solid var(--line);
+  padding: 9px 8px;
+  border-radius: 6px;
   text-align: left; cursor: pointer; color: var(--ink);
 }
-.fc-mini-row:hover { background: var(--surface); }
-.fc-mini-word { display: flex; align-items: baseline; flex-wrap: wrap; gap: 1px 8px; min-width: 0; }
-.fc-mini-row .fc-jp { font-size: var(--fs-nav); }
-.fc-mini-row .fc-mini-ro { color: var(--muted); font-style: italic; font-size: var(--fs-small); }
-.fc-mini-row .fc-mini-en { color: var(--muted); font-size: var(--fs-small); }
-.fc-mini-row .fc-mini-meta { color: var(--rose-dark); font-size: var(--fs-micro); white-space: nowrap; text-align: right; }
+.fc-missed-list li:first-child .fc-missed-row { border-top: 0; }
+.fc-missed-row:hover, .fc-missed-row:focus-visible { background: var(--surface); }
+/* Japanese pair -- the anchor: full size, one line, plain/polite split by a
+   quiet slash. */
+.fc-missed-jp {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
+  font-size: var(--fs-nav);
+  color: var(--ink);
+}
+.fc-missed-jp .furigana { font-size: .5em; }
+.fc-jp-slash { color: var(--faint); padding: 0 2px; }
+/* One supporting line: romaji (muted italic) · English (legible ink). */
+.fc-missed-gloss { flex: 0 1 auto; min-width: 0; font-size: var(--fs-small); line-height: 1.4; }
+.fc-missed-ro { color: var(--muted); font-style: italic; }
+.fc-missed-sep { color: var(--faint); }
+.fc-missed-en { color: var(--ink); }
+/* The one place rose does work here -- the count, and only the count. */
+.fc-missed-badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  font-size: var(--fs-micro);
+  color: var(--rose-dark);
+  background: var(--rose-soft);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+@media (max-width: 560px) {
+  /* Japanese pair + badge on the top line (badge pushed to the right edge),
+     the romaji · english gloss full-width beneath -- the JP pair still never
+     gets its own narrow column. `order` moves the gloss after the badge
+     without reordering the DOM. */
+  .fc-missed-row { gap: 4px 10px; }
+  .fc-missed-badge { margin-left: auto; }
+  .fc-missed-gloss { flex-basis: 100%; order: 1; }
+}
 
-/* Words to Review host -- the section it holds is a standard .table-section,
-   so it needs no table styling of its own, just top spacing. */
+/* Words to Review -- a real, sortable, printable vocabulary table, but on the
+   dashboard it should read as one more quiet card, not a full vocabulary-page
+   section. Strip the filled header strip, the category chip and the heavy
+   accent rule; the title matches the other dashboard card headings. */
 #fcWordsToReview { margin-top: 20px; }
 #fcWordsToReview .fc-note { padding: 4px 0; }
+#fcWordsToReview .section-head {
+  padding: 14px 16px;
+  gap: 8px;
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+}
+#fcWordsToReview .section-title-icon { display: none; }
+#fcWordsToReview .section-title-text { font-size: var(--fs-section-title); font-weight: 600; }
+#fcWordsToReview .section-toggle-icon { width: 20px; height: 20px; }
 
 /* Printing the Words to Review table from the Dashboard: strip the Flashcards
    chrome so only that one table (title + grid) reaches the page, matching how
