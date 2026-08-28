@@ -1,4 +1,7 @@
-window.vocabularyTables = [
+// Data only. Published on the single application namespace as
+// SakuraStudy.data.vocabularyTables -- see the load-order comment in index.html.
+window.SakuraStudy = window.SakuraStudy || {};
+window.SakuraStudy.data = { vocabularyTables: [
   {
     id: 0,
     title: "Counters",
@@ -669,4 +672,4 @@ window.vocabularyTables = [
     {"id":"v0508","type":"word","jp":[{"kanji":"伝票","reading":"でんぴょう"}],"romaji":"denpyō","english":"bill / order slip"},
     ]
   }
-];
+]};

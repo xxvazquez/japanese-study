@@ -22,10 +22,11 @@ The Flashcards section stores your learning data (which vocab entries you've add
 
 1. In your project, go to **Settings** → **API**.
 2. Copy the **Project URL** and the **`anon` `public`** key (not the `service_role` key — that one must never be used in this repo or any client-side code).
-3. Open [`js/supabase-config.js`](js/supabase-config.js) and fill them in:
+3. Open [`js/config.js`](js/config.js) and fill them in:
 
    ```js
-   window.SUPABASE_CONFIG = {
+   window.SakuraStudy = window.SakuraStudy || {};
+   window.SakuraStudy.config = window.SakuraStudy.config || {
      url: "https://YOUR-PROJECT-REF.supabase.co",
      anonKey: "YOUR-ANON-PUBLIC-KEY",
    };

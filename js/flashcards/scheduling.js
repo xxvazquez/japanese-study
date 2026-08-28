@@ -1,0 +1,168 @@
+// Flashcards -- FSRS-6 scheduling + review queue/stats
+// (SakuraStudy.flashcards.scheduling).
+//
+// A thin wrapper over the vendored ts-fsrs (window.FSRS): builds a scheduler
+// from the user's settings, previews/applies ratings, converts between the
+// library's card/log shapes and what the cache/Supabase store, and derives the
+// study queue and the Dashboard's aggregate stats. The trained algorithm and
+// its weights are never touched -- only the knobs ts-fsrs itself exposes.
+window.SakuraStudy = window.SakuraStudy || {};
+window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
+window.SakuraStudy.flashcards.scheduling = (function () {
+  "use strict";
+
+  var store = window.SakuraStudy.flashcards.store;
+  var getCache = store.getCache;
+  var RATING_NAMES = store.RATING_NAMES;
+
+  function getScheduler(settings) {
+    var params = window.FSRS.generatorParameters({
+      request_retention: settings.fsrs_request_retention,
+      maximum_interval: settings.fsrs_maximum_interval,
+      enable_fuzz: settings.fsrs_enable_fuzz
+    });
+    return window.FSRS.fsrs(params);
+  }
+
+  function formatInterval(now, due) {
+    var ms = new Date(due).getTime() - now.getTime();
+    if (ms <= 0) return "now";
+    var mins = ms / 60000;
+    if (mins < 1) return "<1m";
+    if (mins < 60) return Math.round(mins) + "m";
+    var hours = mins / 60;
+    if (hours < 24) return Math.round(hours) + "h";
+    var days = hours / 24;
+    if (days < 30) return Math.round(days) + "d";
+    var months = days / 30.44;
+    if (months < 12) return Math.round(months) + "mo";
+    return (days / 365.25).toFixed(1) + "y";
+  }
+  function formatWhen(due) {
+    return new Date(due).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  function cardToFsrsInput(card) {
+    return {
+      due: card.due, stability: card.stability, difficulty: card.difficulty,
+      scheduled_days: card.scheduled_days, learning_steps: card.learning_steps,
+      reps: card.reps, lapses: card.lapses, state: card.state, last_review: card.last_review || undefined
+    };
+  }
+  function fsrsCardToStorage(c) {
+    return {
+      due: c.due instanceof Date ? c.due.toISOString() : c.due,
+      stability: c.stability, difficulty: c.difficulty, scheduled_days: c.scheduled_days,
+      learning_steps: c.learning_steps, reps: c.reps, lapses: c.lapses, state: c.state,
+      last_review: c.last_review ? (c.last_review instanceof Date ? c.last_review.toISOString() : c.last_review) : null
+    };
+  }
+  function fsrsLogToStorage(l) {
+    return {
+      rating: l.rating, state: l.state,
+      due: l.due instanceof Date ? l.due.toISOString() : l.due,
+      stability: l.stability, difficulty: l.difficulty, scheduled_days: l.scheduled_days,
+      learning_steps: l.learning_steps,
+      review: l.review instanceof Date ? l.review.toISOString() : l.review
+    };
+  }
+
+  function previewRatings(scheduler, card, now) {
+    var record = scheduler.repeat(cardToFsrsInput(card), now);
+    var out = {};
+    RATING_NAMES.forEach(function (name) {
+      var item = record[window.FSRS.Rating[name]];
+      out[name] = { card: fsrsCardToStorage(item.card), log: fsrsLogToStorage(item.log), intervalLabel: formatInterval(now, item.card.due) };
+    });
+    return out;
+  }
+  function applyRating(scheduler, card, now, ratingName) {
+    var result = scheduler.next(cardToFsrsInput(card), now, window.FSRS.Rating[ratingName]);
+    return { card: fsrsCardToStorage(result.card), log: fsrsLogToStorage(result.log) };
+  }
+  function retrievabilityOf(scheduler, card, now) {
+    if (!card.reps) return null;
+    return scheduler.retrievability(cardToFsrsInput(card), now);
+  }
+
+  // The FSRS scheduling columns of a card, for a Supabase flashcards row.
+  function fsrsRowFields(card) {
+    return {
+      state: card.state, due: card.due, stability: card.stability, difficulty: card.difficulty,
+      scheduled_days: card.scheduled_days, reps: card.reps, lapses: card.lapses,
+      learning_steps: card.learning_steps, last_review: card.last_review
+    };
+  }
+
+  // -----------------------------------------------------------------------
+  // Queue selection + stats
+  // -----------------------------------------------------------------------
+  function activeCards() {
+    var c = getCache();
+    return Object.keys(c.cards).map(function (id) { return c.cards[id]; }).filter(function (card) { return card.active; });
+  }
+  // Cards in a direction the user has switched off in Settings (Study
+  // Directions) are left exactly as they are -- state, history, everything
+  // -- just excluded from what gets studied or counted, the same way an
+  // archived card is. Re-enabling the direction picks them back up with
+  // nothing lost.
+  function studyableCards() {
+    var enabled = getCache().settings.enabled_directions;
+    return activeCards().filter(function (card) { return enabled[card.direction] !== false; });
+  }
+  function shuffle(arr) {
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  // Learning/relearning cards stay strictly ordered by due time (a card due
+  // in 1 minute genuinely should come back before one due in 10) since
+  // that's short-term reinforcement, not a memorization drill -- but which
+  // due reviews and which fresh cards come up is shuffled, so a session
+  // isn't a predictable march through the same word/direction order every
+  // time (e.g. always all 4 directions of one word back to back).
+  function buildQueue(now) {
+    var c = getCache();
+    var studyable = studyableCards();
+    var learning = studyable.filter(function (card) { return (card.state === 1 || card.state === 3) && new Date(card.due) <= now; })
+      .sort(function (a, b) { return new Date(a.due) - new Date(b.due); });
+    var review = shuffle(studyable.filter(function (card) { return card.state === 2 && new Date(card.due) <= now; }));
+    var fresh = shuffle(studyable.filter(function (card) { return card.state === 0; }))
+      .slice(0, Math.max(0, c.settings.queue_new_cards_per_day));
+    return learning.concat(review, fresh).map(function (card) { return card.id; });
+  }
+  function computeStats(now) {
+    var cards = studyableCards();
+    var newCount = 0, learningCount = 0, reviewCount = 0, dueCount = 0;
+    var retSum = 0, retN = 0;
+    var scheduler = getScheduler(getCache().settings);
+    cards.forEach(function (card) {
+      if (card.state === 0) newCount++;
+      else if (card.state === 1 || card.state === 3) learningCount++;
+      else reviewCount++;
+      if (card.state !== 0 && new Date(card.due) <= now) dueCount++;
+      var r = retrievabilityOf(scheduler, card, now);
+      if (r != null) { retSum += r; retN++; }
+    });
+    var reviewsCompleted = 0;
+    // Reviews completed is a lifetime count derived from each card's own
+    // `reps` (ts-fsrs increments it once per review) rather than a separate
+    // counter -- one less piece of state that could drift out of sync.
+    Object.keys(getCache().cards).forEach(function (id) { reviewsCompleted += getCache().cards[id].reps || 0; });
+    return {
+      total: cards.length, newCount: newCount, learningCount: learningCount, reviewCount: reviewCount,
+      dueCount: dueCount, reviewsCompleted: reviewsCompleted,
+      estimatedRetention: retN ? retSum / retN : null
+    };
+  }
+
+  return {
+    getScheduler: getScheduler, previewRatings: previewRatings, applyRating: applyRating,
+    retrievabilityOf: retrievabilityOf, formatInterval: formatInterval, formatWhen: formatWhen,
+    fsrsRowFields: fsrsRowFields,
+    activeCards: activeCards, studyableCards: studyableCards, shuffle: shuffle,
+    buildQueue: buildQueue, computeStats: computeStats
+  };
+})();

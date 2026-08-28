@@ -5,7 +5,7 @@
 // file changes later. Idempotent: re-running only fills in ids for rows that
 // are missing one (e.g. freshly added vocab); existing ids are never touched
 // or reassigned. Flashcards (in Supabase) reference this id, never the
-// row's content directly -- see js/flashcards.js.
+// row's content directly -- see js/flashcards/data-ops.js.
 //
 // This is a one-off/occasional maintenance script, not part of the site's
 // runtime. Run it with `npm run generate:vocab-ids` after adding new rows to

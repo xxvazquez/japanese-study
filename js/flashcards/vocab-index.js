@@ -1,0 +1,131 @@
+// Flashcards -- vocabulary index (SakuraStudy.flashcards.vocabIndex).
+//
+// Turns SakuraStudy.data.vocabularyTables into a lookup keyed by each row's
+// permanent id: display markup, the study directions it supports, and the
+// normalized accepted answers for checking. Pure -- reads the dataset live,
+// never copies content anywhere. This is what scripts/smoke-test.js exercises
+// through the flashcards test hooks.
+window.SakuraStudy = window.SakuraStudy || {};
+window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
+window.SakuraStudy.flashcards.vocabIndex = (function () {
+  "use strict";
+
+  var DIRECTIONS = window.SakuraStudy.flashcards.store.DIRECTIONS;
+
+  var JAPANESE_SCRIPT = /[ぁ-ゖァ-ヺ一-鿏々〆ヵヶ]/;
+
+  function isRomajiUsable(str) {
+    return !JAPANESE_SCRIPT.test(String(str || ""));
+  }
+
+  function foldMacrons(s) {
+    return s
+      .replace(/[āâ]/g, "a").replace(/[īî]/g, "i").replace(/[ūû]/g, "u")
+      .replace(/[ēê]/g, "e").replace(/[ōô]/g, "o");
+  }
+
+  function normalizeAnswer(s, romaji) {
+    var v = String(s == null ? "" : s).trim().replace(/\s+/g, " ").toLowerCase();
+    if (romaji) {
+      v = foldMacrons(v);
+      v = v.replace(/^~/, "");
+    }
+    return v;
+  }
+
+  function splitAlternatives(s) {
+    return String(s || "").split(" / ").map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+
+  function jpPlainOf(segments) {
+    return segments.map(function (seg) { return seg.kanji ? seg.kanji : seg.text; }).join("");
+  }
+
+  var vocabIndex = null;
+  function buildVocabIndex() {
+    var index = {};
+    (window.SakuraStudy.data.vocabularyTables || []).forEach(function (table) {
+      table.rows.forEach(function (row) {
+        if (!row.id) return;
+        var entry = { vocabId: row.id, category: table.category || "", tableTitle: table.title, tableId: table.id };
+        var jpHtmlFn = window.SakuraStudy.vocab.jpSegmentsHtml || function () { return ""; };
+        if (row.type === "verb-pair") {
+          entry.jpHtml = row.forms.map(function (f) {
+            return '<div class="verb-form"><span class="jpword">' + jpHtmlFn(f.jp) + "</span></div>";
+          }).join("");
+          // Same forms on one line ("plain / polite"), for compact lists.
+          entry.jpInlineHtml = row.forms.map(function (f) {
+            return '<span class="jpword">' + jpHtmlFn(f.jp) + "</span>";
+          }).join('<span class="fc-jp-slash"> / </span>');
+          entry.jpPlain = row.forms.map(function (f) { return jpPlainOf(f.jp); }).join(" / ");
+          entry.romajiDisplay = row.forms.map(function (f) { return f.romaji; }).join(" / ");
+          entry.romajiUsable = row.forms.every(function (f) { return isRomajiUsable(f.romaji); });
+          entry.romajiAnswers = entry.romajiUsable
+            ? row.forms.map(function (f) { return normalizeAnswer(f.romaji, true); })
+            : [];
+        } else {
+          entry.jpHtml = '<span class="jpword">' + jpHtmlFn(row.jp) + "</span>";
+          entry.jpInlineHtml = entry.jpHtml;
+          entry.jpPlain = jpPlainOf(row.jp);
+          entry.romajiDisplay = row.romaji;
+          entry.romajiUsable = isRomajiUsable(row.romaji);
+          entry.romajiAnswers = entry.romajiUsable ? [normalizeAnswer(row.romaji, true)] : [];
+        }
+        entry.englishDisplay = row.english;
+        entry.englishAnswers = splitAlternatives(row.english).map(function (a) { return normalizeAnswer(a, false); });
+        index[row.id] = entry;
+      });
+    });
+    return index;
+  }
+  function getVocabIndex() {
+    if (!vocabIndex) vocabIndex = buildVocabIndex();
+    return vocabIndex;
+  }
+  function directionsForEntry(entry) {
+    return entry.romajiUsable ? DIRECTIONS.slice() : ["jp-en"];
+  }
+
+  function promptFor(entry, direction) {
+    if (direction === "jp-en" || direction === "jp-ro") return { html: entry.jpHtml, lang: "ja" };
+    if (direction === "ro-en") return { text: entry.romajiDisplay };
+    return { text: entry.englishDisplay }; // en-ro
+  }
+  function askLabelFor(direction) {
+    return direction === "jp-en" || direction === "ro-en" ? "Type the English meaning" : "Type the romaji reading";
+  }
+  // Same "which language" cue as the label above the prompt, but repeated
+  // right inside the input itself -- the label can be easy to skim past,
+  // and this is exactly where your eyes are when you start typing.
+  function answerPlaceholderFor(direction) {
+    return direction === "jp-en" || direction === "ro-en" ? "English…" : "Romaji…";
+  }
+  function expectedDisplayFor(entry, direction) {
+    return direction === "jp-en" || direction === "ro-en" ? entry.englishDisplay : entry.romajiDisplay;
+  }
+  function checkAnswer(entry, direction, input) {
+    var isRomajiTarget = direction === "jp-ro" || direction === "en-ro";
+    var norm = normalizeAnswer(input, isRomajiTarget);
+    var answers = isRomajiTarget ? entry.romajiAnswers : entry.englishAnswers;
+    return answers.indexOf(norm) !== -1;
+  }
+
+  var rawRowById = null;
+  function getRawVocabRow(vocabId) {
+    if (!rawRowById) {
+      rawRowById = {};
+      (window.SakuraStudy.data.vocabularyTables || []).forEach(function (t) {
+        t.rows.forEach(function (r) { if (r.id) rawRowById[r.id] = r; });
+      });
+    }
+    return rawRowById[vocabId] || null;
+  }
+
+  return {
+    getVocabIndex: getVocabIndex, directionsForEntry: directionsForEntry,
+    promptFor: promptFor, askLabelFor: askLabelFor, answerPlaceholderFor: answerPlaceholderFor,
+    expectedDisplayFor: expectedDisplayFor, checkAnswer: checkAnswer,
+    normalizeAnswer: normalizeAnswer, isRomajiUsable: isRomajiUsable,
+    getRawVocabRow: getRawVocabRow
+  };
+})();

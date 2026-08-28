@@ -6,7 +6,7 @@
 // wouldn't catch.
 //
 // The Flashcards checks below only cover page navigation, the per-row toggle,
-// and pure answer-checking/vocab-index logic (exposed via window.__fcTestHooks)
+// and pure answer-checking/vocab-index logic (exposed via window.SakuraStudy.flashcards.__testHooks)
 // -- none of that needs a network. Everything that talks to Supabase (auth,
 // add/remove/restore/delete-forever, review sync, offline-outbox replay) has
 // no live project to test against here and needs manual verification instead.
@@ -31,16 +31,14 @@ async function main() {
     runScripts: "dangerously",
     resources: "usable",
     pretendToBeVisual: true,
-    // js/supabase-config.js holds whoever's real project credentials once
-    // they've completed SUPABASE_SETUP.md -- this test needs the
-    // "not configured yet" path to be reachable regardless of what's
-    // actually committed right now. Freezing the property before any
-    // script runs makes the config file's own (non-strict-mode) assignment
-    // to it silently no-op, rather than trying to intercept the file load.
+    // js/config.js holds whoever's real project credentials once they've
+    // completed SUPABASE_SETUP.md -- this test needs the "not configured yet"
+    // path to be reachable regardless of what's actually committed right now.
+    // js/config.js only fills SakuraStudy.config in when it isn't already set
+    // (its `|| ` guard), so seeding an empty one here before any script runs
+    // wins without having to intercept the file load.
     beforeParse(window) {
-      Object.defineProperty(window, "SUPABASE_CONFIG", {
-        value: { url: "", anonKey: "" }, writable: false, configurable: false
-      });
+      window.SakuraStudy = { config: { url: "", anonKey: "" } };
     }
   });
   const { window } = dom;
@@ -318,7 +316,7 @@ async function main() {
   document.querySelector(".sidebar-overview").click();
 
   console.log("Flashcards: answer checking and vocab index (pure-logic hooks)");
-  const fc = window.__fcTestHooks;
+  const fc = window.SakuraStudy.flashcards.__testHooks;
   check("test hooks are exposed", !!fc);
   check("normalizeAnswer trims/collapses/lowercases", fc.normalizeAnswer("  Hot   Water  ", false) === "hot water");
   check("normalizeAnswer folds macrons for romaji", fc.normalizeAnswer("Kōhī", true) === "kohi");

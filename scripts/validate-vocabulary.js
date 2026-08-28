@@ -5,7 +5,7 @@ const page = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("css/site.css", "utf8");
 const sandbox = { window: {} };
 vm.runInNewContext(source, sandbox);
-const tableList = sandbox.window.vocabularyTables || [];
+const tableList = (sandbox.window.SakuraStudy && sandbox.window.SakuraStudy.data.vocabularyTables) || [];
 const tableCount = tableList.length;
 const rowCount = tableList.reduce((total, t) => total + t.rows.length, 0);
 const expectedTables = 23;
@@ -16,7 +16,7 @@ if (tableCount !== expectedTables || rowCount !== expectedRows) {
 }
 if (!page.includes('role="status"') || !page.includes('aria-live="polite"')) { console.error("Accessibility validation failed: search results must use a live status region."); process.exit(1); }
 if (!page.includes('aria-label="Search vocabulary"') || !css.includes(":focus-visible")) { console.error("Accessibility validation failed: search labeling or focus styling is missing."); process.exit(1); }
-if (!/function\s+sortHeader/.test(fs.readFileSync("js/app.js", "utf8"))) { console.error("Accessibility validation failed: table headings must be rendered with sort controls."); process.exit(1); }
+if (!/function\s+sortHeader/.test(fs.readFileSync("js/vocab/render.js", "utf8"))) { console.error("Accessibility validation failed: table headings must be rendered with sort controls."); process.exit(1); }
 console.log("Vocabulary and accessibility validation passed: " + rowCount + " rows across " + tableCount + " tables.");
 
 const japanesePattern = /[ぁ-ゖァ-ヺ一-龯々〆ヵヶ〜]/;
