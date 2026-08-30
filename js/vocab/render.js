@@ -1,7 +1,8 @@
 // Vocabulary page -- rendering half of SakuraStudy.vocab.
 //
-// Builds every vocabulary table, the sidebar tree and the Overview table of
-// contents from SakuraStudy.data, and owns per-table sorting. Runs its render
+// Builds every vocabulary table (grouped section -> category -> table) and the
+// four-item top navigation from SakuraStudy.data, and owns per-table sorting.
+// Runs its render
 // synchronously at load (same lifecycle as the old js/app.js). The interaction
 // half -- navigation, search, event wiring -- lives in js/vocab/interactions.js
 // and augments the same SakuraStudy.vocab object. See the load-order comment in
@@ -92,22 +93,18 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     return '<td class="jp" lang="ja">' + inner + '</td>';
   }
   var EYE_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c1.8-3.2 4.5-4.8 7-4.8s5.2 1.6 7 4.8c-1.8 3.2-4.5 4.8-7 4.8S3.8 12.2 2 9Z"/><circle cx="9" cy="9" r="2"/></svg>';
-  // Which tables are hidden from the Overview table-of-contents -- persisted
-  // client-side (localStorage), independent of the sidebar/search/direct
-  // links, which never consult this and always show every table. Guarded
-  // against localStorage being unavailable (private browsing, some test
-  // environments): the feature just silently stops persisting rather than
-  // breaking the page.
-  var HIDDEN_OVERVIEW_KEY = 'sakura-hidden-overview-tables';
-  function loadHiddenOverviewTables() {
-    try {
-      var raw = window.localStorage && localStorage.getItem(HIDDEN_OVERVIEW_KEY);
-      return raw ? new Set(JSON.parse(raw)) : new Set();
-    } catch (e) { return new Set(); }
+  // The four main study areas. Grammar and Travel are promoted out of the
+  // general vocabulary list into their own top-level sections; everything
+  // else lives under Vocabulary, still grouped by its content category.
+  function sectionOf(category) {
+    if (category === 'Grammar') return 'grammar';
+    if (category === 'Travel') return 'travel';
+    return 'vocabulary';
   }
-  function saveHiddenOverviewTables(set) {
-    try { localStorage.setItem(HIDDEN_OVERVIEW_KEY, JSON.stringify([...set])); } catch (e) {}
-  }
+  var SECTION_ORDER = ['vocabulary', 'grammar', 'travel'];
+  var SECTION_LABEL = { vocabulary: 'Vocabulary', grammar: 'Grammar', travel: 'Travel' };
+  vocab.sectionOf = sectionOf;
+  vocab.sectionLabel = function (name) { return SECTION_LABEL[name] || name; };
   function rowHideButton() {
     return '<button type="button" class="row-hide-btn" aria-label="Hide this row" title="Hide this row">' + EYE_ICON + '</button>';
   }
@@ -154,7 +151,6 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // print button, furigana markup, and every feature that keys off
   // `.table-section` / `.vocab` (search, print, view-mode, row hiding).
   function sectionMarkup(o) {
-    var catMeta = categoryMeta(o.category || '');
     var controls = o.controls || {};
     var ctrlParts =['<span class="rows-hidden-status" hidden><span class="rows-hidden-count"></span> · <button type="button" class="show-all-rows">Show all</button></span>'];
     // Secondary actions collapse into a quiet overflow menu so only its icon
@@ -175,25 +171,28 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     }
     if (controls.print) ctrlParts.push('<button type="button" class="print-one print-icon-btn" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>');
     var defaultSort = o.defaultSort !== false;
-    return '<section class="table-section ' + (o.sectionClass || '') + '" data-table="' + o.id + '" data-category="' + esc(o.category || '') + '" id="table-' + o.id + '">' +
+    return '<section class="table-section ' + (o.sectionClass || '') + (o.collapsed ? ' collapsed' : '') +
+      '" data-table="' + o.id + '" data-category="' + esc(o.category || '') + '"' +
+      (o.section ? ' data-section="' + esc(o.section) + '"' : '') +
+      ' id="table-' + o.id + '">' +
       '<div class="section-head">' +
-      '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="true" aria-controls="vocab-' + o.id + '">' +
-      '<span class="section-title-icon ' + catMeta.cls + '">' + catMeta.icon + '</span>' +
+      '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="' + (o.collapsed ? 'false' : 'true') + '" aria-controls="vocab-' + o.id + '">' +
+      '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span>' +
       '<span class="section-title-text">' + esc(o.title) + '</span>' +
-      '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span></button></h2>' +
+      '</button></h2>' +
       '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
       '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
       '<th>Japanese</th>' +
-      sortHeader('Romaji', 1, false) + sortHeader('English', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
+      sortHeader('Romaji', 1, false) + sortHeader('Meaning', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
       o.rowsHtml + '\n  </tbody></table></section>';
   }
   function renderTable(t) {
     var sortedRows = t.rows.slice().sort(byEnglish);
     return sectionMarkup({
-      id: t.id, title: t.title, category: t.category, tableClass: t.tableClass,
+      id: t.id, title: t.title, category: t.category, section: sectionOf(t.category), tableClass: t.tableClass,
       rowsHtml: rowsHtmlFor(sortedRows),
       controls: { addTable: true, manageRows: true, print: true },
-      sectionClass: 'page-hidden', defaultSort: true
+      sectionClass: 'page-hidden', collapsed: true, defaultSort: true
     });
   }
   // Build a standard vocabulary table section from an arbitrary set of rows
@@ -213,34 +212,21 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     });
   };
 
-  // Small, hand-drawn line icons -- one per category, each its own color
-  // from the existing palette, purely as a fast visual anchor when scanning.
-  // Colors come from CSS classes rather than inline style="" -- the page's CSP
-  // (style-src 'self', no 'unsafe-inline') silently drops inline style
-  // attributes, so any per-category color has to live in the stylesheet.
-  var CATEGORY_META = {
-    'Grammar': { cls: 'cat-color-a', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="3" y1="5" x2="15" y2="5"/><line x1="3" y1="9" x2="12.5" y2="9"/><line x1="3" y1="13" x2="9.5" y2="13"/></svg>' },
-    'Food & Ingredients': { cls: 'cat-color-b', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5h12"/><path d="M3.5 7.5a5.5 5.5 0 0 0 11 0"/><path d="M9 7.5V3.8c1.4 0 2.2.9 2.2 2"/></svg>' },
-    'Kitchen & Dining': { cls: 'cat-color-c', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="9.5" r="4.2"/><line x1="10.8" y1="7.2" x2="15.5" y2="4.2"/></svg>' },
-    'Numbers & Counting': { cls: 'cat-color-d', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="4" x2="4" y2="14"/><line x1="7.3" y1="4" x2="7.3" y2="14"/><line x1="10.6" y1="4" x2="10.6" y2="14"/><line x1="3" y1="13.5" x2="12" y2="4.5"/></svg>' },
-    'Travel': { cls: 'cat-color-e', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 15.5c3-3.3 4.5-6 4.5-8.2A4.5 4.5 0 0 0 9 2.8a4.5 4.5 0 0 0-4.5 4.5c0 2.2 1.5 4.9 4.5 8.2Z"/><circle cx="9" cy="7.2" r="1.6"/></svg>' }
-  };
-  var DEFAULT_CATEGORY_META = { cls: 'cat-color-default', icon: '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h8v12l-4-3-4 3Z"/></svg>' };
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
-  function categoryMeta(name) { return CATEGORY_META[name] || DEFAULT_CATEGORY_META; }
+  // Category header -- just the name and its table count. No decorative
+  // icon: the categories read fine as plain labels, and an icon per row
+  // would be noise on what is meant to be a quiet reference index.
   function categoryHeaderHtml(name, count) {
-    var meta = categoryMeta(name);
-    return '<span class="cat-icon ' + meta.cls + '">' + meta.icon + '</span>' +
-      '<span class="cat-name">' + esc(name) + '</span>' +
+    return '<span class="cat-name">' + esc(name) + '</span>' +
       '<span class="cat-count">' + count + '</span>';
   }
   // Exposed so js/flashcards/views.js's Manage tab renders the exact same
-  // icon/color/count category header as the sidebar and Overview, instead
-  // of a plain unstyled heading of its own.
+  // name/count category header as the vocabulary sections, instead of a plain
+  // unstyled heading of its own.
   vocab.categoryHeaderHtml = categoryHeaderHtml;
   // Group tables by category (alphabetical categories, alphabetical tables
-  // within each) -- shared by the sidebar and the Overview table of contents
-  // so both stay in sync as tables/categories are added.
+  // within each) -- used both to lay out #vocabulary and by the Flashcards
+  // Manage tab.
   function groupByCategory(tables) {
     var byName = {};
     tables.forEach(function (t) {
@@ -253,99 +239,87 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       return { name: name, tables: byName[name].slice().sort(function (a, b) { return a.title.localeCompare(b.title); }) };
     });
   }
-  // Hidden tables are filtered out of both the sidebar and Overview -- the
-  // same `hidden` set drives both, so hiding a table from Overview also
-  // pulls it out of the sidebar's nav tree. It stays fully intact and
-  // reachable everywhere else (its #table-N link, search, print) -- this
-  // only ever affects the two navigation lists, never the data or routing.
-  function renderSidebar(tables, hidden) {
-    return groupByCategory(tables).map(function (g) {
-      var visible = g.tables.filter(function (t) { return !hidden.has(String(t.id)); });
-      var links = visible.map(function (t) {
-        return '<a href="#table-' + t.id + '" data-target="' + t.id + '">' + esc(t.title) + '</a>';
-      }).join('');
-      // Accordion: every group renders collapsed; syncSidebarAccordion() (via
-      // markActiveNav) opens just the active category. Category name + count
-      // stay visible in the head either way.
-      return '<div class="sidebar-group collapsed">' +
-        '<div class="sidebar-group-head">' +
-        '<button type="button" class="sidebar-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, visible.length) + '</button>' +
-        '<button type="button" class="sidebar-group-chevron" aria-expanded="false" aria-label="Toggle ' + esc(g.name) + '">' + CHEVRON_ICON + '</button>' +
-        '</div>' +
-        '<div class="sidebar-group-items">' + links + '</div></div>';
-    }).join('');
+  // The four-item top navigation: the three vocabulary sections plus
+  // Flashcards. Fixed -- it never changes with the data.
+  function renderNav() {
+    return '<a class="site-nav-link" href="#vocabulary" data-section="vocabulary">Vocabulary</a>' +
+      '<a class="site-nav-link" href="#grammar" data-section="grammar">Grammar</a>' +
+      '<a class="site-nav-link" href="#travel" data-section="travel">Travel</a>' +
+      '<a class="site-nav-link" href="#flashcards" data-page="flashcards">Flashcards</a>';
   }
-  // Overview is a plain table of contents -- no accordion, just links. Each
-  // row gets a trailing chevron (a rotated copy of CHEVRON_ICON, so it's the
-  // same icon family as everywhere else) to read as a clickable list row
-  // rather than wrapped inline text, plus a hide control.
-  function renderOverview(tables, hidden) {
-    return groupByCategory(tables).map(function (g) {
-      var hiddenCount = 0;
-      var links = g.tables.map(function (t) {
-        if (hidden.has(String(t.id))) { hiddenCount++; return ''; }
-        return '<div class="overview-row">' +
-          '<a class="overview-link" href="#table-' + t.id + '" data-target="' + t.id + '">' +
-          '<span class="overview-link-text">' + esc(t.title) + '</span>' +
-          '<span class="overview-link-chevron">' + CHEVRON_ICON + '</span>' +
-          '</a>' +
-          '<button type="button" class="overview-hide-btn" data-target="' + t.id + '" aria-label="Hide ' + esc(t.title) + ' from Overview" title="Hide from Overview">' + EYE_ICON + '</button>' +
-          '</div>';
+  // The internal table index: a visual directory that stands in for a
+  // redundant page heading. Closed, it's one small control (showing the
+  // table you're currently on); open, it lays out the whole active section
+  // at once -- every category, every table, nothing to expand -- linked to
+  // #table-N. One panel per section; showSection reveals the active one.
+  // Panels with more than a handful of tables are marked --wide so CSS flows
+  // them into two columns.
+  function renderTableIndex(tables) {
+    var bySection = { vocabulary: [], grammar: [], travel: [] };
+    tables.forEach(function (t) { bySection[sectionOf(t.category)].push(t); });
+    var panels = SECTION_ORDER.map(function (sec) {
+      var groups = groupByCategory(bySection[sec]);
+      var multiCat = groups.length > 1;
+      var wide = bySection[sec].length > 5;
+      var body = groups.map(function (g) {
+        var links = g.tables.map(function (t) {
+          return '<a href="#table-' + t.id + '" data-target="' + t.id + '" role="menuitem">' +
+            '<span class="tindex-count" title="' + t.rows.length + ' entries">' + t.rows.length + '</span>' +
+            '<span class="tindex-tname">' + esc(t.title) + '</span></a>';
+        }).join('');
+        // Multi-category sections (Vocabulary) get a quiet, non-interactive
+        // category label above each group; a single-category section is a
+        // plain list that flows freely across the columns.
+        if (multiCat) {
+          return '<div class="tindex-cat-group">' +
+            '<p class="tindex-cat">' +
+            '<span class="tindex-count" title="' + g.tables.length + ' tables">' + g.tables.length + '</span>' +
+            '<span class="tindex-cat-name">' + esc(g.name) + '</span></p>' +
+            '<div class="tindex-cat-items">' + links + '</div></div>';
+        }
+        return '<div class="tindex-list">' + links + '</div>';
       }).join('');
-      var status = hiddenCount === 0 ? '' :
-        '<div class="overview-hidden-status">' + hiddenCount + ' hidden · ' +
-        '<button type="button" class="overview-show-hidden" data-category="' + esc(g.name) + '">Show all</button></div>';
-      // The count matches the sidebar's (visible tables only) -- the
-      // "N hidden · Show all" status line right below already accounts for
-      // the rest, so the header count doesn't need to double as a total.
-      return '<div class="overview-group">' +
-        '<button type="button" class="overview-group-nav" data-category="' + esc(g.name) + '">' + categoryHeaderHtml(g.name, g.tables.length - hiddenCount) + '</button>' +
-        '<div class="overview-group-items">' + links + '</div>' + status + '</div>';
+      return '<div class="tindex-panel' + (sec === 'vocabulary' ? '' : ' page-hidden') +
+        (wide ? ' tindex-panel--wide' : '') +
+        '" data-section="' + sec + '" role="menu">' + body + '</div>';
     }).join('');
+    return '<button type="button" class="tindex-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="tindexMenu" title="Browse every table">' +
+      '<span class="tindex-trigger-label">Jump to a table</span>' + CHEVRON_ICON + '</button>' +
+      '<div class="tindex-menu" id="tindexMenu" hidden>' + panels + '</div>' +
+      '<div class="tindex-scrim"></div>';
+  }
+  // Assemble #vocabulary: every table, grouped section -> category -> table
+  // (categories and tables alphabetical). The Vocabulary section carries a
+  // quiet category sub-heading before each of its groups; Grammar and Travel
+  // are a single category, so they get none. Headings and sections all start
+  // page-hidden; routing (interactions.js -> showSection) reveals one section
+  // at a time.
+  function renderAll(tables) {
+    var bySection = { vocabulary: [], grammar: [], travel: [] };
+    tables.forEach(function (t) { bySection[sectionOf(t.category)].push(t); });
+    var html = '';
+    SECTION_ORDER.forEach(function (sec) {
+      groupByCategory(bySection[sec]).forEach(function (g) {
+        if (sec === 'vocabulary') {
+          html += '<h2 class="cat-heading page-hidden" data-section="' + sec + '" data-category="' + esc(g.name) + '">' +
+            esc(g.name) + '<span class="cat-heading-count">' + g.tables.length + '</span></h2>';
+        }
+        g.tables.forEach(function (t) { html += renderTable(t) + '\n'; });
+      });
+    });
+    return html;
   }
 
   var host = document.getElementById('vocabulary');
-  var sidebarHost = document.querySelector('.sidebar-groups');
-  var overviewHost = document.querySelector('.overview-groups');
-  var hiddenTables = loadHiddenOverviewTables();
+  var navHost = document.getElementById('siteNav');
+  var indexHost = document.getElementById('tableIndex');
   var vocabularyTables = window.SakuraStudy.data.vocabularyTables;
   if (host && vocabularyTables) {
-    host.innerHTML = vocabularyTables.map(renderTable).join('\n');
-    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(vocabularyTables, hiddenTables);
-    if (overviewHost) overviewHost.innerHTML = renderOverview(vocabularyTables, hiddenTables);
+    host.innerHTML = renderAll(vocabularyTables);
+    if (navHost) navHost.innerHTML = renderNav();
+    if (indexHost) indexHost.innerHTML = renderTableIndex(vocabularyTables);
   }
   document.querySelectorAll('.vocab tbody').forEach(function (tbody) {
     [...tbody.querySelectorAll('tr')].forEach(function (row, i) { row.dataset.originalIndex = i; });
   });
-
-  // Re-rendering the sidebar/Overview (after a hide/show-all) destroys any
-  // listeners and UI state (collapsed groups, the active-page marker) on
-  // their old nodes -- this rebuilds both from the same hidden set, re-binds
-  // their delegated events (SakuraStudy.vocab.bindSidebarEvents /
-  // bindOverviewEvents, defined in js/vocab/interactions.js) and reapplies the
-  // active marker (reapplyActiveNav, also in interactions.js, which tracks the
-  // active table id) since the freshly-rendered nodes start with no .active
-  // class of their own.
-  vocab.refreshNav = function () {
-    if (sidebarHost) sidebarHost.innerHTML = renderSidebar(vocabularyTables, hiddenTables);
-    if (overviewHost) overviewHost.innerHTML = renderOverview(vocabularyTables, hiddenTables);
-    // reapplyActiveNav() below re-runs syncSidebarAccordion(), so the freshly
-    // rendered groups end up with exactly the active category expanded.
-    if (vocab.bindSidebarEvents) vocab.bindSidebarEvents();
-    if (vocab.bindOverviewEvents) vocab.bindOverviewEvents();
-    if (vocab.reapplyActiveNav) vocab.reapplyActiveNav();
-    if (vocab.applySidebarFilter) vocab.applySidebarFilter();
-  };
-  vocab.hideOverviewTable = function (id) {
-    hiddenTables.add(String(id));
-    saveHiddenOverviewTables(hiddenTables);
-    vocab.refreshNav();
-  };
-  vocab.showOverviewCategory = function (category) {
-    vocabularyTables.forEach(function (t) {
-      if ((t.category || 'Tables') === category) hiddenTables.delete(String(t.id));
-    });
-    saveHiddenOverviewTables(hiddenTables);
-    vocab.refreshNav();
-  };
 })();

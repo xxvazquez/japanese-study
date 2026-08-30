@@ -6,26 +6,33 @@ Live at [xxvazquez.github.io/japanese-study](https://xxvazquez.github.io/japanes
 
 ## Brand
 
-"sakura study" — the wordmark at the top of the sidebar, above the Overview link (`sakura` + a small tracked-out `STUDY` underneath), pairs with `logo.png`, a circular mark (sun, hills, a leaf, waves) in the same palette. The palette itself, as CSS custom properties in `css/site.css`:
+"sakura" — the wordmark sits at the left of the header opposite a small `JAPANESE REFERENCE`, and goes with `logo.png` (a circular mark: sun, hills, a leaf, waves). The wordmark is set in [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) (self-hosted, SIL OFL) — the one place a second typeface is used, to give the mark some personality; every other element is Inter. Hierarchy is carried by size, spacing, position and colour rather than bold weight or high contrast.
 
-| Swatch | Hex | CSS variable | Used for |
-|---|---|---|---|
-| Deep Teal | `#0F6B6D` | `--accent-dark` | smaller, deliberate emphasis — filled "managing rows" state, one category icon, particle highlights |
-| Teal | `#2BA7A0` | `--accent` | the main brand color in use — the *specific selected table's* nav pill, links/hover accents, focus ring |
-| Soft Teal | `#D6EFEE` | `--accent-soft` | soft hover/tint backgrounds |
-| Light Gray | `#F4F7F8` | `--surface` / `--page-bg` | sidebar + content pane surface, and the table header row itself |
-| Text Dark | `#1F2933` | `--ink` | primary text |
-| Text Muted | `#6B7C85` | `--muted` | secondary text (romaji, counts, meta, table header labels) |
+Each of the four sections (Vocabulary, Grammar, Travel, Flashcards) has one muted, desaturated cool tone that colours only its structural/interactive elements — the page title's ink, the active nav underline, category headings and their rules, active filters and tabs, focus and sort accents. Rows and large surfaces stay neutral. `--section` is switched by `body[data-active-*]`; the per-section values live in `:root` as `--sec-vocabulary` (muted blue), `--sec-grammar` (muted indigo), `--sec-travel` (muted blue-green), `--sec-flashcards` (muted slate).
 
-A dusty sakura-pink ramp rides alongside the brand palette as the one functional, non-brand accent family — never decorative, never bright/pastel (no `#FFB6C1`-style pink, which reads as the generic "cute Japanese app" look this site deliberately avoids): `--rose-blush` (`#FAF1F3`, barely-there wash), `--rose-soft` (`#F4E3E8`, tint backgrounds), `--rose` (`#C98296`, the accent itself — irregular-verb rows, search-match highlights, incorrect-answer feedback), and `--rose-dark` (`#A95F78`, for text that needs real contrast over a soft-pink background). The overall visual direction follows the "Clean Comfort" concept: a light, airy shell (white/light-gray sidebar and toolbar, not a colored panel), table chrome that stays quiet and light rather than brand-colored, and Teal reserved for exactly one job — marking the specific table you're currently on. Note that only the specific selected *table* gets the solid Teal pill; its parent category is never filled in too, even though it's also "active" in the sense of containing the current page — otherwise two different things read as selected at once.
+The palette is deliberately quiet and cool — a light "sheet" on a grey-blue ground, one restrained slate-blue accent, and no warm tones. As CSS custom properties in `css/site.css`:
+
+| Hex | CSS variable | Used for |
+|---|---|---|
+| `#2F3944` | `--ink` | primary text — dark blue-grey, never black |
+| `#5F6B79` / `#8996A3` | `--muted` / `--faint` | secondary text (romaji, labels) / tertiary (counts, chevrons) |
+| `#EEF1F4` | `--page-bg` | the cool grey behind the sheet |
+| `#FFFFFF` | `--paper` | the sheet and table surface |
+| `#E3E8EC` / `#D3DBE2` | `--line` / `--line-strong` | hairline row rules / borders, header + table-head rules |
+| `#526D87` / `#405A73` | `--accent` / `--accent-strong` | the single accent — active nav/tabs/controls, focus, search-match wash |
+
+Two colours do a narrow functional job and nothing decorative: a calm slate wash (`--irregular-bg` / `--irregular-ink`) marks irregular-verb rows, and a muted brick red (`--wrong`) is used only for a wrong or missed flashcard answer. There is no pink, no gradient, no shadow beyond a single soft one under the table overflow menu.
 
 ## What's here
 
-- `index.html` — the page shell: header, search, sidebar, overview page. Its `<script>` block documents the load order.
+- `index.html` — the page shell: header (wordmark + light/dark toggle), the four-item navigation, the vocabulary-section page (`#tableIndex` directory + sticky search/controls + tables) and the Flashcards page. Its `<script>` block documents the load order.
+- `js/theme-init.js` — tiny `<head>` script: sets `<html data-theme>` (stored choice, else OS preference) before the first paint so the theme never flashes.
 - `css/site.css` — styling and print rules
+- `fonts/InterVariable.woff2` — self-hosted [Inter](https://rsms.me/inter/) variable font (SIL OFL, `fonts/Inter.LICENSE.txt`) for all Latin/UI text; one local file, no external font runtime. Japanese keeps its Noto stack.
+- `fonts/SpaceGrotesk.woff2` — self-hosted [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) (SIL OFL, `fonts/SpaceGrotesk.LICENSE.txt`), latin weight 400 only, used solely for the `sakura` wordmark.
 - `js/config.js` — your Supabase project URL + anon key (see `SUPABASE_SETUP.md`)
 - `js/shared.js` — helpers used by more than one feature (currently just HTML escaping)
-- `js/vocab/` — the vocabulary page: `render.js` (tables, sidebar, Overview, sorting), `interactions.js` (routing, search, view modes, menus, print, polite toggle)
+- `js/vocab/` — the vocabulary page: `render.js` (tables + the four-item navigation, sorting), `interactions.js` (section routing, search, view modes, menus, print, polite toggle)
 - `js/flashcards/` — the Flashcards feature, split by responsibility: `store.js` (state & local storage), `vocab-index.js` (lookup + answer checking), `scheduling.js` (FSRS-6 + queue/stats), `data-ops.js` (auth, Supabase sync, guest store, streak), `dashboard.js` (Dashboard tab + insights + review session), `views.js` (Manage/Settings/Help + row toggle), `bootstrap.js` (app shell + init). See Flashcards, below.
 - `js/sw-register.js` — registers the service worker (see PWA, below)
 - `data/vocabulary.js` — the actual vocab, as plain data (not HTML), each row carrying a permanent id
@@ -45,16 +52,19 @@ No framework, no build step. Just open `index.html`.
 ## Features
 
 - Search across Japanese, furigana, romaji, and English, with filters to scope it to just one of those
-- Results sorted by how good the match is (exact → starts with → ends with → contains), matched text highlighted, and pulled in from every category even if you're not currently viewing it
-- Tables are grouped into categories in the sidebar; each category is its own page, so you're never scrolling past the whole book to find one table
-- An Overview page (also the sidebar's landing page) lists every category and table as a plain table of contents
-- Sortable columns (↓ = A–Z / low→high, ↑ = Z–A / high→low; every table starts sorted A–Z by English), per-table print, A4-friendly print layout
-- A sidebar filter to jump to a table by name; opening a table collapses the others in that category so only one is expanded at a time
-- A **Show polite** toggle switches verb tables between the plain/dictionary form and the polite 〜ます form — one form at a time, same table structure
+- Results sorted by how good the match is (exact → starts with → ends with → contains), matched text highlighted, and pulled in from every section even if you're not currently viewing it
+- Four main study areas in the navigation — **Vocabulary**, **Grammar**, **Travel**, **Flashcards**. Vocabulary is the landing page; inside it the tables are still grouped by content category (Food & Ingredients, Kitchen & Dining, Numbers & Counting). Grammar and Travel are promoted to their own sections.
+- Each section opens with a **table directory** (`#tableIndex`) — closed, it's a small control naming the table you're on; open, it lays the whole section out at once (every category as a quiet label, every table listed beneath with an entry count aligned in a gutter, nothing to expand). Two columns on a wide screen, a bounded bottom sheet on a phone; the table you're viewing is marked with the section colour; keyboard-navigable, hidden during a search and never printed
+- The search field and column filters stay **stuck below the navigation** as you scroll a long table
+- The URL hash tracks the view — `#grammar`, `#table-15`, `#flashcards` — so a section or a specific table can be bookmarked, shared and survives a reload; browser back/forward work
+- Sortable columns (↓ = A–Z / low→high, ↑ = Z–A / high→low; every table starts sorted A–Z by meaning), per-table print, A4-friendly print layout
+- Opening a table collapses the others in the same category so only one is expanded at a time; an **Expand all** toggle above the tables opens every table in the current section at once (and back to the one-open accordion), and steps aside while you search
+- A **Show polite** toggle switches verb tables between the plain/dictionary form and the polite 〜ます form; it only appears when a verb table (currently just Verbs) is on screen
 - "Manage rows" lets you hide individual rows you've already memorized, per table, with a one-click "Show all" to bring them back
 - **Flashcards**: turn any vocabulary row into an FSRS-6-scheduled flashcard (see below)
-- Furigana sits over the actual kanji it belongs to, not the whole word
-- On mobile the sidebar tucks behind a menu button instead of eating screen space
+- Furigana sits over the actual kanji it belongs to, not the whole word, and is always shown — never behind a hover or a toggle; it keeps a 9px floor so it stays readable when the Japanese steps down on narrow screens
+- A **light / dark** toggle in the header (`js/theme-init.js` applies the choice — a stored preference, else the OS setting — before first paint; the rest is in `interactions.js`)
+- On mobile the sheet goes full-width; the four-item navigation still fits on one line
 - Installable as a PWA on iPhone and Android, and works offline once visited (see below)
 
 ## PWA (installing on iPhone / Android)
@@ -68,7 +78,7 @@ The site is an installable, offline-capable PWA:
 
 ## Flashcards
 
-An additive feature on top of the existing vocabulary — it doesn't change or duplicate it. Every table has an "Add to flashcards" button (next to "Manage rows") that adds every one of its rows at once — it skips any row you've already hidden in that table, so words you've marked as already-known don't get pulled back in. Prefer to pick individual words instead? "Manage rows" also puts a per-row add/remove toggle next to the eye icon. A "Flashcards" page in the sidebar then lets you review, browse, and track progress (including a daily study streak).
+An additive feature on top of the existing vocabulary — it doesn't change or duplicate it. Every table has an "Add to flashcards" button (next to "Manage rows") that adds every one of its rows at once — it skips any row you've already hidden in that table, so words you've marked as already-known don't get pulled back in. Prefer to pick individual words instead? "Manage rows" also puts a per-row add/remove toggle next to the eye icon. A "Flashcards" page in the top navigation then lets you review, browse, and track progress (including a daily study streak).
 
 - Real **FSRS-6** scheduling via [`ts-fsrs`](https://github.com/open-spaced-repetition/ts-fsrs) (the official reference implementation, same org behind Anki's own FSRS), vendored as a static file at `vendor/ts-fsrs.js` — no build step added to the site itself.
 - Each vocab entry becomes up to 4 independently-scheduled cards (Japanese→English, Japanese→Romaji, Romaji→English, English→Romaji) — never Japanese-to-type. Any row whose "romaji" field isn't usable as a typed answer (still kana) is limited to Japanese→English only; the Numbers table now carries real romaji, so its rows get all four. Which of the 4 directions "Study now" actually draws from is a Settings toggle ("Study Directions") — turning one off never touches its cards or history, just leaves it out of review until switched back on. Within whichever directions are on, review order is randomized (which due reviews and which new cards come up, not the short-interval learning queue, which stays strictly soonest-due-first) so a session isn't the same predictable word/direction sequence every time.

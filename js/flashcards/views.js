@@ -160,8 +160,8 @@ window.SakuraStudy.flashcards.views = (function () {
           html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
             '<div class="fc-manage-table-head">' +
             '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(table.title) + '">' + CHEVRON_ICON + "</button>" +
-            '<span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
-            '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span>";
+            '<span class="fc-manage-table-label"><span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
+            '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span></span>";
           // Table-level actions per filter: "all" gets both add + pause;
           // "My flashcards" gets Pause table (the whole point of that view);
           // "Archived" gets Restore table.

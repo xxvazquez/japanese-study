@@ -134,6 +134,7 @@ function assetRequest(pathWithQuery) { return { url: resolveUrl(pathWithQuery), 
 
 // The versioned first-party shell, exactly as index.html requests it.
 const REFERENCE_SHELL = [
+  "js/theme-init.js",
   "css/site.css",
   "data/vocabulary.js",
   "js/config.js",
@@ -162,6 +163,8 @@ async function main() {
   check("root navigation target is precached", cache.entries.has(resolveUrl("./")));
   check("every maskable/app icon is precached", ["icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-192.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"].every((i) => cache.entries.has(resolveUrl(i))));
   check("manifest is precached", cache.entries.has(resolveUrl("manifest.webmanifest")));
+  check("the self-hosted Inter font is precached (bare URL)", cache.entries.has(resolveUrl("fonts/InterVariable.woff2")));
+  check("the self-hosted Space Grotesk wordmark font is precached (bare URL)", cache.entries.has(resolveUrl("fonts/SpaceGrotesk.woff2")));
   REFERENCE_SHELL.concat(FLASHCARDS_SHELL).forEach((p) => {
     check("precached under its exact ?v= URL: " + p, cache.entries.has(resolveUrl(p + "?v=" + V1)));
     check("NOT precached under a bare (unversioned) URL: " + p, !cache.entries.has(resolveUrl(p)));

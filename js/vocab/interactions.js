@@ -1,10 +1,11 @@
 // Vocabulary page -- interaction half of SakuraStudy.vocab.
 //
-// Page routing (Overview / category / Flashcards), the section accordion and
-// overflow menus, print, cross-category search, the view-mode column filter,
-// the sidebar (open/close, filter) and the casual/polite toggle. Augments the
-// SakuraStudy.vocab object that js/vocab/render.js creates. Loaded after
-// render.js; keeps the exact DOMContentLoaded lifecycle the old js/app.js had.
+// Section routing (Vocabulary / Grammar / Travel / Flashcards), the per-table
+// accordion and overflow menus, print, cross-section search, the view-mode
+// column filter, the four-item top navigation and the casual/polite toggle.
+// Augments the SakuraStudy.vocab object that js/vocab/render.js creates. Loaded
+// after render.js; keeps the exact DOMContentLoaded lifecycle the old
+// js/app.js had.
 window.SakuraStudy = window.SakuraStudy || {};
 window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
 (function () {
@@ -31,7 +32,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const toggle=section.querySelector('.section-toggle');
     toggle.setAttribute('aria-expanded', String(!section.classList.contains('collapsed')));
     // Accordion: opening one table in a category with several closes the others,
-    // so a multi-table category page only ever shows one open table at a time.
+    // so a category only ever shows one open table at a time.
     if (!section.classList.contains('collapsed')) collapseSiblingSections(section);
   }
   function expandSection(section) {
@@ -43,14 +44,43 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const toggle=section.querySelector('.section-toggle');
     if (toggle) toggle.setAttribute('aria-expanded','false');
   }
-  // Collapse every other table sharing this one's category page (search results
-  // span categories and set their own state, so this only runs for normal
-  // category/table navigation).
+  // Collapse every other table sharing this one's content category -- unless
+  // "Expand all" is on, where every table stays open on purpose. (Search
+  // results span sections and set their own state, so this only runs for
+  // normal section navigation and manual toggles.)
   function collapseSiblingSections(section) {
+    if (document.body.classList.contains('expand-all-mode')) return;
     const category=section.dataset.category;
-    document.querySelectorAll('.table-section').forEach(function (s) {
+    document.querySelectorAll('#vocabulary .table-section').forEach(function (s) {
       if (s !== section && s.dataset.category === category) collapseSection(s);
     });
+  }
+
+  function visibleSectionTables() {
+    return [...document.querySelectorAll('#vocabulary .table-section:not(.page-hidden):not(.search-hidden)')];
+  }
+  // Accordion default: the first table of each category open, the rest closed.
+  function collapseToAccordion(list) {
+    const seen = {};
+    list.forEach(function (s) {
+      if (!seen[s.dataset.category]) { seen[s.dataset.category] = true; expandSection(s); }
+      else collapseSection(s);
+    });
+  }
+  function setExpandAll(on) {
+    document.body.classList.toggle('expand-all-mode', on);
+    const list = visibleSectionTables();
+    if (on) list.forEach(expandSection);
+    else collapseToAccordion(list);
+    syncExpandAllBtn();
+    if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
+  }
+  function syncExpandAllBtn() {
+    const btn = document.getElementById('expandAllBtn');
+    if (!btn) return;
+    const on = document.body.classList.contains('expand-all-mode');
+    btn.textContent = on ? 'Collapse all' : 'Expand all';
+    btn.setAttribute('aria-pressed', String(on));
   }
   function updateHiddenStatus(section) {
     const count = section.querySelectorAll('tbody tr.row-hidden').length;
@@ -59,8 +89,6 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     status.querySelector('.rows-hidden-count').textContent = count + ' row' + (count === 1 ? '' : 's') + ' hidden';
   }
   // Close every open per-table overflow menu, resetting its button's aria state.
-  // `.table-section` normally clips to its rounded corners (overflow:hidden), so
-  // the open menu also toggles `.menu-open` on the section to let the popover show.
   function closeSectionMenus(except) {
     document.querySelectorAll('.section-menu-list:not([hidden])').forEach(function (list) {
       if (list === except) return;
@@ -73,132 +101,135 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       section.classList.remove('menu-open');
     });
   }
-  function openSidebar() {
-    document.querySelector('.sidebar').classList.add('open');
-    document.body.classList.add('sidebar-open');
-    const toggle = document.querySelector('.sidebar-toggle');
-    if (toggle) toggle.setAttribute('aria-expanded', 'true');
+  // The "jump to a table" dropdown.
+  function closeTableIndexMenu() {
+    const menu = document.getElementById('tindexMenu');
+    if (menu) menu.hidden = true;
+    const trigger = document.querySelector('.tindex-trigger');
+    if (trigger) trigger.setAttribute('aria-expanded', 'false');
   }
-  function closeSidebar() {
-    document.querySelector('.sidebar').classList.remove('open');
-    document.body.classList.remove('sidebar-open');
-    const toggle = document.querySelector('.sidebar-toggle');
-    if (toggle) toggle.setAttribute('aria-expanded', 'false');
-  }
-  /* Each category behaves like its own page: only its tables render at once,
-     instead of one long scroll through everything. Overview is a separate
-     table-of-contents page. Search is the one thing that reaches across
-     category boundaries -- it un-hides matches from every category, then
-     restores whichever page was active when the query is cleared. */
-  function markActiveNav(categoryName, tableId) {
-    document.querySelector('.sidebar-overview').classList.toggle('active', !categoryName && document.body.dataset.activePage !== 'flashcards');
-    const flashcardsLink = document.querySelector('.sidebar-flashcards');
-    if (flashcardsLink) flashcardsLink.classList.toggle('active', document.body.dataset.activePage === 'flashcards');
-    document.querySelectorAll('.sidebar-group-nav').forEach(b => b.classList.toggle('active', b.dataset.category === categoryName));
-    document.querySelectorAll('.sidebar-group-items a').forEach(a => a.classList.toggle('active', tableId != null && a.dataset.target === String(tableId)));
-    syncSidebarAccordion(categoryName);
-  }
-  // True accordion: only the active category's group is expanded. On Overview /
-  // Flashcards (no active category) every group collapses, keeping the rail short.
-  // The sidebar table filter forces its own groups open via the .filtering class,
-  // which wins over .collapsed in CSS, so this is safe to run while filtering too.
-  function syncSidebarAccordion(categoryName) {
-    document.querySelectorAll('.sidebar-group').forEach(function (group) {
-      const nav = group.querySelector('.sidebar-group-nav');
-      const isActive = !!categoryName && nav && nav.dataset.category === categoryName;
-      group.classList.toggle('collapsed', !isActive);
-      const chevron = group.querySelector('.sidebar-group-chevron');
-      if (chevron) chevron.setAttribute('aria-expanded', String(isActive));
+
+  /* The four main study areas. Vocabulary / Grammar / Travel each render a set
+     of table-sections (Vocabulary keeps its content-category sub-headings);
+     Flashcards is its own page. Search is the one thing that reaches across
+     section boundaries -- it reveals matches everywhere, then restores the
+     active section when the query is cleared. */
+  function markActiveNav(sectionName) {
+    const page = document.body.dataset.activePage;
+    document.querySelectorAll('#siteNav .site-nav-link').forEach(function (link) {
+      const on = link.dataset.page === 'flashcards'
+        ? page === 'flashcards'
+        : (page !== 'flashcards' && link.dataset.section === sectionName);
+      link.classList.toggle('active', on);
     });
   }
-  // Tracks whichever table is currently the active page, independent of the
-  // sidebar's own DOM -- the sidebar gets fully re-rendered whenever a table
-  // is hidden/shown from Overview (see SakuraStudy.vocab.refreshNav, in
-  // render.js), which would otherwise wipe out the .active marking those
-  // re-created nodes start without. refreshNav calls reapplyActiveNav() (below)
-  // to re-apply it from this after every re-render.
-  var currentTableId = null;
-  vocab.reapplyActiveNav = function () {
-    markActiveNav(document.body.dataset.activeCategory || null, currentTableId);
-  };
-  function showCategoryPage(name) {
+
+  // Reflect the current view in the URL hash (#vocabulary / #grammar /
+  // #travel / #flashcards / #table-N) so a section or a specific table can be
+  // bookmarked, shared and survive a reload. `fromRoute` = we're already
+  // responding to a hash, so don't push it again.
+  function setHash(h, fromRoute) {
+    if (fromRoute) return;
+    if (('#' + h) === location.hash) return;
+    try { history.pushState(null, '', '#' + h); } catch (e) { location.hash = h; }
+  }
+
+  function showSection(name, opts) {
+    opts = opts || {};
     if (vocab.clearSearchQuery) vocab.clearSearchQuery();
-    currentTableId = null;
-    document.body.dataset.activeCategory = name;
-    document.body.dataset.activePage = 'vocabulary';
-    document.getElementById('overviewPage').hidden = true;
-    document.getElementById('vocabulary').hidden = false;
+    document.body.dataset.activeSection = name;
+    document.body.dataset.activePage = name;
+    document.getElementById('vocabPage').hidden = false;
     const flashcardsPage = document.getElementById('flashcardsPage');
     if (flashcardsPage) flashcardsPage.hidden = true;
-    // Accordion: on a category page with several tables, only one is open at a
-    // time. Landing on the page opens the alphabetically-first table (matching
-    // the sidebar's own order); the rest start collapsed and open when picked.
-    const matching = [...document.querySelectorAll('.table-section')].filter(function (s) { return s.dataset.category === name; });
-    const firstByTitle = matching.slice().sort(function (a, b) {
-      return (a.querySelector('.section-title-text')?.textContent || '').localeCompare(b.querySelector('.section-title-text')?.textContent || '');
-    })[0];
-    document.querySelectorAll('.table-section').forEach(function (s) {
-      s.classList.toggle('page-hidden', s.dataset.category !== name);
+    // Reset the "jump to a table" dropdown to this section (closed).
+    const tableIndex = document.getElementById('tableIndex');
+    if (tableIndex) {
+      tableIndex.classList.remove('search-hidden');
+      closeTableIndexMenu();
+      tableIndex.querySelectorAll('.tindex-panel').forEach(function (p) {
+        p.classList.toggle('page-hidden', p.dataset.section !== name);
+      });
+    }
+    // A section switch always starts from the accordion default.
+    document.body.classList.remove('expand-all-mode');
+    syncExpandAllBtn();
+    // Reveal this section's tables; within it, open the first table of each
+    // category and collapse the rest (one open table per category).
+    const seen = {};
+    document.querySelectorAll('#vocabulary .table-section').forEach(function (s) {
+      const inSection = s.dataset.section === name;
+      s.classList.toggle('page-hidden', !inSection);
+      s.classList.remove('search-hidden');
+      if (!inSection) return;
+      if (!seen[s.dataset.category]) { seen[s.dataset.category] = true; expandSection(s); }
+      else collapseSection(s);
     });
-    matching.forEach(function (s) { s === firstByTitle ? expandSection(s) : collapseSection(s); });
-    markActiveNav(name, null);
-    window.scrollTo({ top: 0 });
-    closeSidebar();
+    document.querySelectorAll('#vocabulary .cat-heading').forEach(function (h) {
+      h.classList.remove('search-hidden');
+      h.classList.toggle('page-hidden', h.dataset.section !== name);
+    });
+    markActiveNav(name);
+    updatePoliteVisibility();
+    if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
+    setHash(name, opts.fromRoute);
+    if (!opts.fromRoute || !/^#table-/.test(location.hash)) window.scrollTo({ top: 0 });
   }
-  function showOverviewPage() {
-    if (vocab.clearSearchQuery) vocab.clearSearchQuery();
-    currentTableId = null;
-    document.body.dataset.activeCategory = '';
-    document.body.dataset.activePage = 'overview';
-    document.getElementById('vocabulary').hidden = true;
-    document.getElementById('overviewPage').hidden = false;
-    const flashcardsPage = document.getElementById('flashcardsPage');
-    if (flashcardsPage) flashcardsPage.hidden = true;
-    markActiveNav(null, null);
-    window.scrollTo({ top: 0 });
-    closeSidebar();
-  }
-  // Flashcards is a third top-level page alongside Overview/vocabulary. Its
-  // page-hiding plumbing (clearing search, resetting currentTableId, closing
-  // the mobile sidebar) lives here so js/flashcards/bootstrap.js can reuse it instead of
-  // duplicating it; flashcards.js owns everything that happens *inside*
-  // #flashcardsPage once it's shown.
-  vocab.showFlashcardsPage = function () {
-    if (vocab.clearSearchQuery) vocab.clearSearchQuery();
-    currentTableId = null;
-    document.body.dataset.activeCategory = '';
-    document.body.dataset.activePage = 'flashcards';
-    document.getElementById('vocabulary').hidden = true;
-    document.getElementById('overviewPage').hidden = true;
-    const flashcardsPage = document.getElementById('flashcardsPage');
-    if (flashcardsPage) flashcardsPage.hidden = false;
-    markActiveNav(null, null);
-    window.scrollTo({ top: 0 });
-    closeSidebar();
-  };
-  function goToTable(i) {
-    const section=document.querySelector(`.table-section[data-table="${i}"]`);
+  vocab.showSection = showSection;
+
+  // Jump straight to a table: switch section if needed, open it (collapsing
+  // its category siblings), scroll it into view.
+  function goToTable(id, opts) {
+    opts = opts || {};
+    const section = document.querySelector('#vocabulary .table-section[data-table="' + id + '"]');
     if (!section) return;
-    showCategoryPage(section.dataset.category);
-    currentTableId = i;
+    if (document.body.dataset.activeSection !== section.dataset.section) showSection(section.dataset.section, { fromRoute: true });
     expandSection(section);
     collapseSiblingSections(section);
-    section.scrollIntoView({block:'start'});
-    markActiveNav(section.dataset.category, i);
+    section.scrollIntoView({ block: 'start' });
+    // Mark this table current in the directory right away -- when it's already
+    // on screen no scroll fires, so the scroll-spy alone wouldn't update.
+    if (vocab.syncTableIndexActive) vocab.syncTableIndexActive(id);
+    setHash('table-' + id, opts.fromRoute);
   }
-  function updateNavOnScroll() {
-    if (document.getElementById('vocabulary').hidden) return;
-    const sections=[...document.querySelectorAll('.table-section:not(.page-hidden):not(.search-hidden)')];
-    if (!sections.length) return;
-    let current=sections[0];
-    const y=window.scrollY+230;
-    for(const sec of sections) if(sec.offsetTop<=y) current=sec;
-    document.querySelectorAll('.sidebar-group-items a').forEach(a=>{
-      a.classList.toggle('active', current && a.dataset.target===current.dataset.table);
-    });
+
+  // Flashcards is a top-level page alongside the three vocabulary sections. Its
+  // page-hiding plumbing lives here so js/flashcards/bootstrap.js can reuse it;
+  // flashcards.js owns everything inside #flashcardsPage.
+  vocab.showFlashcardsPage = function (opts) {
+    opts = opts || {};
+    if (vocab.clearSearchQuery) vocab.clearSearchQuery();
+    document.body.dataset.activeSection = '';
+    document.body.dataset.activePage = 'flashcards';
+    document.getElementById('vocabPage').hidden = true;
+    const flashcardsPage = document.getElementById('flashcardsPage');
+    if (flashcardsPage) flashcardsPage.hidden = false;
+    markActiveNav(null);
+    setHash('flashcards', opts.fromRoute);
+    window.scrollTo({ top: 0 });
+  };
+
+  // "Show polite" only does anything to verb tables (only the Verbs table has
+  // them), so it only shows when a verb table is on screen.
+  function updatePoliteVisibility() {
+    const pt = document.getElementById('politeToggle');
+    if (!pt) return;
+    pt.hidden = !document.querySelector('#vocabulary .table-section:not(.page-hidden) .verb-form');
   }
-  window.addEventListener('scroll',updateNavOnScroll,{passive:true});
-  window.addEventListener('load',updateNavOnScroll);
+  vocab.updatePoliteVisibility = updatePoliteVisibility;
+
+  // Route the current URL hash to a view. `fromRoute` everywhere so nothing
+  // pushes a new history entry in response to one.
+  function routeFromHash() {
+    const h = (location.hash || '').replace(/^#/, '');
+    const m = h.match(/^table-(.+)$/);
+    if (h === 'flashcards') { vocab.showFlashcardsPage({ fromRoute: true }); return; }
+    if (m && document.getElementById('table-' + m[1])) { goToTable(m[1], { fromRoute: true }); return; }
+    if (h === 'grammar' || h === 'travel') { showSection(h, { fromRoute: true }); return; }
+    showSection('vocabulary', { fromRoute: true });
+  }
+  vocab.routeFromHash = routeFromHash;
+  window.addEventListener('popstate', routeFromHash);
 
   /* Search across Japanese, furigana, romaji and English. A filter (All/Japanese/Romaji/English)
      scopes which field(s) are matched; results rank exact > starts-with > ends-with > contains,
@@ -208,7 +239,13 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     if (!input) return;
     const count = document.getElementById('searchCount');
     const box = input.closest('.search-box');
-    const sections = [...document.querySelectorAll('.table-section')];
+    const vocabHost = document.getElementById('vocabulary');
+    const sections = [...vocabHost.querySelectorAll('.table-section')];
+    const headings = [...vocabHost.querySelectorAll('.cat-heading')];
+    // The full, grouped child order of #vocabulary (headings + sections) --
+    // restored verbatim when a search is cleared, since ranking reorders the
+    // sections while a query is active.
+    const vocabOrder = [...vocabHost.children];
 
     function currentFilter() {
       const active = document.querySelector('.view-mode button.active');
@@ -297,17 +334,26 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       const q = input.value.trim().toLocaleLowerCase();
       box.classList.toggle('has-value', Boolean(q));
       const filter = currentFilter();
+      const activeSection = document.body.dataset.activeSection || 'vocabulary';
       let totalRows = 0, totalTables = 0;
       const sectionOrder = [];
-      const overviewPage = document.getElementById('overviewPage');
-      const vocabHost = document.getElementById('vocabulary');
-      const activeCategory = document.body.dataset.activeCategory || '';
 
-      // A query needs matches from every category, not just the one currently
-      // open -- so search temporarily lifts the per-category page restriction.
-      if (q) { vocabHost.hidden = false; overviewPage.hidden = true; }
-      else if (activeCategory) { vocabHost.hidden = false; overviewPage.hidden = true; }
-      else { vocabHost.hidden = true; overviewPage.hidden = false; }
+      // Category sub-headings + the per-section table-index dropdown are
+      // noise while results span every section.
+      headings.forEach(h => {
+        h.classList.toggle('search-hidden', Boolean(q));
+        if (!q) h.classList.toggle('page-hidden', h.dataset.section !== activeSection);
+      });
+      const tableIndexEl = document.getElementById('tableIndex');
+      if (tableIndexEl) {
+        tableIndexEl.classList.toggle('search-hidden', Boolean(q));
+        if (q) closeTableIndexMenu();
+        else tableIndexEl.querySelectorAll('.tindex-panel').forEach(p => p.classList.toggle('page-hidden', p.dataset.section !== activeSection));
+      }
+      // "Expand all" is meaningless with search results (already all open).
+      const expandBar = document.querySelector('.expand-bar');
+      if (expandBar) expandBar.classList.toggle('search-hidden', Boolean(q));
+      if (q) document.body.classList.remove('expand-all-mode');
 
       sections.forEach((section, originalIndex) => {
         const tbody = section.querySelector('tbody');
@@ -331,24 +377,30 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
           if (sectionRows > 0) { totalTables++; totalRows += sectionRows; expandSection(section); }
         } else {
           section.classList.remove('search-hidden');
-          section.classList.toggle('page-hidden', Boolean(activeCategory) && section.dataset.category !== activeCategory);
+          section.classList.toggle('page-hidden', section.dataset.section !== activeSection);
         }
         sectionOrder.push({ section, rank: sectionBest === null ? Infinity : sectionBest, originalIndex });
       });
       count.textContent = q ? totalRows + ' matching row' + (totalRows === 1 ? '' : 's') + ' · ' + totalTables + ' table' + (totalTables === 1 ? '' : 's') : '';
+      if (vocab.updatePoliteVisibility) vocab.updatePoliteVisibility();
 
-      // The best match overall should be the first thing on the page, not just first
-      // within whichever table happens to sort earliest -- so reorder the table
-      // sections themselves by their best contained match, ties kept in table order.
+      // The best match overall should be first on the page; ties keep table order.
       if (q) {
         sectionOrder.sort((a, b) => a.rank - b.rank || a.originalIndex - b.originalIndex);
         sectionOrder.forEach(s => vocabHost.appendChild(s.section));
       } else {
-        sections.forEach(section => vocabHost.appendChild(section));
+        vocabOrder.forEach(el => vocabHost.appendChild(el));
       }
     }
     vocab.clearSearchQuery = function () {
       if (input.value) { input.value = ''; runSearch(); }
+    };
+    // The `/` shortcut needs a vocabulary section on screen -- search only
+    // lives there.
+    vocab.focusSearch = function () {
+      if (document.body.dataset.activePage === 'flashcards') showSection('vocabulary');
+      input.scrollIntoView({ block: 'nearest' });
+      input.focus();
     };
 
     input.addEventListener('input', runSearch);
@@ -365,16 +417,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     });
     document.addEventListener('keydown', function (event) {
       if (event.key === '/' && !/input|textarea|select/i.test(document.activeElement.tagName)) {
-        event.preventDefault(); input.focus();
+        event.preventDefault();
+        if (vocab.focusSearch) vocab.focusSearch();
       }
     });
 
-    // The view-mode filter visually dims other columns (color: transparent) so the grid,
-    // borders and colors stay intact -- but that leaves the text readable to a screen
-    // reader and its sort button focusable. Mark the hidden columns aria-hidden and
-    // disable their sort control so the accessible state matches what's visually shown.
+    // View-mode dims other columns (color: transparent) so the grid stays
+    // intact; mark the hidden columns aria-hidden and disable their sort
+    // control so the accessible state matches the visual one.
     function applyViewModeAccessibility(mode) {
-      // Columns: 1 = Japanese, 2 = Romaji, 3 = English.
       const hiddenByMode = { japanese: [2, 3], romaji: [1, 3], english: [1, 2] };
       const hidden = hiddenByMode[mode] || [];
       document.querySelectorAll('.vocab').forEach(function (table) {
@@ -388,16 +439,11 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         });
       });
     }
-
-    // One column-scope mode for the whole page (All/Japanese/Romaji/English),
-    // driven by the header's segmented control via a delegated click handler.
     function setViewMode(mode) {
       document.body.classList.remove('mode-japanese', 'mode-romaji', 'mode-english');
       if (mode !== 'all') document.body.classList.add('mode-' + mode);
       syncViewModeControls();
       applyViewModeAccessibility(mode);
-      // On the Flashcards page the vocabulary list isn't the thing on screen,
-      // and runSearch() would fight its page-visibility handling.
       if (document.body.dataset.activePage !== 'flashcards') runSearch();
     }
     function syncViewModeControls() {
@@ -410,19 +456,19 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         b.setAttribute('aria-pressed', String(on));
       });
     }
+    // No explicit "All" button: clicking the already-active scope turns it off.
     document.addEventListener('click', function (event) {
       const button = event.target.closest && event.target.closest('.view-mode button');
-      if (button) setViewMode(button.dataset.mode);
+      if (!button) return;
+      setViewMode(button.classList.contains('active') ? 'all' : button.dataset.mode);
     });
   });
 
-  // CSP-safe delegated event wiring for the generated vocabulary controls -- one
-  // document-level listener rather than a per-node forEach at load.
+  // CSP-safe delegated event wiring for the generated vocabulary controls.
   document.addEventListener('DOMContentLoaded', function () {
     document.addEventListener('click', function (event) {
       const t = event.target;
       if (!t || !t.closest) return;
-      // Any click outside a menu (button + popover) dismisses open menus.
       if (!t.closest('.section-menu')) closeSectionMenus();
       let el;
       if ((el = t.closest('.section-menu-btn'))) {
@@ -461,7 +507,6 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         event.stopPropagation();
         vocab.sortTableFromButton(el);
       } else if (t.closest('.fc-add-table-btn')) {
-        // Handled in js/flashcards/views.js -- just dismiss the menu it lives in.
         closeSectionMenus();
       }
     });
@@ -473,129 +518,137 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       closeSectionMenus();
       if (btn) btn.focus();
     });
-    // The sidebar and Overview list both re-render themselves (hide/show-all
-    // pulls a table from both at once, see SakuraStudy.vocab.refreshNav in
-    // render.js), which destroys and recreates their nodes -- so their bindings
-    // live in named, re-callable functions instead of a one-time forEach like
-    // everything else here.
-    vocab.bindSidebarEvents = function () {
-      document.querySelectorAll('.sidebar-group-chevron').forEach(function (button) {
-        button.addEventListener('click', function () {
-          const group = button.closest('.sidebar-group');
-          const willExpand = group.classList.contains('collapsed');
-          // True accordion: expanding one group collapses the others.
-          if (willExpand) {
-            document.querySelectorAll('.sidebar-group').forEach(function (other) {
-              if (other === group) return;
-              other.classList.add('collapsed');
-              const c = other.querySelector('.sidebar-group-chevron');
-              if (c) c.setAttribute('aria-expanded', 'false');
-            });
-          }
-          group.classList.toggle('collapsed', !willExpand);
-          button.setAttribute('aria-expanded', String(willExpand));
-        });
-      });
-      document.querySelectorAll('.sidebar-group-nav').forEach(function (button) {
-        button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
-      });
-      document.querySelectorAll('.sidebar-group-items a').forEach(function (link) {
-        link.addEventListener('click', function (event) {
-          event.preventDefault();
-          goToTable(link.dataset.target);
-        });
-      });
-    };
-    vocab.bindSidebarEvents();
-    vocab.bindOverviewEvents = function () {
-      document.querySelectorAll('.overview-group-nav').forEach(function (button) {
-        button.addEventListener('click', function () { showCategoryPage(button.dataset.category); });
-      });
-      document.querySelectorAll('.overview-link').forEach(function (link) {
-        link.addEventListener('click', function (event) {
-          event.preventDefault();
-          goToTable(link.dataset.target);
-        });
-      });
-      document.querySelectorAll('.overview-hide-btn').forEach(function (button) {
-        button.addEventListener('click', function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          vocab.hideOverviewTable(button.dataset.target);
-        });
-      });
-      document.querySelectorAll('.overview-show-hidden').forEach(function (button) {
-        button.addEventListener('click', function (event) {
-          event.preventDefault();
-          event.stopPropagation();
-          vocab.showOverviewCategory(button.dataset.category);
-        });
-      });
-    };
-    vocab.bindOverviewEvents();
-    const overviewLink = document.querySelector('.sidebar-overview');
-    if (overviewLink) {
-      overviewLink.addEventListener('click', function (event) {
+
+    // Top navigation -- rendered once by render.js, never rebuilt.
+    document.querySelectorAll('#siteNav .site-nav-link').forEach(function (link) {
+      link.addEventListener('click', function (event) {
         event.preventDefault();
-        showOverviewPage();
+        if (link.dataset.page === 'flashcards') { if (vocab.showFlashcardsPage) vocab.showFlashcardsPage(); }
+        else if (link.dataset.section) showSection(link.dataset.section);
       });
+    });
+    const wordmark = document.querySelector('.wordmark');
+    if (wordmark) {
+      wordmark.addEventListener('click', function (event) { event.preventDefault(); showSection('vocabulary'); });
     }
-    const flashcardsLink = document.querySelector('.sidebar-flashcards');
-    if (flashcardsLink) {
-      flashcardsLink.addEventListener('click', function (event) {
+
+    // Table-index dropdown -- rendered once. The trigger opens/closes the
+    // menu; picking a table jumps to it and closes; outside-click / Esc
+    // close it. The trigger label and the menu's `.current` mark track
+    // whichever table is in view as you scroll.
+    const tableIndex = document.getElementById('tableIndex');
+    // Every table link in the visible panel -- the directory shows them all,
+    // so keyboard nav walks the whole list.
+    function tindexItems() { return [...document.querySelectorAll('#tindexMenu .tindex-panel:not(.page-hidden) a[data-target]')]; }
+    function openTindexMenu() {
+      const menu = document.getElementById('tindexMenu');
+      closeSectionMenus();
+      menu.hidden = false;
+      document.querySelector('.tindex-trigger').setAttribute('aria-expanded', 'true');
+      const items = tindexItems();
+      const target = items.find(a => a.classList.contains('current')) || items[0];
+      if (target) requestAnimationFrame(() => target.focus());
+    }
+    if (tableIndex) {
+      tableIndex.addEventListener('click', function (event) {
+        const trigger = event.target.closest('.tindex-trigger');
+        if (trigger) {
+          if (document.getElementById('tindexMenu').hidden) openTindexMenu();
+          else closeTableIndexMenu();
+          return;
+        }
+        // The mobile bottom-sheet scrim.
+        if (event.target.closest('.tindex-scrim')) { closeTableIndexMenu(); return; }
+        const link = event.target.closest('a[data-target]');
+        if (!link) return;
         event.preventDefault();
-        if (vocab.showFlashcardsPage) vocab.showFlashcardsPage();
+        closeTableIndexMenu();
+        goToTable(link.dataset.target);
+        const t = document.querySelector('.tindex-trigger');
+        if (t) t.focus();
+      });
+      // Arrow-key navigation once the menu is open.
+      tableIndex.addEventListener('keydown', function (event) {
+        const menu = document.getElementById('tindexMenu');
+        if (menu.hidden) return;
+        const items = tindexItems();
+        const i = items.indexOf(document.activeElement);
+        if (event.key === 'ArrowDown') { event.preventDefault(); (items[i + 1] || items[0]).focus(); }
+        else if (event.key === 'ArrowUp') { event.preventDefault(); (items[i - 1] || items[items.length - 1]).focus(); }
+        else if (event.key === 'Home') { event.preventDefault(); items[0] && items[0].focus(); }
+        else if (event.key === 'End') { event.preventDefault(); items[items.length - 1] && items[items.length - 1].focus(); }
+        else if (event.key === 'Tab') { closeTableIndexMenu(); }
       });
     }
-    const sidebarToggle = document.querySelector('.sidebar-toggle');
-    if (sidebarToggle) {
-      sidebarToggle.addEventListener('click', function () {
-        if (document.querySelector('.sidebar').classList.contains('open')) closeSidebar();
-        else openSidebar();
+    document.addEventListener('click', function (event) {
+      if (!event.target.closest || !event.target.closest('#tableIndex')) closeTableIndexMenu();
+    });
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      const menu = document.getElementById('tindexMenu');
+      if (menu && !menu.hidden) {
+        closeTableIndexMenu();
+        const t = document.querySelector('.tindex-trigger');
+        if (t) t.focus();
+      }
+    });
+    vocab.syncTableIndexActive = function (forceId) {
+      const panel = document.querySelector('#tableIndex .tindex-panel:not(.page-hidden)');
+      const label = document.querySelector('.tindex-trigger-label');
+      if (!panel) return;
+      const visible = [...document.querySelectorAll('#vocabulary .table-section:not(.page-hidden):not(.search-hidden)')];
+      let current = visible[0];
+      const y = window.scrollY + 130;
+      for (const s of visible) if (s.offsetTop <= y) current = s;
+      if (forceId) { const f = visible.find(s => s.dataset.table === String(forceId)); if (f) current = f; }
+      panel.querySelectorAll('a[data-target]').forEach(function (a) {
+        a.classList.toggle('current', !!current && a.dataset.target === current.dataset.table);
       });
-    }
-    // Sidebar table filter -- narrows the nav tree to tables whose name matches,
-    // hiding any category left with no matches. The input lives in static markup
-    // (index.html), but .sidebar-groups is re-rendered by refreshNav, so the
-    // filter is a re-appliable function called again at the end of every rebuild.
-    const sidebarSearchInput = document.getElementById('sidebarSearch');
-    let sidebarFilterQuery = '';
-    vocab.applySidebarFilter = function () {
-      const q = sidebarFilterQuery;
-      let anyVisible = false;
-      document.querySelectorAll('.sidebar-group').forEach(function (group) {
-        let groupHasMatch = false;
-        group.querySelectorAll('.sidebar-group-items a').forEach(function (link) {
-          const match = !q || link.textContent.toLowerCase().includes(q);
-          link.hidden = !match;
-          if (match) groupHasMatch = true;
-        });
-        group.hidden = !groupHasMatch;
-        if (groupHasMatch) anyVisible = true;
-        // While filtering, force groups open so matches aren't hidden inside a
-        // collapsed category; clearing the filter restores normal accordion use.
-        group.classList.toggle('filtering', Boolean(q));
-      });
-      const empty = document.querySelector('.sidebar-search-empty');
-      if (empty) empty.hidden = Boolean(!q) || anyVisible;
+      if (label) label.textContent = current ? (current.querySelector('.section-title-text')?.textContent || 'Jump to a table') : 'Jump to a table';
     };
-    if (sidebarSearchInput) {
-      sidebarSearchInput.addEventListener('input', function () {
-        sidebarFilterQuery = sidebarSearchInput.value.trim().toLowerCase();
-        vocab.applySidebarFilter();
+    window.addEventListener('scroll', function () {
+      if (document.getElementById('vocabPage').hidden) return;
+      if (document.getElementById('tableSearch').value.trim()) return;
+      vocab.syncTableIndexActive();
+    }, { passive: true });
+
+    // Expand all / collapse all -- read a whole category (or section) straight
+    // through, then snap back to the one-open accordion.
+    const expandAllBtn = document.getElementById('expandAllBtn');
+    if (expandAllBtn) {
+      expandAllBtn.addEventListener('click', function () {
+        setExpandAll(!document.body.classList.contains('expand-all-mode'));
       });
     }
 
-    const sidebarBackdrop = document.querySelector('.sidebar-backdrop');
-    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', closeSidebar);
-    document.addEventListener('keydown', function (event) {
-      if (event.key === 'Escape' && document.body.classList.contains('sidebar-open')) closeSidebar();
-    });
+    // Light / dark theme. js/theme-init.js already set <html data-theme>
+    // before paint; this just wires the toggle and persists the choice.
+    const THEME_KEY = 'sakura-theme';
+    const themeToggle = document.getElementById('themeToggle');
+    function applyTheme(mode) {
+      document.documentElement.setAttribute('data-theme', mode);
+      if (themeToggle) {
+        themeToggle.setAttribute('aria-label', mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+        themeToggle.title = mode === 'dark' ? 'Light mode' : 'Dark mode';
+      }
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', mode === 'dark' ? '#191d23' : '#f4f6f8');
+      try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+    }
+    if (themeToggle) {
+      applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+      themeToggle.addEventListener('click', function () {
+        applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+      });
+    }
+
+    // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
+    // section or table can be linked to and survives a reload.
+    routeFromHash();
 
     // Casual / polite: one page-wide switch. Verb tables carry both forms in the
-    // markup (unchanged row structure); body.show-polite just swaps which one is
-    // visible via CSS, so exactly one shows at a time. Rows with no distinct
-    // polite form are unaffected. Preference persists client-side.
+    // markup; body.show-polite swaps which one is visible via CSS. Preference
+    // persists client-side.
     const POLITE_KEY = 'sakura-show-polite';
     const politeToggle = document.getElementById('politeToggle');
     function applyPoliteMode(on) {
@@ -614,5 +667,6 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         applyPoliteMode(!document.body.classList.contains('show-polite'));
       });
     }
+    updatePoliteVisibility();
   });
 })();

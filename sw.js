@@ -23,12 +23,15 @@ const UNVERSIONED = [
   'icons/icon-maskable-192.png',
   'icons/icon-maskable-512.png',
   'icons/apple-touch-icon.png',
+  'fonts/InterVariable.woff2',
+  'fonts/SpaceGrotesk.woff2',
 ];
 
 // Requested by the browser WITH ?v=<sha> (see the <script>/<link> tags in
 // index.html). Cached under the exact versioned URL. Keep this list in sync
 // with index.html whenever a first-party script or stylesheet is added.
 const VERSIONED = [
+  'js/theme-init.js',
   'css/site.css',
   'data/vocabulary.js',
   'js/config.js',

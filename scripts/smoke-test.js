@@ -66,76 +66,148 @@ async function main() {
   // easy to introduce by accident and easy to miss without a check like this.
   check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
 
-  console.log("Default landing page is the Overview table of contents");
-  check("vocabulary starts hidden", document.getElementById("vocabulary").hidden === true);
-  check("overview page starts visible", document.getElementById("overviewPage").hidden === false);
-  check("the Overview sidebar link starts active", document.querySelector(".sidebar-overview").classList.contains("active"));
+  console.log("Default landing page is Vocabulary");
+  check("vocabulary page is visible on load", document.getElementById("vocabPage").hidden === false);
+  check("flashcards page starts hidden", document.getElementById("flashcardsPage").hidden === true);
+  check("no redundant page heading -- the nav is the only place the section is named", !document.getElementById("vocabPageTitle") && !document.querySelector("#vocabPage .page-title"));
+  check("the Vocabulary nav link starts active", document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').classList.contains("active"));
+  check("only the Vocabulary section's tables are shown", [...document.querySelectorAll("#vocabulary .table-section")].every(s => s.classList.contains("page-hidden") === (s.dataset.section !== "vocabulary")));
+  check("Grammar tables belong to the grammar section", [...document.querySelectorAll('.table-section[data-category="Grammar"]')].every(s => s.dataset.section === "grammar"));
+  check("Travel tables belong to the travel section", [...document.querySelectorAll('.table-section[data-category="Travel"]')].every(s => s.dataset.section === "travel"));
+  check("every other category belongs to the vocabulary section", [...document.querySelectorAll(".table-section")].filter(s => !["Grammar", "Travel"].includes(s.dataset.category)).every(s => s.dataset.section === "vocabulary"));
 
-  console.log("Overview table of contents");
-  const overviewGroups = document.querySelectorAll(".overview-group");
-  check("overview renders one group per category", overviewGroups.length === 5);
-  check("overview links cover every table", document.querySelectorAll(".overview-group-items a").length === 23);
-  const overviewNames = [...overviewGroups].map(g => g.querySelector(".cat-name").textContent.trim());
-  check("overview categories are ordered alphabetically", JSON.stringify(overviewNames) === JSON.stringify([...overviewNames].sort((a, b) => a.localeCompare(b))));
+  console.log("Vocabulary section: content-category sub-headings + table-index dropdown");
+  const catHeads = [...document.querySelectorAll('#vocabulary .cat-heading[data-section="vocabulary"]')];
+  check("a sub-heading per Vocabulary category (Food & Ingredients / Kitchen & Dining / Numbers & Counting)", catHeads.length === 3);
+  check("sub-headings are visible on the Vocabulary page", catHeads.every(h => !h.classList.contains("page-hidden")));
+  const tindexMenu = document.getElementById("tindexMenu");
+  check("the table-index dropdown menu starts closed", tindexMenu.hidden === true);
+  check("its trigger reports collapsed", document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "false");
+  const vocPanel = document.querySelector('#tableIndex .tindex-panel[data-section="vocabulary"]');
+  check("the Vocabulary panel is the visible one", !!vocPanel && !vocPanel.classList.contains("page-hidden"));
+  check("it links every Vocabulary table by name", (() => {
+    const links = [...vocPanel.querySelectorAll('a[data-target]')];
+    const tables = [...document.querySelectorAll('.table-section[data-section="vocabulary"]')];
+    return links.length === tables.length && links.every(a => document.getElementById('table-' + a.dataset.target));
+  })());
+  check("the Vocabulary panel groups links by category (3 groups, 3 labels)", vocPanel.querySelectorAll('.tindex-cat-group').length === 3 && vocPanel.querySelectorAll('.tindex-cat').length === 3);
+  check("category labels are plain text, not expand/collapse buttons", [...vocPanel.querySelectorAll('.tindex-cat')].every(c => c.tagName !== "BUTTON" && !c.hasAttribute("aria-expanded")));
+  check("the Grammar panel is a single ungrouped list (no category label)", (() => {
+    const g = document.querySelector('#tableIndex .tindex-panel[data-section="grammar"]');
+    return g && g.querySelectorAll('.tindex-cat-group').length === 0 && g.querySelectorAll('.tindex-cat').length === 0 && !!g.querySelector('.tindex-list');
+  })());
+  check("a section with many tables is marked for the two-column layout", vocPanel.classList.contains("tindex-panel--wide") && !document.querySelector('#tableIndex .tindex-panel[data-section="grammar"]').classList.contains("tindex-panel--wide"));
+  check("clicking the trigger opens the menu", (() => {
+    document.querySelector(".tindex-trigger").click();
+    return tindexMenu.hidden === false && document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "true";
+  })());
+  check("clicking outside closes it", (() => { document.body.click(); return tindexMenu.hidden === true; })());
+  check("one table per category is expanded on landing", (() => {
+    const seen = {};
+    let ok = true;
+    document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)').forEach(s => {
+      const first = !seen[s.dataset.category];
+      seen[s.dataset.category] = true;
+      if (s.classList.contains("collapsed") === first) ok = false;
+    });
+    return ok;
+  })());
 
-  console.log("Sidebar table index");
-  const sidebarGroups = document.querySelectorAll(".sidebar-group");
-  check("sidebar renders category groups", sidebarGroups.length === 5);
-  check("each group header carries a colored icon", [...sidebarGroups].every(g => !!g.querySelector(".cat-icon svg")));
-  check("each group header shows a table count", [...sidebarGroups].every(g => /^\d+$/.test(g.querySelector(".cat-count").textContent.trim())));
-  const groupNames = [...sidebarGroups].map(g => g.querySelector(".cat-name").textContent.trim());
-  check("categories are ordered alphabetically", JSON.stringify(groupNames) === JSON.stringify([...groupNames].sort((a, b) => a.localeCompare(b))));
-  const firstGroupLinks = [...sidebarGroups[0].querySelectorAll(".sidebar-group-items a")].map(a => a.textContent.trim());
-  check("tables are ordered alphabetically within a category", JSON.stringify(firstGroupLinks) === JSON.stringify([...firstGroupLinks].sort((a, b) => a.localeCompare(b))));
-  check("sidebar links cover every table", document.querySelectorAll(".sidebar-group-items a").length === 23);
+  console.log("Four-item top navigation");
+  const navLinks = [...document.querySelectorAll("#siteNav .site-nav-link")];
+  check("nav is Vocabulary / Grammar / Travel / Flashcards", navLinks.map(l => l.textContent) .join(" ") === "Vocabulary Grammar Travel Flashcards");
+  check("the three vocabulary sections carry data-section", navLinks.slice(0, 3).map(l => l.dataset.section).join(",") === "vocabulary,grammar,travel");
+  check("last nav item is Flashcards", navLinks[3].dataset.page === "flashcards");
+  check("no category is a top-level nav item", !navLinks.some(l => l.dataset.category));
 
-  console.log("Sidebar accordion (independent of which page is open)");
-  const chevron = sidebarGroups[0].querySelector(".sidebar-group-chevron");
-  check("groups start collapsed on the Overview page (only the active category expands)", sidebarGroups[0].classList.contains("collapsed"));
-  chevron.click();
-  check("clicking a chevron expands that group", !sidebarGroups[0].classList.contains("collapsed"));
-  check("aria-expanded tracks the expanded state", chevron.getAttribute("aria-expanded") === "true");
-  check("expanding one group collapses the others (true accordion)", [...sidebarGroups].slice(1).every(g => g.classList.contains("collapsed")));
-  chevron.click();
-  check("clicking it again re-collapses the group", sidebarGroups[0].classList.contains("collapsed"));
-
-  console.log("Categories behave like separate pages");
-  const grammarNav = document.querySelector('.sidebar-group-nav[data-category="Grammar"]');
+  console.log("Sections behave like separate pages");
+  const grammarNav = document.querySelector('#siteNav .site-nav-link[data-section="grammar"]');
   grammarNav.click();
-  check("opening a category reveals the vocabulary view", document.getElementById("vocabulary").hidden === false);
-  check("opening a category hides the overview page", document.getElementById("overviewPage").hidden === true);
-  check("only that category's tables are shown", [...document.querySelectorAll(".table-section")].every(s => s.classList.contains("page-hidden") === (s.dataset.category !== "Grammar")));
-  check("the sidebar marks that category nav active", grammarNav.classList.contains("active"));
-  check("the Overview link is no longer active", !document.querySelector(".sidebar-overview").classList.contains("active"));
+  check("only Grammar tables are shown", [...document.querySelectorAll("#vocabulary .table-section")].every(s => s.classList.contains("page-hidden") === (s.dataset.section !== "grammar")));
+  check("the Grammar table-index panel is now the visible one", (() => {
+    const shown = [...document.querySelectorAll('#tableIndex .tindex-panel')].filter(t => !t.classList.contains("page-hidden"));
+    return shown.length === 1 && shown[0].dataset.section === "grammar";
+  })());
+  check("the Grammar nav link is active", grammarNav.classList.contains("active"));
+  check("the Vocabulary nav link is no longer active", !document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').classList.contains("active"));
+  check("Grammar has no in-flow category sub-heading (single category)", ![...document.querySelectorAll('#vocabulary .cat-heading:not(.page-hidden)')].length);
 
-  const drinksLink = document.querySelector('.sidebar-group-items a[data-target="1"]');
-  drinksLink.click();
-  const drinksSection = document.querySelector('.table-section[data-table="1"]');
-  check("picking a table from a different category switches pages", !drinksSection.classList.contains("page-hidden"));
-  check("the previous category's tables are hidden again", document.querySelector('.table-section[data-category="Grammar"]').classList.contains("page-hidden"));
-  check("the picked table is expanded", !drinksSection.classList.contains("collapsed"));
-  check("the picked table's sidebar link is active", drinksLink.classList.contains("active"));
+  console.log("\"Show polite\" only appears where a verb table is on screen");
+  check("hidden on Vocabulary (no verb tables)", (() => {
+    document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+    return document.getElementById("politeToggle").hidden === true;
+  })());
+  check("shown on Grammar (the Verbs table)", (() => {
+    document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
+    return document.getElementById("politeToggle").hidden === false;
+  })());
 
-  console.log("Overview link returns to the table of contents");
-  document.querySelector(".sidebar-overview").click();
-  check("Overview link hides the vocabulary tables", document.getElementById("vocabulary").hidden === true);
-  check("Overview link reveals the overview page", document.getElementById("overviewPage").hidden === false);
-  check("Overview link is marked active again", document.querySelector(".sidebar-overview").classList.contains("active"));
+  console.log("Directory shows aligned counts");
+  check("every table link carries an entry count", [...document.querySelectorAll('#tindexMenu .tindex-panel[data-section="vocabulary"] a[data-target]')].every(a => /^\d+$/.test(a.querySelector('.tindex-count')?.textContent || "")));
+  check("category labels carry a table count", [...document.querySelectorAll('#tindexMenu .tindex-panel[data-section="vocabulary"] .tindex-cat')].every(c => /^\d+$/.test(c.querySelector('.tindex-count')?.textContent || "")));
 
-  console.log("Search reaches across category pages");
-  document.querySelector('.sidebar-group-nav[data-category="Grammar"]').click();
+  console.log("URL hash routing");
+  window.location.hash = "#grammar";
+  window.dispatchEvent(new window.Event("popstate"));
+  check("#grammar routes to the Grammar section", document.body.dataset.activeSection === "grammar");
+  const advId = [...document.querySelectorAll('.table-section[data-section="grammar"]')].find(s => s.querySelector('.section-title-text').textContent === "Adjectives").dataset.table;
+  window.location.hash = "#table-" + advId;
+  window.dispatchEvent(new window.Event("popstate"));
+  check("#table-N reveals and expands that table", (() => {
+    const s = document.querySelector('.table-section[data-table="' + advId + '"]');
+    return !s.classList.contains("page-hidden") && !s.classList.contains("collapsed") && document.body.dataset.activeSection === "grammar";
+  })());
+  window.location.hash = "";
+  window.dispatchEvent(new window.Event("popstate"));
+  check("an empty hash routes back to Vocabulary", document.body.dataset.activeSection === "vocabulary");
+
+  console.log("Dark-mode toggle");
+  const themeBtn = document.getElementById("themeToggle");
+  const before = document.documentElement.getAttribute("data-theme");
+  themeBtn.click();
+  check("clicking the toggle flips <html data-theme>", document.documentElement.getAttribute("data-theme") !== before && ["light", "dark"].includes(document.documentElement.getAttribute("data-theme")));
+  themeBtn.click();
+  check("clicking again flips it back", document.documentElement.getAttribute("data-theme") === before);
+
+  console.log("Jumping to a table from the dropdown");
+  // On Grammar: open the menu, jump to Verbs, menu closes.
+  const verbsSec = [...document.querySelectorAll('.table-section[data-section="grammar"]')].find(s => s.querySelector('.section-title-text').textContent === "Verbs");
+  document.querySelector(".tindex-trigger").click();
+  const verbsIdxLink = document.querySelector('#tableIndex .tindex-panel[data-section="grammar"] a[data-target="' + verbsSec.dataset.table + '"]');
+  verbsIdxLink.click();
+  check("the target table is revealed and expanded", !verbsSec.classList.contains("page-hidden") && !verbsSec.classList.contains("collapsed"));
+  check("its section siblings are collapsed", [...document.querySelectorAll('.table-section[data-section="grammar"]')].filter(s => s !== verbsSec).every(s => s.classList.contains("collapsed")));
+  check("picking a table closes the menu", document.getElementById("tindexMenu").hidden === true);
+
+  document.querySelector('#siteNav .site-nav-link[data-section="travel"]').click();
+  check("Travel shows the travel section's tables", [...document.querySelectorAll('.table-section[data-category="Travel"]')].every(s => !s.classList.contains("page-hidden")));
+  check("Grammar tables are hidden again", document.querySelector('.table-section[data-category="Grammar"]').classList.contains("page-hidden"));
+
+  console.log("The wordmark routes back to Vocabulary");
+  document.querySelector(".wordmark").click();
+  check("wordmark returns to the Vocabulary section", document.body.dataset.activeSection === "vocabulary" && document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').classList.contains("active"));
+
+  console.log("Search reaches across every section");
+  document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
   const input = document.getElementById("tableSearch");
   input.value = "beer";
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
-  check("search reveals the vocabulary view", document.getElementById("vocabulary").hidden === false);
   const visibleRows = [...document.querySelectorAll(".table-section:not(.search-hidden) tbody tr:not(.search-hidden)")];
   check("searching 'beer' leaves exactly one visible row", visibleRows.length === 1);
   check("the match is highlighted", visibleRows[0] && !!visibleRows[0].querySelector("mark.search-hit"));
-  check("the matching table is pulled out of its category's page-hidden state", !document.querySelector('.table-section[data-table="1"]').classList.contains("page-hidden"));
+  check("the match (a Food table) is revealed even though Grammar was open", !document.querySelector('.table-section[data-table="1"]').classList.contains("page-hidden"));
+  check("category sub-headings are hidden during a search", [...document.querySelectorAll("#vocabulary .cat-heading")].every(h => h.classList.contains("search-hidden")));
+  check("the table-index dropdown is hidden during a search", document.getElementById("tableIndex").classList.contains("search-hidden"));
   input.value = "";
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
   check("clearing search shows every table again", document.querySelectorAll(".table-section.search-hidden").length === 0);
-  check("clearing search restores the category page that was open before searching", document.querySelector('.table-section[data-category="Grammar"]').classList.contains("page-hidden") === false && document.querySelector('.table-section[data-table="1"]').classList.contains("page-hidden") === true);
+  check("clearing search restores the Grammar section", document.querySelector('.table-section[data-category="Grammar"]').classList.contains("page-hidden") === false && document.querySelector('.table-section[data-table="1"]').classList.contains("page-hidden") === true);
+  check("...and restores the category sub-headings for the active section", [...document.querySelectorAll("#vocabulary .cat-heading")].every(h => !h.classList.contains("search-hidden")));
+  check("...and restores the Grammar table-index dropdown", (() => {
+    const ti = document.getElementById("tableIndex");
+    const shown = [...ti.querySelectorAll('.tindex-panel')].filter(t => !t.classList.contains("page-hidden"));
+    return !ti.classList.contains("search-hidden") && shown.length === 1 && shown[0].dataset.section === "grammar";
+  })());
 
   console.log("View modes");
   const japaneseModeBtn = document.querySelector('.view-mode button[data-mode="japanese"]');
@@ -145,8 +217,9 @@ async function main() {
   check("hidden column cells are aria-hidden (accessible state matches the visual)", hiddenEnglishCell.getAttribute("aria-hidden") === "true");
   const hiddenSortButton = document.querySelector(".vocab th:nth-child(3) .sort-button");
   check("sort control in a hidden column is disabled, not just invisible", hiddenSortButton.disabled === true);
-  document.querySelector('.view-mode button[data-mode="all"]').click();
-  check("switching back to All clears aria-hidden", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
+  japaneseModeBtn.click(); // clicking the active scope again clears back to All
+  check("clicking the active scope again clears aria-hidden", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
+  check("...and no scope button stays active", !document.querySelector(".view-mode button.active"));
 
   console.log("Keyboard-operable table toggle");
   const grammarSection = document.querySelector('.table-section[data-category="Grammar"]');
@@ -155,11 +228,67 @@ async function main() {
   check("clicking the toggle (the same activation a native button gets from Enter/Space) flips collapsed state", grammarSection.classList.contains("collapsed") !== wasCollapsed);
   check("aria-expanded tracks the toggle", grammarSection.querySelector(".section-toggle").getAttribute("aria-expanded") === String(!grammarSection.classList.contains("collapsed")));
 
+  console.log("Expand all / collapse all");
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  const expandAllBtn = document.getElementById("expandAllBtn");
+  const accordionIntact = () => {
+    const seen = {};
+    let ok = true;
+    document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)').forEach(s => {
+      const first = !seen[s.dataset.category];
+      seen[s.dataset.category] = true;
+      if (s.classList.contains("collapsed") === first) ok = false;
+    });
+    return ok;
+  };
+  check("the expand-all control starts as 'Expand all'", !!expandAllBtn && expandAllBtn.textContent === "Expand all" && expandAllBtn.getAttribute("aria-pressed") === "false");
+  expandAllBtn.click();
+  check("clicking it expands every visible Vocabulary table", [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')].every(s => !s.classList.contains("collapsed")));
+  check("...the button flips to 'Collapse all' and body carries expand-all-mode", expandAllBtn.textContent === "Collapse all" && expandAllBtn.getAttribute("aria-pressed") === "true" && document.body.classList.contains("expand-all-mode"));
+  expandAllBtn.click();
+  check("clicking again snaps back to the one-open-per-category accordion", accordionIntact() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
+  check("switching sections clears expand-all mode", (() => {
+    expandAllBtn.click();
+    document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
+    const cleared = !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all";
+    document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+    return cleared;
+  })());
+  check("a search hides the expand-all bar", (() => {
+    const s = document.getElementById("tableSearch");
+    s.value = "water";
+    s.dispatchEvent(new window.Event("input", { bubbles: true }));
+    const hidden = document.querySelector(".expand-bar").classList.contains("search-hidden");
+    s.value = "";
+    s.dispatchEvent(new window.Event("input", { bubbles: true }));
+    return hidden;
+  })());
+
+  console.log("Table directory: every table visible at once, click to jump");
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  document.querySelector(".tindex-trigger").click();
+  const dirPanel = document.querySelector('#tableIndex .tindex-panel[data-section="vocabulary"]');
+  check("opening it lists every Vocabulary table with nothing to expand", (() => {
+    const links = [...dirPanel.querySelectorAll('a[data-target]')];
+    const tables = [...document.querySelectorAll('.table-section[data-section="vocabulary"]')];
+    return links.length === tables.length && !dirPanel.querySelector('.collapsed');
+  })());
+  check("no collapsible category toggles remain", !document.querySelector('.tindex-cat[aria-expanded], button.tindex-cat'));
+  const dirLink = dirPanel.querySelector('a[data-target]');
+  const dirTargetId = dirLink.dataset.target;
+  dirLink.click();
+  check("picking a table from the directory jumps to it and closes the menu", (() => {
+    const sec = document.querySelector('.table-section[data-table="' + dirTargetId + '"]');
+    return document.getElementById("tindexMenu").hidden === true &&
+      !sec.classList.contains("page-hidden") && !sec.classList.contains("collapsed");
+  })());
+  check("the mobile bottom-sheet scrim element is present", !!document.querySelector('#tableIndex .tindex-scrim'));
+
   console.log("Table columns");
   const countersSection = document.querySelector('.table-section[data-table="0"]');
   check("there is no row-number column — Japanese leads the table", !countersSection.querySelector("td.row-num, .row-num-th"));
   const headerLabels = [...countersSection.querySelectorAll("thead th")].map(th => th.textContent.replace(/[↕↓↑]/g, "").trim());
-  check("columns are Japanese → Romaji → English", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "English"]));
+  check("columns are Japanese → Romaji → Meaning", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "Meaning"]));
 
   console.log("Manage rows");
   const drinksSectionManage = document.querySelector('.table-section[data-table="1"]');
@@ -178,8 +307,6 @@ async function main() {
   check("the status line hides again once nothing is hidden", drinksSectionManage.querySelector(".rows-hidden-status").hidden === true);
 
   console.log("Removed controls stay removed");
-  check("no expand-all button", !document.querySelector(".expand-all"));
-  check("no collapse-all button", !document.querySelector(".collapse-all"));
   check("no print-all button", !document.querySelector(".print-all"));
   check("no print-selected button", !document.querySelector(".print-selected"));
   check("no hide-section button", !document.querySelector(".hide-section"));
@@ -199,16 +326,16 @@ async function main() {
 
   console.log("Flashcards: page navigation");
   check("no console errors from vendor/flashcards scripts loading", true); // JSDOM.fromFile above would have rejected on a thrown top-level error
-  const flashcardsLink = document.querySelector(".sidebar-flashcards");
-  check("Flashcards sidebar link exists", !!flashcardsLink);
+  const flashcardsLink = document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]');
+  check("Flashcards nav link exists", !!flashcardsLink);
   flashcardsLink.click();
   check("clicking it reveals the Flashcards page", document.getElementById("flashcardsPage").hidden === false);
-  check("clicking it hides the vocabulary view", document.getElementById("vocabulary").hidden === true);
-  check("clicking it hides the Overview page", document.getElementById("overviewPage").hidden === true);
+  check("clicking it hides the vocabulary view", document.getElementById("vocabPage").hidden === true);
   check("clicking it marks the Flashcards link active", flashcardsLink.classList.contains("active"));
+  check("no vocabulary-section nav link stays active on Flashcards", !document.querySelector('#siteNav .site-nav-link[data-section].active'));
   check("without Supabase configured, it explains setup is needed", document.getElementById("flashcardsPage").textContent.includes("SUPABASE_SETUP.md"));
-  document.querySelector(".sidebar-overview").click();
-  check("Overview still returns to the table of contents (unaffected by the new page)", document.getElementById("overviewPage").hidden === false);
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  check("Vocabulary still returns to the reference (unaffected by the Flashcards page)", document.getElementById("vocabPage").hidden === false);
 
   console.log("Flashcards: per-row add toggle");
   // Table 2 (not table 1) -- table 1's own "Manage rows" state was already
@@ -252,7 +379,7 @@ async function main() {
   }
   const storageUsable = readLocalStorage("sakura-flashcards-mode") !== undefined;
 
-  document.querySelector(".sidebar-flashcards").click();
+  document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]').click();
   const guestBtn = document.getElementById("fcUseGuest");
   check("a \"Continue without an account\" option is offered alongside signing in", !!guestBtn);
   guestBtn.click();
@@ -313,7 +440,7 @@ async function main() {
     const totalTileAgain = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
     check("...the in-memory fallback keeps the session's guest data reachable regardless", totalTileAgain === "4");
   }
-  document.querySelector(".sidebar-overview").click();
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
 
   console.log("Flashcards: answer checking and vocab index (pure-logic hooks)");
   const fc = window.SakuraStudy.flashcards.__testHooks;
