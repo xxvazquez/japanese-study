@@ -33,7 +33,7 @@ Two colours do a narrow functional job and nothing decorative: a calm slate wash
 - `fonts/SpaceGrotesk.woff2` — self-hosted [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) (SIL OFL, `fonts/SpaceGrotesk.LICENSE.txt`), latin weight 400 only, used solely for the `sakura` wordmark.
 - `js/config.js` — your Supabase project URL + anon key (see `SUPABASE_SETUP.md`)
 - `js/shared.js` — helpers used by more than one feature (currently just HTML escaping)
-- `js/vocab/` — the vocabulary page: `render.js` (tables + the four-item navigation, sorting), `interactions.js` (section routing, search, view modes, menus, print, polite toggle)
+- `js/vocab/` — the vocabulary page: `kana-romaji.js` (`SakuraStudy.kanaRomaji` — kana→romaji converter for the hover/tap reading layer), `render.js` (tables + the four-item navigation, sorting), `interactions.js` (section routing, search, view modes, menus, print, polite toggle, theme, reading-layer taps)
 - `js/flashcards/` — the Flashcards feature, split by responsibility: `store.js` (state & local storage), `vocab-index.js` (lookup + answer checking), `scheduling.js` (FSRS-6 + queue/stats), `data-ops.js` (auth, Supabase sync, guest store, streak), `dashboard.js` (Dashboard tab + insights + review session), `views.js` (Manage/Settings/Help + row toggle), `bootstrap.js` (app shell + init). See Flashcards, below.
 - `js/sw-register.js` — registers the service worker (see PWA, below)
 - `data/vocabulary.js` — the actual vocab, as plain data (not HTML), each row carrying a permanent id
@@ -64,6 +64,7 @@ No framework, no build step. Just open `index.html`.
 - "Manage rows" lets you hide individual rows you've already memorized, per table, with a one-click "Show all" to bring them back
 - **Flashcards**: turn any vocabulary row into an FSRS-6-scheduled flashcard (see below)
 - Furigana sits over the actual kanji it belongs to, not the whole word, and is always shown — never behind a hover or a toggle; it keeps an 11px floor so small kana stay readable when the Japanese steps down on narrow screens, with a touch of extra row padding above the Japanese cell so it never touches the row rule
+- **Reading layer** (katakana): hover — or tap on touch, tap away to dismiss — a katakana unit in the tables to see its romaji, small and directly above it, the same place furigana sits. Hidden otherwise so the Japanese stays clean. `js/vocab/kana-romaji.js` is a small standalone converter (`SakuraStudy.kanaRomaji`) that handles yōon combos (キャ→kya, ジャ→ja), foreign-sound combos (ファ→fa, チェ→che), the long-vowel mark ー (macron), and the sokuon ッ (doubled consonant); the romaji lives in `::after` `content: attr()` so it never enters the DOM text and search/sort stay clean. Flashcard prompts are left undecorated so they can't spoil a romaji answer
 - A header theme control that cycles **System → Light → Dark** (icon and label reflect the current mode); "System" follows the OS setting live. `js/theme-init.js` applies it before first paint, the rest is in `interactions.js`; a stored value means an explicit Light/Dark, its absence means System
 - On mobile the sheet goes full-width; the four-item navigation still fits on one line
 - Installable as a PWA on iPhone and Android, and works offline once visited (see below)

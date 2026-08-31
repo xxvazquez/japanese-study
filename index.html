@@ -63,14 +63,15 @@
   js/theme-init.js is loaded first, in <head>, so the light/dark theme is on
   <html data-theme> before the first paint. Everything else loads here:
 
-  1. data/vocabulary.js   -> SakuraStudy.data      (vocabulary dataset, data only)
-  2. js/config.js         -> SakuraStudy.config    (Supabase connection config)
-  3. js/shared.js         -> SakuraStudy.shared    (cross-feature helpers)
-  4. js/vocab/render.js       -> SakuraStudy.vocab  (tables + four-item nav rendering, sorting)
-  5. js/vocab/interactions.js -> SakuraStudy.vocab  (routing, search, view modes, menus, print, polite)
-  6. vendor/ts-fsrs.js    -> window.FSRS           (vendored FSRS-6 scheduler)
-  7. vendor/supabase.js   -> window.supabase       (vendored Supabase client)
-  8. js/flashcards/  -> SakuraStudy.flashcards.*  (feature split by responsibility; each file
+  1. data/vocabulary.js   -> SakuraStudy.data       (vocabulary dataset, data only)
+  2. js/config.js         -> SakuraStudy.config     (Supabase connection config)
+  3. js/shared.js         -> SakuraStudy.shared     (cross-feature helpers)
+  4. js/vocab/kana-romaji.js  -> SakuraStudy.kanaRomaji (kana->romaji for the hover/tap reading layer)
+  5. js/vocab/render.js       -> SakuraStudy.vocab  (tables + four-item nav rendering, sorting)
+  6. js/vocab/interactions.js -> SakuraStudy.vocab  (routing, search, view modes, menus, print, polite)
+  7. vendor/ts-fsrs.js    -> window.FSRS           (vendored FSRS-6 scheduler)
+  8. vendor/supabase.js   -> window.supabase       (vendored Supabase client)
+  9. js/flashcards/  -> SakuraStudy.flashcards.*  (feature split by responsibility; each file
                        only reads modules above it in this list)
        store.js       .store       state & storage: local cache, guest/signed-in mode
        vocab-index.js .vocabIndex  vocab lookup + answer checking (pure)
@@ -79,11 +80,12 @@
        dashboard.js   .dashboard   Dashboard tab, review-history insights, review session flow
        views.js       .views       Manage / Settings / Help tabs + vocabulary-row toggle
        bootstrap.js   (root)       app shell, sign-in form, tab routing, DOMContentLoaded init
-  9. js/sw-register.js                             (service-worker registration)
+  10. js/sw-register.js                            (service-worker registration)
 -->
 <script src="data/vocabulary.js?v=__CACHEBUST__"></script>
 <script src="js/config.js?v=__CACHEBUST__"></script>
 <script src="js/shared.js?v=__CACHEBUST__"></script>
+<script src="js/vocab/kana-romaji.js?v=__CACHEBUST__"></script>
 <script src="js/vocab/render.js?v=__CACHEBUST__"></script>
 <script src="js/vocab/interactions.js?v=__CACHEBUST__"></script>
 <script src="vendor/ts-fsrs.js?v=__CACHEBUST__"></script>

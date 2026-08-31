@@ -139,6 +139,7 @@ const REFERENCE_SHELL = [
   "data/vocabulary.js",
   "js/config.js",
   "js/shared.js",
+  "js/vocab/kana-romaji.js",
   "js/vocab/render.js",
   "js/vocab/interactions.js",
   "js/sw-register.js",

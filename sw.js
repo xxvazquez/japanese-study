@@ -36,6 +36,7 @@ const VERSIONED = [
   'data/vocabulary.js',
   'js/config.js',
   'js/shared.js',
+  'js/vocab/kana-romaji.js',
   'js/vocab/render.js',
   'js/vocab/interactions.js',
   'vendor/ts-fsrs.js',

@@ -888,6 +888,33 @@ body.show-polite .verb-form-polite { display: block; }
   ruby-align: start;
 }
 
+/* Interactive reading layer: hover (desktop) or tap (touch -> .kr-on) a
+   katakana unit to see its romaji, small and directly above it. The romaji
+   lives in ::after content(attr) so it never enters the DOM's textContent
+   (search / sort stay clean); it's position:absolute so nothing reflows, and
+   it sits in the cell's existing top padding so it doesn't get clipped. */
+.kr { position: relative; cursor: help; }
+.kr::after {
+  content: attr(data-r);
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 1px;
+  transform: translateX(-50%);
+  font-family: var(--font-ui);
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0;
+  color: var(--romaji);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .1s ease;
+}
+.kr:hover::after,
+.kr.kr-on::after { opacity: 1; }
+@media (hover: none) { .kr:hover::after { opacity: 0; } }
+
 /* Romaji: the softest column -- a light grey gloss, clearly third. */
 .vocab td:nth-child(2) { color: var(--romaji); font-size: var(--fs-romaji); }
 /* Meaning: dark, but a step below the Japanese so the Japanese still leads. */
@@ -914,11 +941,15 @@ mark.search-hit {
   -webkit-box-decoration-break: clone;
 }
 /* In the Japanese cell the same wash sits behind the matched run; a thin
-   underline in the darker tone keeps it legible over the larger glyphs. */
-.vocab td.jp mark.search-hit {
+   underline in the darker tone keeps it legible over the larger glyphs.
+   Katakana units (.kr spans) can't be split into a <mark>, so they take the
+   same treatment via a class. */
+.vocab td.jp mark.search-hit,
+.vocab td.jp .kr.search-hit {
   color: inherit;
   border-bottom: 2px solid var(--hl-ink);
 }
+.vocab td.jp .kr.search-hit { background: var(--hl); }
 
 .vocab th { position: relative; }
 .sort-button {

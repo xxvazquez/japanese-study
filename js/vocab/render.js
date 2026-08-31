@@ -79,17 +79,23 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // Exposed so js/flashcards/vocab-index.js can render the exact same furigana markup
   // for a vocab entry's Japanese prompt instead of duplicating this logic.
   vocab.jpSegmentsHtml = jpSegments;
-  function jpSegments(segments) {
+  // decorateKana: wrap katakana in hover/tap romaji targets (see
+  // js/vocab/kana-romaji.js). On for the vocabulary tables; off for flashcard
+  // prompts (passed straight through), where it would spoil a romaji answer.
+  function jpSegments(segments, decorateKana) {
+    var plain = decorateKana && window.SakuraStudy.kanaRomaji
+      ? function (t) { return window.SakuraStudy.kanaRomaji.decorate(t); }
+      : esc;
     return segments.map(function (seg) {
       return seg.kanji
         ? '<ruby><rb class="jpmain">' + esc(seg.kanji) + '</rb><rt class="furigana">' + esc(seg.reading) + '</rt></ruby>'
-        : esc(seg.text);
+        : plain(seg.text);
     }).join('');
   }
   function jpCell(row) {
     var inner = row.particle
       ? '<span class="particle">' + esc(row.jp[0].text) + '</span>'
-      : '<span class="jpword">' + jpSegments(row.jp) + '</span>';
+      : '<span class="jpword">' + jpSegments(row.jp, true) + '</span>';
     return '<td class="jp" lang="ja">' + inner + '</td>';
   }
   var EYE_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 9c1.8-3.2 4.5-4.8 7-4.8s5.2 1.6 7 4.8c-1.8 3.2-4.5 4.8-7 4.8S3.8 12.2 2 9Z"/><circle cx="9" cy="9" r="2"/></svg>';
@@ -127,7 +133,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // the Japanese and Romaji columns.
   var VERB_FORM_CLASS = ['verb-form-plain', 'verb-form-polite'];
   function verbPairRow(row) {
-    var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp) + '</span></div>'; }).join('');
+    var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp, true) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '">' + esc(f.romaji) + '</div>'; }).join('');
     return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
   }

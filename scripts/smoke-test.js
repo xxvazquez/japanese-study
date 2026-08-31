@@ -66,6 +66,29 @@ async function main() {
   // easy to introduce by accident and easy to miss without a check like this.
   check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
 
+  console.log("Kana -> romaji reading layer (katakana)");
+  const kr = window.SakuraStudy.kanaRomaji;
+  check("the converter is exposed", kr && typeof kr.toRomaji === "function");
+  const cases = {
+    "ケチャップ": "kechappu",   // ッ doubles the next consonant
+    "マヨネーズ": "mayonēzu",   // ー -> macron
+    "キャベツ": "kyabetsu",     // yoon kya
+    "ジャム": "jamu",           // ji + small ya -> ja (no y)
+    "チョコ": "choko",          // cho
+    "シュークリーム": "shūkurīmu",
+    "コーヒー": "kōhī",
+    "ラーメン": "rāmen",
+    "パーティー": "pātī",
+  };
+  Object.keys(cases).forEach(k => check(`${k} -> ${cases[k]}`, kr.toRomaji(k) === cases[k]));
+  // Decoration: katakana in a table cell becomes hover targets, and the romaji
+  // is NOT in the DOM text (so search/sort see only the kana).
+  const kataCell = [...document.querySelectorAll("#vocabulary td.jp")].find(td => td.querySelector(".kr"));
+  check("katakana words render .kr hover targets in the table", !!kataCell);
+  check("each .kr carries its romaji in data-r", [...kataCell.querySelectorAll(".kr")].every(s => /^[a-zāīūēō]+$/.test(s.dataset.r || "")));
+  check("the romaji stays out of the cell's textContent", !/[a-z]/i.test(kataCell.textContent));
+  check("hiragana / kanji rows get no .kr wrapping", !document.querySelector('#vocabulary td.jp ruby .kr'));
+
   console.log("Default landing page is Vocabulary");
   check("vocabulary page is visible on load", document.getElementById("vocabPage").hidden === false);
   check("flashcards page starts hidden", document.getElementById("flashcardsPage").hidden === true);
@@ -209,6 +232,17 @@ async function main() {
   check("the table-index dropdown is hidden during a search", document.getElementById("tableIndex").classList.contains("search-hidden"));
   input.value = "";
   input.dispatchEvent(new window.Event("input", { bubbles: true }));
+  // A katakana query spans several .kr units, so its highlight lands on the
+  // spans (not a split <mark>); the row must still surface and clear cleanly.
+  input.value = "ケチャップ";
+  input.dispatchEvent(new window.Event("input", { bubbles: true }));
+  const kataRow = [...document.querySelectorAll(".table-section:not(.search-hidden) tbody tr:not(.search-hidden)")]
+    .find(r => r.querySelector("td.jp")?.textContent === "ケチャップ");
+  check("a katakana search surfaces its row", !!kataRow);
+  check("...with the katakana units highlighted", kataRow && kataRow.querySelectorAll("td.jp .kr.search-hit").length >= 2);
+  input.value = "";
+  input.dispatchEvent(new window.Event("input", { bubbles: true }));
+  check("clearing removes the katakana highlight too", !document.querySelector("td.jp .kr.search-hit"));
   check("clearing search shows every table again", document.querySelectorAll(".table-section.search-hidden").length === 0);
   check("clearing search restores the Grammar section", document.querySelector('.table-section[data-category="Grammar"]').classList.contains("page-hidden") === false && document.querySelector('.table-section[data-table="1"]').classList.contains("page-hidden") === true);
   check("...and restores the category sub-headings for the active section", [...document.querySelectorAll("#vocabulary .cat-heading")].every(h => !h.classList.contains("search-hidden")));

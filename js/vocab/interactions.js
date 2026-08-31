@@ -289,27 +289,55 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
 
     function clearHighlights(row) {
       row.querySelectorAll('mark.search-hit').forEach(mark => mark.replaceWith(document.createTextNode(mark.textContent)));
+      row.querySelectorAll('.kr.search-hit').forEach(el => el.classList.remove('search-hit'));
       [...row.cells].forEach(cell => cell.normalize());
     }
 
+    function markTextNode(textNode, idx, len) {
+      const text = textNode.textContent;
+      const mark = document.createElement('mark');
+      mark.className = 'search-hit';
+      mark.textContent = text.slice(idx, idx + len);
+      const frag = document.createDocumentFragment();
+      if (idx > 0) frag.appendChild(document.createTextNode(text.slice(0, idx)));
+      frag.appendChild(mark);
+      if (idx + len < text.length) frag.appendChild(document.createTextNode(text.slice(idx + len)));
+      textNode.replaceWith(frag);
+    }
     function highlightCell(cell, q) {
-      const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT);
-      const nodes = [];
-      let node;
-      while ((node = walker.nextNode())) nodes.push(node);
-      nodes.forEach(textNode => {
-        const text = textNode.textContent;
-        const idx = text.toLocaleLowerCase().indexOf(q);
-        if (idx === -1) return;
-        const mark = document.createElement('mark');
-        mark.className = 'search-hit';
-        mark.textContent = text.slice(idx, idx + q.length);
-        const frag = document.createDocumentFragment();
-        if (idx > 0) frag.appendChild(document.createTextNode(text.slice(0, idx)));
-        frag.appendChild(mark);
-        if (idx + q.length < text.length) frag.appendChild(document.createTextNode(text.slice(idx + q.length)));
-        textNode.replaceWith(frag);
+      // The Japanese cell wraps katakana in per-unit <span class="kr">, so a
+      // match can straddle several nodes. Walk the cell's leaf nodes with a
+      // running offset: split plain text nodes, and flag whole .kr spans that
+      // fall inside the match (styled like <mark> via .kr.search-hit).
+      const walker = document.createTreeWalker(cell, NodeFilter.SHOW_TEXT + NodeFilter.SHOW_ELEMENT, {
+        acceptNode(n) {
+          if (n.nodeType === 3) return n.parentElement.closest('.kr') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+          return n.classList && n.classList.contains('kr') ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
       });
+      const segs = [];
+      let n, pos = 0;
+      while ((n = walker.nextNode())) {
+        const text = n.textContent;
+        segs.push({ node: n, start: pos, text });
+        pos += text.length;
+      }
+      const full = segs.map(s => s.text).join('').toLocaleLowerCase();
+      let from = 0, at;
+      while ((at = full.indexOf(q, from)) !== -1) {
+        const end = at + q.length;
+        segs.forEach(s => {
+          const sEnd = s.start + s.text.length;
+          if (sEnd <= at || s.start >= end) return;
+          if (s.node.nodeType === 3) {
+            const lo = Math.max(0, at - s.start), hi = Math.min(s.text.length, end - s.start);
+            markTextNode(s.node, lo, hi - lo);
+          } else {
+            s.node.classList.add('search-hit');
+          }
+        });
+        from = end;
+      }
     }
 
     function evaluateRow(row, q, filter) {
@@ -664,6 +692,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (darkMedia.addEventListener) darkMedia.addEventListener('change', onOsThemeChange);
       else if (darkMedia.addListener) darkMedia.addListener(onOsThemeChange);
     }
+
+    // Reading layer: on touch there's no hover, so a tap on a katakana unit
+    // pins its romaji (`.kr-on`) and a tap anywhere else clears it. On desktop
+    // the CSS :hover already handles it; a click just toggles the pin.
+    document.addEventListener('click', function (event) {
+      const kr = event.target.closest && event.target.closest('.kr');
+      document.querySelectorAll('.kr.kr-on').forEach(function (el) { if (el !== kr) el.classList.remove('kr-on'); });
+      if (kr) kr.classList.toggle('kr-on');
+    });
 
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
     // section or table can be linked to and survives a reload.
