@@ -35,8 +35,32 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   function getSession() { return session; }
   function setSession(v) { session = v; }
 
+  // Nothing added yet -- a dashboard of zeroes and empty charts tells a new
+  // user nothing. Show only what to do next: add some vocabulary.
+  function renderEmptyDashboard(panel) {
+    panel.innerHTML =
+      '<div class="fc-dash-empty">' +
+      "<h3>No flashcards yet</h3>" +
+      "<p>Add words from the vocabulary tables and they’ll show up here to review on an FSRS schedule. Open a table, then use the card icon on any row — or add the whole table from its menu.</p>" +
+      '<div class="fc-cta-row fc-cta-row-primary">' +
+      '<button type="button" class="fc-btn fc-btn-primary" id="fcEmptyBrowse">Browse vocabulary</button>' +
+      '<button type="button" class="fc-btn" id="fcEmptyManage">Choose tables in Manage</button>' +
+      "</div></div>";
+    var browse = document.getElementById("fcEmptyBrowse");
+    if (browse) browse.addEventListener("click", function () {
+      var v = window.SakuraStudy.vocab;
+      if (v && v.showSection) v.showSection("vocabulary");
+    });
+    var manage = document.getElementById("fcEmptyManage");
+    if (manage) manage.addEventListener("click", function () {
+      window.SakuraStudy.flashcards.setActiveTab("manage");
+      rerender();
+    });
+  }
+
   function renderDashboard(panel, stats) {
     if (session) { renderReview(panel); return; }
+    if (stats.total === 0) { renderEmptyDashboard(panel); return; }
     var retentionText = stats.estimatedRetention == null ? "—" : Math.round(stats.estimatedRetention * 100) + "%";
     var settings = getCache().settings;
     var streak = settings.current_streak || 0;

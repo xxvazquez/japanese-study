@@ -387,11 +387,11 @@ async function main() {
   const guestBtn = document.getElementById("fcUseGuest");
   check("a \"Continue without an account\" option is offered alongside signing in", !!guestBtn);
   guestBtn.click();
-  check("choosing it goes straight to the Dashboard, no session needed", !!document.querySelector(".fc-stats-grid"));
+  check("choosing it goes straight to the Dashboard tab, no session needed", !!document.querySelector("#fcPanelDashboard"));
   check("it's labeled as on-device, not signed in", document.getElementById("flashcardsPage").textContent.includes("Using this device only"));
   if (storageUsable) check("guest mode is remembered in localStorage", readLocalStorage("sakura-flashcards-mode") === "guest");
-  const totalTileBefore = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
-  check("starts with zero cards", totalTileBefore === "0");
+  check("with nothing added yet, the Dashboard shows an empty state (not a grid of zeroes)",
+    !document.querySelector(".fc-stats-grid") && /No flashcards yet/.test(document.querySelector("#fcPanelDashboard").textContent));
   document.querySelector('.fc-tab[data-tab="manage"]').click();
   const firstManageTable = document.querySelector("#fcPanelManage .fc-manage-table");
   check("each table starts collapsed (this list gets long fast otherwise)", firstManageTable.classList.contains("fc-manage-table-collapsed"));
