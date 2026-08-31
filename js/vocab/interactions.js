@@ -248,9 +248,10 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   vocab.routeFromHash = routeFromHash;
   window.addEventListener('popstate', routeFromHash);
 
-  /* Search across Japanese, furigana, romaji and English. A filter (All/Japanese/Romaji/English)
-     scopes which field(s) are matched; results rank exact > starts-with > ends-with > contains,
-     reorder within their table, and highlight the matched text. */
+  /* Search across whichever of Japanese / furigana / romaji / English is
+     still visible (the column-visibility toggles below narrow it). Results
+     rank exact > starts-with > ends-with > contains, reorder within their
+     table, and highlight the matched text. */
   document.addEventListener('DOMContentLoaded', function () {
     const input = document.getElementById('tableSearch');
     if (!input) return;
@@ -264,9 +265,14 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // sections while a query is active.
     const vocabOrder = [...vocabHost.children];
 
-    function currentFilter() {
-      const active = document.querySelector('.view-mode button.active');
-      return active ? active.dataset.mode : 'all';
+    // Column visibility: each toolbar button hides its own thing (the
+    // Japanese / Romaji / English columns, or just the furigana readings),
+    // any combination -- never all three columns at once. Search then only
+    // looks at what's still on screen.
+    const COL_INDEX = { japanese: 1, romaji: 2, english: 3 };
+    function isHidden(key) { return document.body.classList.contains('hide-' + key); }
+    function visibleColKeys() {
+      return Object.keys(COL_INDEX).filter(k => !isHidden(k));
     }
 
     // The jp cell mixes kanji/kana with <rt class="furigana"> readings; split them
@@ -289,15 +295,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       return 3;
     }
 
-    function fieldsForFilter(row, filter) {
+    function fieldsForRow(row) {
       const fields = [];
-      if (filter === 'all' || filter === 'japanese') {
+      if (!isHidden('japanese')) {
         const jp = jpFields(row.cells[0]);
         fields.push({ cell: row.cells[0], text: jp.kanji });
-        fields.push({ cell: row.cells[0], text: jp.furigana });
+        if (!isHidden('furigana')) fields.push({ cell: row.cells[0], text: jp.furigana });
       }
-      if (filter === 'all' || filter === 'romaji') fields.push({ cell: row.cells[1], text: row.cells[1].textContent });
-      if (filter === 'all' || filter === 'english') fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
+      if (!isHidden('romaji')) fields.push({ cell: row.cells[1], text: row.cells[1].textContent });
+      if (!isHidden('english')) fields.push({ cell: row.cells[2], text: row.cells[2].textContent });
       return fields;
     }
 
@@ -354,12 +360,12 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       }
     }
 
-    function evaluateRow(row, q, filter) {
+    function evaluateRow(row, q) {
       clearHighlights(row);
       if (!q) return { match: true, rank: null };
       let best = null;
       const matchedCells = new Set();
-      fieldsForFilter(row, filter).forEach(f => {
+      fieldsForRow(row).forEach(f => {
         const r = rankOf(f.text, q);
         if (r !== null) {
           if (best === null || r < best) best = r;
@@ -378,7 +384,6 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     function runSearch() {
       const q = input.value.trim().toLocaleLowerCase();
       box.classList.toggle('has-value', Boolean(q));
-      const filter = currentFilter();
       const activeSection = document.body.dataset.activeSection || 'vocabulary';
       let totalRows = 0, totalTables = 0;
       const sectionOrder = [];
@@ -405,7 +410,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         const ranked = [];
         let sectionRows = 0, sectionBest = null;
         tbody.querySelectorAll('tr').forEach(row => {
-          const { match, rank } = evaluateRow(row, q, filter);
+          const { match, rank } = evaluateRow(row, q);
           row.classList.toggle('search-hidden', !match);
           if (match) {
             sectionRows++;
@@ -467,45 +472,44 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       }
     });
 
-    // View-mode dims other columns (color: transparent) so the grid stays
-    // intact; mark the hidden columns aria-hidden and disable their sort
-    // control so the accessible state matches the visual one.
-    function applyViewModeAccessibility(mode) {
-      const hiddenByMode = { japanese: [2, 3], romaji: [1, 3], english: [1, 2] };
-      const hidden = hiddenByMode[mode] || [];
+    // A hidden column keeps its width and rules (CSS just makes its text
+    // transparent); this keeps the accessible state in step -- aria-hidden on
+    // its cells / the furigana, its sort control disabled -- and reflects each
+    // button's pressed state (pressed = hidden).
+    function applyColVisibility() {
+      document.querySelectorAll('.view-mode button').forEach(b => {
+        const off = isHidden(b.dataset.col);
+        b.classList.toggle('col-hidden', off);
+        b.setAttribute('aria-pressed', String(off));
+      });
       document.querySelectorAll('.vocab').forEach(function (table) {
-        [1, 2, 3].forEach(function (col) {
-          const isHidden = hidden.indexOf(col) !== -1;
+        Object.keys(COL_INDEX).forEach(function (key) {
+          const col = COL_INDEX[key], hide = isHidden(key);
           table.querySelectorAll('th:nth-child(' + col + '), td:nth-child(' + col + ')').forEach(function (cell) {
-            if (isHidden) cell.setAttribute('aria-hidden', 'true'); else cell.removeAttribute('aria-hidden');
+            if (hide) cell.setAttribute('aria-hidden', 'true'); else cell.removeAttribute('aria-hidden');
             const sortBtn = cell.querySelector('.sort-button');
-            if (sortBtn) sortBtn.disabled = isHidden;
+            if (sortBtn) sortBtn.disabled = hide;
           });
+        });
+        const furiHidden = isHidden('furigana') || isHidden('japanese');
+        table.querySelectorAll('.furigana').forEach(function (rt) {
+          if (furiHidden) rt.setAttribute('aria-hidden', 'true'); else rt.removeAttribute('aria-hidden');
         });
       });
     }
-    function setViewMode(mode) {
-      document.body.classList.remove('mode-japanese', 'mode-romaji', 'mode-english');
-      if (mode !== 'all') document.body.classList.add('mode-' + mode);
-      syncViewModeControls();
-      applyViewModeAccessibility(mode);
+    function toggleColumn(key) {
+      const cls = 'hide-' + key;
+      const willHide = !document.body.classList.contains(cls);
+      // Never hide the last remaining column (furigana isn't a column, so it
+      // doesn't count toward that).
+      if (willHide && key in COL_INDEX && visibleColKeys().length <= 1) return;
+      document.body.classList.toggle(cls, willHide);
+      applyColVisibility();
       if (document.body.dataset.activePage !== 'flashcards') runSearch();
     }
-    function syncViewModeControls() {
-      const mode = document.body.classList.contains('mode-japanese') ? 'japanese'
-        : document.body.classList.contains('mode-romaji') ? 'romaji'
-        : document.body.classList.contains('mode-english') ? 'english' : 'all';
-      document.querySelectorAll('.view-mode button').forEach(b => {
-        const on = b.dataset.mode === mode;
-        b.classList.toggle('active', on);
-        b.setAttribute('aria-pressed', String(on));
-      });
-    }
-    // No explicit "All" button: clicking the already-active scope turns it off.
     document.addEventListener('click', function (event) {
       const button = event.target.closest && event.target.closest('.view-mode button');
-      if (!button) return;
-      setViewMode(button.classList.contains('active') ? 'all' : button.dataset.mode);
+      if (button && button.dataset.col) toggleColumn(button.dataset.col);
     });
   });
 

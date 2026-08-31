@@ -252,17 +252,23 @@ async function main() {
     return !ti.classList.contains("search-hidden") && shown.length === 1 && shown[0].dataset.section === "grammar";
   })());
 
-  console.log("View modes");
-  const japaneseModeBtn = document.querySelector('.view-mode button[data-mode="japanese"]');
-  japaneseModeBtn.click();
-  check("active view-mode button reports aria-pressed=true", japaneseModeBtn.getAttribute("aria-pressed") === "true");
-  const hiddenEnglishCell = document.querySelector(".vocab td:nth-child(3)");
-  check("hidden column cells are aria-hidden (accessible state matches the visual)", hiddenEnglishCell.getAttribute("aria-hidden") === "true");
-  const hiddenSortButton = document.querySelector(".vocab th:nth-child(3) .sort-button");
-  check("sort control in a hidden column is disabled, not just invisible", hiddenSortButton.disabled === true);
-  japaneseModeBtn.click(); // clicking the active scope again clears back to All
-  check("clicking the active scope again clears aria-hidden", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
-  check("...and no scope button stays active", !document.querySelector(".view-mode button.active"));
+  console.log("Column visibility toggles (each button hides its own thing)");
+  const colBtn = k => document.querySelector('.view-mode button[data-col="' + k + '"]');
+  colBtn("english").click();
+  check("clicking a column button hides that column — pressed means hidden", colBtn("english").getAttribute("aria-pressed") === "true" && colBtn("english").classList.contains("col-hidden"));
+  check("its cells are aria-hidden and its sort control is disabled", document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === "true" && document.querySelector(".vocab th:nth-child(3) .sort-button").disabled === true);
+  check("the other columns are untouched", !colBtn("japanese").classList.contains("col-hidden") && document.querySelector(".vocab td:nth-child(1)").getAttribute("aria-hidden") === null);
+  colBtn("romaji").click();
+  check("a second column can be hidden independently", colBtn("romaji").classList.contains("col-hidden") && colBtn("english").classList.contains("col-hidden"));
+  colBtn("japanese").click();
+  check("the last visible column can't be hidden", !colBtn("japanese").classList.contains("col-hidden") && document.querySelector(".vocab td:nth-child(1)").getAttribute("aria-hidden") === null);
+  colBtn("english").click();
+  colBtn("romaji").click();
+  check("clicking again shows a column back", !colBtn("english").classList.contains("col-hidden") && document.querySelector(".vocab td:nth-child(3)").getAttribute("aria-hidden") === null);
+  colBtn("furigana").click();
+  check("the Furigana toggle hides just the readings, not the Japanese column", colBtn("furigana").classList.contains("col-hidden") && document.querySelector(".vocab .furigana").getAttribute("aria-hidden") === "true" && document.querySelector(".vocab td:nth-child(1)").getAttribute("aria-hidden") === null);
+  colBtn("furigana").click();
+  check("...and shows the readings again", document.querySelector(".vocab .furigana").getAttribute("aria-hidden") === null);
 
   console.log("Keyboard-operable table toggle");
   const grammarSection = document.querySelector('.table-section[data-category="Grammar"]');

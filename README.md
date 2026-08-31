@@ -52,7 +52,7 @@ No framework, no build step. Just open `index.html`.
 
 ## Features
 
-- Search across Japanese, furigana, romaji, and English, with **Japanese / Romaji / Meaning** filters (matching the column names) that scope the search to one field and show only that column
+- **Column visibility** toggles in the toolbar — **Japanese / Furigana / Romaji / English** — each hides its own thing (Furigana hides just the readings, not the whole column). Any combination, but never all three columns at once. A hidden column keeps its width and rules (its text just goes transparent, so nothing reflows), its sort control is disabled, and its cells are `aria-hidden`. Search only looks at what's still visible
 - Results sorted by how good the match is (exact → starts with → ends with → contains), matched text highlighted, and pulled in from every section even if you're not currently viewing it
 - Four main study areas in the navigation — **Vocabulary**, **Grammar**, **Travel**, **Flashcards**. Vocabulary is the landing page; inside it the tables are still grouped by content category (Food & Ingredients, Kitchen & Dining, Numbers & Counting). Grammar and Travel are promoted to their own sections.
 - Each section opens with a **table directory** (`#tableIndex`) — closed, it's a small control naming the table you're on; open, it lays the whole section out at once (every category as a quiet label, every table listed beneath with an entry count aligned in a gutter, nothing to expand). Two columns on a wide screen, a bounded bottom sheet on a phone; the table you're viewing is marked with the section colour; keyboard-navigable, hidden during a search and never printed

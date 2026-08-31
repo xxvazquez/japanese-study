@@ -35,9 +35,10 @@
     </label>
     <div class="vocab-controls">
       <div class="view-mode" aria-label="Column visibility">
-        <button type="button" data-mode="japanese" aria-pressed="false" title="Japanese only — also scopes search">Japanese</button>
-        <button type="button" data-mode="romaji" aria-pressed="false" title="Romaji only — also scopes search">Romaji</button>
-        <button type="button" data-mode="english" aria-pressed="false" title="Meaning only — also scopes search">Meaning</button>
+        <button type="button" data-col="japanese" aria-pressed="false" title="Hide the Japanese column">Japanese</button>
+        <button type="button" data-col="furigana" aria-pressed="false" title="Hide the furigana readings">Furigana</button>
+        <button type="button" data-col="romaji" aria-pressed="false" title="Hide the Romaji column">Romaji</button>
+        <button type="button" data-col="english" aria-pressed="false" title="Hide the English column">English</button>
       </div>
       <button type="button" class="polite-toggle" id="politeToggle" aria-pressed="false" title="Switch verb tables between the plain form and the polite 〜ます form">Show polite</button>
       <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>

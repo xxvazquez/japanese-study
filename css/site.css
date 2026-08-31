@@ -557,8 +557,7 @@ body {
 .polite-toggle:hover { color: var(--ink); border-color: var(--muted); }
 /* Active control: a section-toned fill + section-toned text and edge --
    deep enough to read as "on" at a glance, still a bordered rectangle, not
-   a pill. */
-.view-mode button.active,
+   a pill. (View-mode buttons use .col-hidden instead -- see below.) */
 .polite-toggle.active {
   background: color-mix(in srgb, var(--section) 18%, var(--paper));
   color: var(--section-strong);
@@ -969,24 +968,27 @@ mark.search-hit {
 .sort-button:hover,
 .sort-button.active { color: var(--section-strong); }
 
-/* View-mode column filter: dims the other columns' text only -- grid,
-   rules and widths stay exactly as they were. */
-body.mode-japanese .vocab th:nth-child(2), body.mode-japanese .vocab th:nth-child(2) *,
-body.mode-japanese .vocab td:nth-child(2), body.mode-japanese .vocab td:nth-child(2) *,
-body.mode-japanese .vocab th:nth-child(3), body.mode-japanese .vocab th:nth-child(3) *,
-body.mode-japanese .vocab td:nth-child(3), body.mode-japanese .vocab td:nth-child(3) *,
-body.mode-romaji .vocab th:nth-child(1), body.mode-romaji .vocab th:nth-child(1) *,
-body.mode-romaji .vocab td:nth-child(1), body.mode-romaji .vocab td:nth-child(1) *,
-body.mode-romaji .vocab th:nth-child(3), body.mode-romaji .vocab th:nth-child(3) *,
-body.mode-romaji .vocab td:nth-child(3), body.mode-romaji .vocab td:nth-child(3) *,
-body.mode-english .vocab th:nth-child(1), body.mode-english .vocab th:nth-child(1) *,
-body.mode-english .vocab td:nth-child(1), body.mode-english .vocab td:nth-child(1) *,
-body.mode-english .vocab th:nth-child(2), body.mode-english .vocab th:nth-child(2) *,
-body.mode-english .vocab td:nth-child(2), body.mode-english .vocab td:nth-child(2) * {
+/* Column visibility toggles: hide a column's (or the furigana's) text only --
+   grid, rules and widths stay exactly as they were, no reflow. */
+body.hide-japanese .vocab :is(th, td):nth-child(1),
+body.hide-japanese .vocab :is(th, td):nth-child(1) *,
+body.hide-romaji .vocab :is(th, td):nth-child(2),
+body.hide-romaji .vocab :is(th, td):nth-child(2) *,
+body.hide-english .vocab :is(th, td):nth-child(3),
+body.hide-english .vocab :is(th, td):nth-child(3) *,
+body.hide-furigana .vocab .furigana {
   color: transparent !important;
 }
-body.mode-japanese .vocab td:nth-child(3) .row-hide-btn,
-body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !important; }
+/* Keep the row action icons usable even when their column's text is hidden. */
+body.hide-english .vocab td:last-child .row-hide-btn,
+body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !important; }
+/* The pressed (= hidden) toggle reads as switched-off: struck through, muted. */
+.view-mode button.col-hidden {
+  color: var(--faint);
+  border-color: var(--line);
+  text-decoration: line-through;
+}
+.view-mode button.col-hidden:hover { color: var(--muted); }
 
 /* --- Focus + selection ------------------------------------------- */
 :focus-visible { outline: 2px solid var(--section); outline-offset: 2px; }
