@@ -28,6 +28,8 @@ window.SakuraStudy.flashcards.views = (function () {
   // so this file does not depend on its load order.
   function rerender() { window.SakuraStudy.flashcards.render(); }
 
+  var SAVED_FLASH_MS = 3000;
+  var settingsSavedAt = 0; // timestamp of the last successful Settings save -- lets the "Saved ✓" note survive an unrelated re-render for a few seconds
   var manageFilter = "all"; // all | mine | archived
   var manageExpandedTables = {}; // tableId -> true; session-only UI state, collapsed (absent) by default
   // Same chevron used for every other collapse/expand control in the app
@@ -285,8 +287,7 @@ window.SakuraStudy.flashcards.views = (function () {
       '<div class="fc-direction-checks">' + DIRECTIONS.map(function (d) {
         return '<label class="fc-direction-check"><input type="checkbox" data-direction="' + d + '" class="fc-dir-checkbox" ' + (s.enabled_directions[d] !== false ? "checked" : "") + ">" + esc(DIRECTION_LABEL[d]) + "</label>";
       }).join("") + "</div>" +
-      '<div class="fc-auth-error" id="fcDirError" hidden>At least one direction has to stay on.</div>' +
-      '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveDirections">Save</button></div></div>' +
+      '<div class="fc-auth-error" id="fcDirError" hidden>At least one direction has to stay on.</div></div>' +
       '<div class="fc-settings-section"><h3>FSRS Scheduling</h3><p class="fc-note">Tunable knobs FSRS-6 itself supports — the trained algorithm and its weights never change.</p>' +
       settingsField("Desired retention (%)", '<input type="number" id="fcRetention" min="70" max="99" value="' + Math.round(s.fsrs_request_retention * 100) + '">',
         "The recall probability FSRS-6 aims for when each card comes due. Higher means shorter, more frequent reviews and stronger recall; lower means longer gaps but more forgetting in between. 90% is FSRS's own recommended default.") +
@@ -294,45 +295,79 @@ window.SakuraStudy.flashcards.views = (function () {
         "A ceiling on the longest gap FSRS-6 will ever schedule, however well you know a card. 36500 (100 years) effectively means no ceiling.") +
       settingsField("Fuzz scheduled intervals", '<input type="checkbox" id="fcFuzz" ' + (s.fsrs_enable_fuzz ? "checked" : "") + ">",
         "Adds a small random wobble to each computed interval, so a batch of cards added on the same day don't all come due on exactly the same day too.") +
-      '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveFsrs">Save</button></div></div>' +
+      "</div>" +
       '<div class="fc-settings-section"><h3>Daily Session</h3><p class="fc-note">Not an FSRS setting — just how many brand-new cards a review session introduces per day.</p>' +
       settingsField("New cards per day", '<input type="number" id="fcNewPerDay" min="0" max="200" value="' + s.queue_new_cards_per_day + '">',
         "A cap on how many never-studied cards \"Study now\" introduces in one day, on top of anything already due for review. Doesn't affect scheduling, only pacing.") +
-      '<div class="fc-cta-row fc-cta-row-spaced"><button type="button" class="fc-btn fc-btn-primary" id="fcSaveQueue">Save</button></div></div>';
+      "</div>" +
+      '<div class="fc-cta-row fc-cta-row-spaced fc-settings-save">' +
+      '<button type="button" class="fc-btn fc-btn-primary" id="fcSaveSettings">Save settings</button>' +
+      '<span class="fc-settings-saved" id="fcSettingsSaved" role="status"' +
+      (Date.now() - settingsSavedAt < SAVED_FLASH_MS ? "" : " hidden") + ">Saved ✓</span></div>";
 
-    // Settings are already saved to the local cache before the remote call
-    // even goes out (see saveFsrsSettings/saveDirectionSettings), so a
-    // failed sync never loses the change -- this just makes sure a failure
-    // is actually reported instead of silently disappearing as an
-    // unhandled rejection, consistent with how add/remove/delete already
-    // surface errors.
+    // Every setting is written to the local cache before the remote call even
+    // goes out (see saveFsrsSettings/saveDirectionSettings), so a failed sync
+    // never loses the change -- this just makes sure a failure is reported
+    // instead of vanishing as an unhandled rejection, like add/remove/delete.
     function reportSettingsError(e) {
       window.alert("Saved on this device, but couldn't sync — " + (e.message || "check your connection and try again."));
     }
-    document.getElementById("fcSaveDirections").addEventListener("click", async function () {
+    function clearSavedNote() {
+      settingsSavedAt = 0;
+      var n = document.getElementById("fcSettingsSaved");
+      if (n) n.hidden = true;
+    }
+    // One Save for the whole tab -- no guessing which of three buttons a given
+    // field belongs to, plus a visible acknowledgement. The ack is driven by a
+    // timestamp (not just this node) so an unrelated re-render mid-save still
+    // shows it.
+    document.getElementById("fcSaveSettings").addEventListener("click", async function () {
+      var saveBtn = document.getElementById("fcSaveSettings");
       var enabledMap = {};
       panel.querySelectorAll(".fc-dir-checkbox").forEach(function (cb) { enabledMap[cb.dataset.direction] = cb.checked; });
       if (!DIRECTIONS.some(function (d) { return enabledMap[d]; })) {
         document.getElementById("fcDirError").hidden = false;
         return;
       }
-      try { await saveDirectionSettings(enabledMap); } catch (e) { reportSettingsError(e); }
-      rerender();
+      document.getElementById("fcDirError").hidden = true;
+
+      var retention = Math.min(0.99, Math.max(0.7, Number(document.getElementById("fcRetention").value) / 100));
+      var maxInterval = Math.max(1, Number(document.getElementById("fcMaxInterval").value));
+      var newPerDay = Math.max(0, Number(document.getElementById("fcNewPerDay").value));
+
+      saveBtn.disabled = true;
+      clearSavedNote();
+      try {
+        await saveDirectionSettings(enabledMap);
+        await saveFsrsSettings({
+          fsrs_request_retention: retention,
+          fsrs_maximum_interval: maxInterval,
+          fsrs_enable_fuzz: document.getElementById("fcFuzz").checked
+        });
+        await saveQueueSettings({ queue_new_cards_per_day: newPerDay });
+        // Reflect any clamping (retention typed as 150 -> 99) back into the fields.
+        document.getElementById("fcRetention").value = Math.round(retention * 100);
+        document.getElementById("fcMaxInterval").value = maxInterval;
+        document.getElementById("fcNewPerDay").value = newPerDay;
+        settingsSavedAt = Date.now();
+        var note = document.getElementById("fcSettingsSaved");
+        if (note) note.hidden = false;
+        setTimeout(function () {
+          if (Date.now() - settingsSavedAt >= SAVED_FLASH_MS) return;
+          settingsSavedAt = 0;
+          var n = document.getElementById("fcSettingsSaved");
+          if (n) n.hidden = true;
+        }, SAVED_FLASH_MS);
+      } catch (e) {
+        reportSettingsError(e);
+      } finally {
+        var b = document.getElementById("fcSaveSettings");
+        if (b) b.disabled = false;
+      }
     });
-    document.getElementById("fcSaveFsrs").addEventListener("click", async function () {
-      var patch = {
-        fsrs_request_retention: Math.min(0.99, Math.max(0.7, Number(document.getElementById("fcRetention").value) / 100)),
-        fsrs_maximum_interval: Math.max(1, Number(document.getElementById("fcMaxInterval").value)),
-        fsrs_enable_fuzz: document.getElementById("fcFuzz").checked
-      };
-      try { await saveFsrsSettings(patch); } catch (e) { reportSettingsError(e); }
-      rerender();
-    });
-    document.getElementById("fcSaveQueue").addEventListener("click", async function () {
-      var patch = { queue_new_cards_per_day: Math.max(0, Number(document.getElementById("fcNewPerDay").value)) };
-      try { await saveQueueSettings(patch); } catch (e) { reportSettingsError(e); }
-      rerender();
-    });
+    // Any edit clears a lingering "Saved ✓" so it always reflects the current form.
+    panel.addEventListener("input", clearSavedNote);
+    panel.addEventListener("change", clearSavedNote);
   }
   function settingsField(label, controlHtml, help) {
     return '<div class="fc-settings-field"><div class="fc-settings-field-row"><label>' + esc(label) + "</label>" + controlHtml + "</div>" +

@@ -423,24 +423,27 @@ async function main() {
   document.getElementById("fcBackToDashboard").click();
   check("Back to Dashboard leaves the session for the dashboard", !document.querySelector(".fc-session-done") && !!document.querySelector(".fc-stats-grid"));
 
-  console.log("Flashcards: Study Directions setting");
+  console.log("Flashcards: Settings tab");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
   const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];
   check("all 4 directions are offered as a setting", dirChecks.length === 4);
   check("all 4 are enabled by default", dirChecks.every(cb => cb.checked));
+  check("one Save button covers the whole tab (not one per section)",
+    !!document.getElementById("fcSaveSettings") && !document.getElementById("fcSaveDirections") && !document.getElementById("fcSaveFsrs"));
   dirChecks.forEach(cb => { cb.checked = false; });
-  document.getElementById("fcSaveDirections").click();
-  check("saving with none enabled is rejected", document.getElementById("fcDirError").hidden === false);
+  document.getElementById("fcSaveSettings").click();
+  check("saving with no direction enabled is rejected", document.getElementById("fcDirError").hidden === false);
   document.querySelector('.fc-tab[data-tab="settings"]').click(); // re-render fresh
   check("...and nothing was actually saved (still all on)", [...document.querySelectorAll(".fc-dir-checkbox")].every(cb => cb.checked));
   document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]').checked = false;
-  document.getElementById("fcSaveDirections").click();
+  document.getElementById("fcSaveSettings").click();
   await flush();
+  check("a successful save is acknowledged inline", document.getElementById("fcSettingsSaved").hidden === false);
   document.querySelector('.fc-tab[data-tab="settings"]').click();
   const roEnBox = document.querySelector('.fc-dir-checkbox[data-direction="ro-en"]');
   check("turning off just one direction is remembered", !roEnBox.checked && document.querySelector('.fc-dir-checkbox[data-direction="jp-en"]').checked);
   roEnBox.checked = true;
-  document.getElementById("fcSaveDirections").click(); // leave every direction enabled again for later checks
+  document.getElementById("fcSaveSettings").click(); // leave every direction enabled again for later checks
   await flush();
 
   const goAccountBtn = document.getElementById("fcGoAccount");

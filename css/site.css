@@ -1448,6 +1448,9 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
    them without building a custom control from scratch. */
 .fc-direction-check input[type="checkbox"],
 .fc-settings-field input[type="checkbox"] { accent-color: var(--accent); }
+/* One Save for the whole tab, with an inline acknowledgement. */
+.fc-settings-save { align-items: center; }
+.fc-settings-saved { color: var(--accent-strong); font-size: var(--fs-small); font-weight: 600; }
 
 /* ---------------------------------------------------------------------
    Flashcards additions: Help tab, Manage status dots, and the Dashboard's
