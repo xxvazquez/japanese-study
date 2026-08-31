@@ -340,15 +340,19 @@ async function main() {
   console.log("Flashcards: per-row add toggle");
   // Table 2 (not table 1) -- table 1's own "Manage rows" state was already
   // toggled on earlier in this file and left that way, which would make the
-  // "hidden until Manage rows is on" check below a false positive.
+  // manage-mode check below a false positive.
   const drinksSectionFc = document.querySelector('.table-section[data-table="2"]');
   const firstRowFc = drinksSectionFc.querySelector("tbody tr");
   check("every rendered row carries its permanent vocab id", /^v\d{4,}$/.test(firstRowFc.dataset.vocabId));
   const fcBtn = firstRowFc.querySelector(".fc-toggle-btn");
   check("the flashcard toggle exists on every row", !!fcBtn);
-  check("it's hidden until Manage rows is on (same gating as the eye icon)", window.getComputedStyle(fcBtn).display === "none");
+  // Unlike the eye icon it isn't display:none -- it's laid out on every row
+  // (so touch users and keyboard users can reach it) but transparent until
+  // the row is hovered/focused, so the reading table stays quiet.
+  check("the toggle is present in layout, not display:none", window.getComputedStyle(fcBtn).display !== "none");
+  check("but it's transparent until the row is hovered or focused", window.getComputedStyle(fcBtn).opacity === "0");
   drinksSectionFc.querySelector(".manage-rows-toggle").click();
-  check("Manage rows reveals it too", window.getComputedStyle(fcBtn).display !== "none");
+  check("Manage rows makes it permanently visible", window.getComputedStyle(fcBtn).opacity === "1");
   check("its data-vocab-id matches the row's", fcBtn.dataset.vocabId === firstRowFc.dataset.vocabId);
   drinksSectionFc.querySelector(".manage-rows-toggle").click(); // leave manage mode off for later checks
 

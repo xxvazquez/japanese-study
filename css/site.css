@@ -1043,12 +1043,18 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
   --danger-soft: #fbe9e7;
 }
 
-/* Row action button: same gating/positioning family as .row-hide-btn, just
-   one slot to its left so both icons fit without overlapping. */
+/* Row "add to flashcards" toggle. Unlike the hide button (rare housekeeping,
+   stays behind Manage rows) this is the flashcards feature's primary entry
+   point, so it's always reachable: revealed on row hover / keyboard focus on
+   pointer devices, and always shown -- faint until the word is added -- on
+   touch, where there is no hover to reveal it. A little right padding on the
+   column is reserved permanently so the icon never sits on the text. */
+.vocab tbody td:last-child { padding-right: 22px; }
 .fc-toggle-btn {
-  display: none;
+  display: flex;
+  opacity: 0;
   position: absolute;
-  right: 28px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
@@ -1057,10 +1063,20 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
   padding: 2px;
   color: var(--faint) !important;
   cursor: pointer;
+  transition: opacity .12s ease;
 }
+.vocab tbody tr:hover .fc-toggle-btn,
+.vocab tbody tr:focus-within .fc-toggle-btn,
+.fc-toggle-btn:focus-visible,
+.fc-toggle-btn[aria-pressed="true"] { opacity: 1; }
 .fc-toggle-btn:hover { color: var(--accent-dark) !important; }
 .fc-toggle-btn[aria-pressed="true"] { color: var(--accent) !important; }
-.table-section.managing-rows .fc-toggle-btn { display: flex; }
+@media (hover: none) {
+  .fc-toggle-btn { opacity: .5; }               /* ghosted -- present, not loud */
+  .fc-toggle-btn[aria-pressed="true"] { opacity: 1; }
+}
+/* Manage rows shows both icons -- shift the toggle left of the hide button. */
+.table-section.managing-rows .fc-toggle-btn { opacity: 1; right: 28px; }
 .table-section.managing-rows .vocab tbody td:last-child { padding-right: 50px; }
 /* Manage mode overlays two action icons on the English column; on narrow
    screens give that column extra room (borrowed from romaji) so its text
