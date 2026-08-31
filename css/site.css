@@ -1305,7 +1305,13 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
   }
   .fc-manage-table-actions { justify-content: stretch; }
   .fc-manage-table-actions .fc-btn { flex: 1 1 auto; }
+  /* A single action doesn't need to stretch edge-to-edge -- keep it compact. */
+  .fc-manage-table-actions:has(> .fc-btn:only-child) { justify-content: flex-start; }
+  .fc-manage-table-actions:has(> .fc-btn:only-child) .fc-btn { flex: 0 0 auto; }
 }
+/* Category-wide "Add all", sitting just under the category summary. */
+.fc-manage-cat-actions { margin: 4px 0 14px; }
+.fc-manage-cat-actions .fc-btn { font-size: var(--fs-micro); }
 .fc-manage-list { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 /* status | word (jp / romaji / english, wraps internally) | actions -- the
    action pills stay a single non-wrapping group pinned right and vertically

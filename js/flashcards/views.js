@@ -155,6 +155,19 @@ window.SakuraStudy.flashcards.views = (function () {
         var tableIds = Object.keys(byCategory[cat]).sort(function (a, b) { return byCategory[cat][a].title.localeCompare(byCategory[cat][b].title); });
         var totalInCategory = tableIds.reduce(function (n, k) { return n + byCategory[cat][k].ids.length; }, 0);
         html += '<details open class="fc-manage-group"><summary class="fc-manage-group-title">' + window.SakuraStudy.vocab.categoryHeaderHtml(cat, totalInCategory) + "</summary>";
+        // Bulk add for the whole category -- the "no way to add more than one
+        // table at once" gap. Only worth showing when more than one table
+        // still has words left to add.
+        if (manageFilter === "all") {
+          var partialTables = tableIds.filter(function (k) {
+            var t = byCategory[cat][k];
+            return t.ids.filter(function (id) { return vocabState(id) === "active"; }).length < t.ids.length;
+          });
+          if (partialTables.length > 1) {
+            html += '<div class="fc-manage-cat-actions">' +
+              '<button type="button" class="fc-btn" data-cat-action="add-cat" data-cat="' + esc(cat) + '" title="Adds every word from every table in this category (skips rows you’ve hidden on the vocabulary page)">Add all ' + partialTables.length + ' remaining tables</button></div>';
+          }
+        }
         tableIds.forEach(function (tableId) {
           var table = byCategory[cat][tableId];
           var addedCount = table.ids.filter(function (id) { return vocabState(id) === "active"; }).length;
@@ -169,14 +182,20 @@ window.SakuraStudy.flashcards.views = (function () {
             '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(table.title) + '">' + CHEVRON_ICON + "</button>" +
             '<span class="fc-manage-table-label"><span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
             '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span></span>";
-          // Table-level actions per filter: "all" gets both add + pause;
-          // "My flashcards" gets Pause table (the whole point of that view);
-          // "Archived" gets Restore table.
+          // Table-level actions per filter. "all" shows only the actions that
+          // actually apply -- "Add table" until it's fully added, "Pause table"
+          // once something is -- so a fresh deck isn't 23 rows each with a
+          // dead, disabled button. "My flashcards" gets Pause table (the whole
+          // point of that view); "Archived" gets Restore table.
           if (manageFilter === "all") {
-            html += '<div class="fc-manage-table-actions">' +
-              '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '" title="Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)">Add table</button>' +
-              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off"' + (addedCount ? "" : " disabled") + '>Pause table</button>' +
-              "</div>";
+            var actions = "";
+            if (addedCount < table.ids.length) {
+              actions += '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '" title="Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)">Add table</button>';
+            }
+            if (addedCount) {
+              actions += '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off">Pause table</button>';
+            }
+            html += '<div class="fc-manage-table-actions">' + actions + "</div>";
           } else if (manageFilter === "mine" && addedCount) {
             html += '<div class="fc-manage-table-actions">' +
               '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Pauses every word in this table — keeps all progress, add the table back anytime to resume">Pause table</button>' +
@@ -213,6 +232,9 @@ window.SakuraStudy.flashcards.views = (function () {
     bindManageActionButtons(panel);
     panel.querySelectorAll("[data-table-action]").forEach(function (btn) {
       btn.addEventListener("click", function () { runTableAction(btn.dataset.tableAction, btn.dataset.tableId, btn); });
+    });
+    panel.querySelectorAll("[data-cat-action]").forEach(function (btn) {
+      btn.addEventListener("click", function () { runCategoryAdd(btn.dataset.cat, btn); });
     });
     panel.querySelectorAll(".fc-manage-table-toggle").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -268,6 +290,37 @@ window.SakuraStudy.flashcards.views = (function () {
         var activeIds = allIds.filter(function (id) { return vocabState(id) === "active"; });
         await archiveVocabs(activeIds);
       }
+      await refreshData();
+      invalidateInsights();
+      rerender();
+      refreshRowToggleButtons();
+    } catch (e) {
+      btn.textContent = originalText;
+      btn.disabled = false;
+      window.alert("Couldn't update flashcards — " + (e.message || "check your connection and try again."));
+    }
+  }
+  // Category-wide "Add all": every not-yet-active word across every table in
+  // the category, skipping rows hidden on the vocabulary page (same rule as
+  // "Add table"). Nothing to pause/restore at this level -- that stays per
+  // table where the intent is unambiguous.
+  async function runCategoryAdd(cat, btn) {
+    var index = getVocabIndex();
+    var tableIds = {};
+    Object.keys(index).forEach(function (id) { if ((index[id].category || "Tables") === cat) tableIds[index[id].tableId] = true; });
+    var targetIds = [];
+    Object.keys(tableIds).forEach(function (tid) {
+      var allIds = Object.keys(index).filter(function (id) { return String(index[id].tableId) === String(tid); });
+      var visible = visibleVocabIdsForTable(tid);
+      var ids = visible.length ? visible.filter(function (id) { return allIds.indexOf(id) !== -1; }) : allIds;
+      ids.forEach(function (id) { if (vocabState(id) !== "active") targetIds.push(id); });
+    });
+    if (!targetIds.length) return;
+    var originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Adding…";
+    try {
+      await addVocabs(targetIds);
       await refreshData();
       invalidateInsights();
       rerender();

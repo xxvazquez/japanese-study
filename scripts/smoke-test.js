@@ -402,6 +402,11 @@ async function main() {
   const firstManageTable = document.querySelector("#fcPanelManage .fc-manage-table");
   check("each table starts collapsed (this list gets long fast otherwise)", firstManageTable.classList.contains("fc-manage-table-collapsed"));
   check("...its row list is actually hidden, not just visually collapsed", window.getComputedStyle(firstManageTable.querySelector(".fc-manage-list")).display === "none");
+  check("a fresh deck shows no dead buttons -- 'Add table' only, no disabled 'Pause table'",
+    firstManageTable.querySelector('[data-table-action="add-table"]') &&
+    !firstManageTable.querySelector('[data-table-action="remove-table"]') &&
+    !firstManageTable.querySelector('.fc-manage-table-actions .fc-btn[disabled]'));
+  check("a multi-table category offers 'Add all'", !!document.querySelector('#fcPanelManage [data-cat-action="add-cat"]'));
   firstManageTable.querySelector(".fc-manage-table-toggle").click(); // sync render -- re-query fresh, this reference is now stale
   check("clicking the toggle expands just that table", !document.querySelector("#fcPanelManage .fc-manage-table").classList.contains("fc-manage-table-collapsed"));
   const firstAddBtn = document.querySelector('#fcPanelManage [data-action="add"]');
