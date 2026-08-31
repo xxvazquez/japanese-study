@@ -132,13 +132,19 @@ async function main() {
   check("the Vocabulary nav link is no longer active", !document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').classList.contains("active"));
   check("Grammar has no in-flow category sub-heading (single category)", ![...document.querySelectorAll('#vocabulary .cat-heading:not(.page-hidden)')].length);
 
-  console.log("\"Show polite\" only appears where a verb table is on screen");
+  console.log("\"Show polite\" only appears where verb rows are actually visible");
   check("hidden on Vocabulary (no verb tables)", (() => {
     document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
     return document.getElementById("politeToggle").hidden === true;
   })());
-  check("shown on Grammar (the Verbs table)", (() => {
+  check("still hidden on Grammar while only Adjectives is open (Verbs collapsed)", (() => {
     document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
+    return document.getElementById("politeToggle").hidden === true;
+  })());
+  check("shown once the Verbs table is expanded", (() => {
+    const verbs = [...document.querySelectorAll('#vocabulary .table-section:not(.page-hidden)')]
+      .find(s => s.querySelector('.verb-form'));
+    verbs.querySelector('.section-toggle').click();
     return document.getElementById("politeToggle").hidden === false;
   })());
 

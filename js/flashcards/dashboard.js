@@ -486,7 +486,10 @@ window.SakuraStudy.flashcards.dashboard = (function () {
         "</div>" +
         '<div class="fc-answer-reveal"><span class="fc-answer-reveal-label">Answer</span>' +
         '<span class="fc-expected">' + esc(expectedDisplayFor(entry, card.direction)) + "</span></div>" +
-        '<div class="fc-rating-row">' + RATING_NAMES.map(function (name, i) {
+        // After a wrong (or blank) answer the honest ratings are Again / Hard,
+        // so Good / Easy are dimmed -- still one click away (typos happen), just
+        // not the default read.
+        '<div class="fc-rating-row' + (session.correct === false ? " fc-rating-row-missed" : "") + '">' + RATING_NAMES.map(function (name, i) {
           var p = session.preview[name];
           return '<button type="button" class="fc-rating-btn" data-rating="' + name.toLowerCase() + '"><span class="fc-rating-key">' + (i + 1) + '</span><span class="fc-rating-name">' + name + '</span><span class="fc-rating-interval">' + p.intervalLabel + "</span></button>";
         }).join("") + "</div>";

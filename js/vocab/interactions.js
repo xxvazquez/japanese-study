@@ -34,6 +34,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // Accordion: opening one table in a category with several closes the others,
     // so a category only ever shows one open table at a time.
     if (!section.classList.contains('collapsed')) collapseSiblingSections(section);
+    updatePoliteVisibility(); // expanding/collapsing the Verbs table changes whether "Show polite" applies
   }
   function expandSection(section) {
     section.classList.remove('collapsed');
@@ -74,6 +75,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     else collapseToAccordion(list);
     syncExpandAllBtn();
     if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
+    updatePoliteVisibility();
   }
   function syncExpandAllBtn() {
     const btn = document.getElementById('expandAllBtn');
@@ -210,11 +212,12 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   };
 
   // "Show polite" only does anything to verb tables (only the Verbs table has
-  // them), so it only shows when a verb table is on screen.
+  // them), so it only shows when a verb table's rows are actually on screen --
+  // not just present-but-collapsed (or hidden by section routing / search).
   function updatePoliteVisibility() {
     const pt = document.getElementById('politeToggle');
     if (!pt) return;
-    pt.hidden = !document.querySelector('#vocabulary .table-section:not(.page-hidden) .verb-form');
+    pt.hidden = !document.querySelector('#vocabulary .table-section:not(.page-hidden):not(.collapsed):not(.search-hidden) .verb-form');
   }
   vocab.updatePoliteVisibility = updatePoliteVisibility;
 

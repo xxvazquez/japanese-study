@@ -302,7 +302,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       groupByCategory(bySection[sec]).forEach(function (g) {
         if (sec === 'vocabulary') {
           html += '<h2 class="cat-heading page-hidden" data-section="' + sec + '" data-category="' + esc(g.name) + '">' +
-            esc(g.name) + '<span class="cat-heading-count">' + g.tables.length + '</span></h2>';
+            esc(g.name) + '<span class="cat-heading-count" title="' + g.tables.length + ' tables" aria-label="' + g.tables.length + ' tables">' + g.tables.length + '</span></h2>';
         }
         g.tables.forEach(function (t) { html += renderTable(t) + '\n'; });
       });
