@@ -27,6 +27,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     document.querySelectorAll('.table-section').forEach(s=>s.classList.remove('print-target'));
   });
 
+  // Once you've opened/closed tables in a section (or used Expand all), that
+  // section keeps its layout when you navigate away and back -- only a section
+  // you've never touched falls to the first-table default.
+  const sectionLayout = {}; // name -> { touched: true, expandAll: bool }
+  function noteSectionLayout(name) {
+    if (!name) return;
+    sectionLayout[name] = { touched: true, expandAll: document.body.classList.contains('expand-all-mode') };
+  }
+
   function toggleSection(section) {
     section.classList.toggle('collapsed');
     const toggle=section.querySelector('.section-toggle');
@@ -35,6 +44,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // so a category only ever shows one open table at a time.
     if (!section.classList.contains('collapsed')) collapseSiblingSections(section);
     updatePoliteVisibility(); // expanding/collapsing the Verbs table changes whether "Show polite" applies
+    noteSectionLayout(section.dataset.section);
   }
   function expandSection(section) {
     section.classList.remove('collapsed');
@@ -77,6 +87,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     syncExpandAllBtn();
     if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
     updatePoliteVisibility();
+    noteSectionLayout(document.body.dataset.activeSection || 'vocabulary');
   }
   function syncExpandAllBtn() {
     const btn = document.getElementById('expandAllBtn');
@@ -154,16 +165,18 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         p.classList.toggle('page-hidden', p.dataset.section !== name);
       });
     }
-    // A section switch always starts from the accordion default.
-    document.body.classList.remove('expand-all-mode');
+    // Restore this section's remembered layout; a section never touched falls
+    // to the accordion default (its first table open, the rest collapsed).
+    const layout = sectionLayout[name];
+    document.body.classList.toggle('expand-all-mode', !!(layout && layout.expandAll));
     syncExpandAllBtn();
-    // Reveal this section's tables; open only its first, collapse the rest.
     let firstShown = false;
     document.querySelectorAll('#vocabulary .table-section').forEach(function (s) {
       const inSection = s.dataset.section === name;
       s.classList.toggle('page-hidden', !inSection);
       s.classList.remove('search-hidden');
       if (!inSection) return;
+      if (layout && layout.touched) return; // keep whatever the user left
       if (!firstShown) { firstShown = true; expandSection(s); }
       else collapseSection(s);
     });
@@ -188,6 +201,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     if (document.body.dataset.activeSection !== section.dataset.section) showSection(section.dataset.section, { fromRoute: true });
     expandSection(section);
     collapseSiblingSections(section);
+    noteSectionLayout(section.dataset.section);
     section.scrollIntoView({ block: 'start' });
     // Mark this table current in the directory right away -- when it's already
     // on screen no scroll fires, so the scroll-spy alone wouldn't update.

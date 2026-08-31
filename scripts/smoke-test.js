@@ -285,12 +285,24 @@ async function main() {
   check("...the button flips to 'Collapse all' and body carries expand-all-mode", expandAllBtn.textContent === "Collapse all" && expandAllBtn.getAttribute("aria-pressed") === "true" && document.body.classList.contains("expand-all-mode"));
   expandAllBtn.click();
   check("clicking again snaps back to just the section's first table open", accordionIntact() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
-  check("switching sections clears expand-all mode", (() => {
+  check("a section keeps its own layout across navigation", (() => {
+    // Vocabulary: expand all, leave to Grammar, come back -- still expanded.
     expandAllBtn.click();
+    const wasExpandAll = document.body.classList.contains("expand-all-mode");
     document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
-    const cleared = !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all";
+    // Grammar wasn't left in expand-all, so it shows its own state, not Vocabulary's.
+    const grammarIndependent = !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all";
     document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
-    return cleared;
+    const vocabRestored = document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Collapse all";
+    expandAllBtn.click(); // reset Vocabulary to the default for later checks
+    return wasExpandAll && grammarIndependent && vocabRestored;
+  })());
+  check("a section you've never touched still opens to its first table", (() => {
+    document.querySelector('#siteNav .site-nav-link[data-section="travel"]').click();
+    const t = [...document.querySelectorAll('.table-section[data-section="travel"]:not(.page-hidden)')];
+    const ok = t.length > 1 && !t[0].classList.contains("collapsed") && t.slice(1).every(s => s.classList.contains("collapsed"));
+    document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+    return ok;
   })());
   check("a search hides the expand-all bar", (() => {
     const s = document.getElementById("tableSearch");

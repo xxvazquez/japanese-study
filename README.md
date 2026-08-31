@@ -59,7 +59,7 @@ No framework, no build step. Just open `index.html`.
 - The search field and column filters stay **stuck below the navigation** as you scroll a long table
 - The URL hash tracks the view — `#grammar`, `#table-15`, `#flashcards` — so a section or a specific table can be bookmarked, shared and survives a reload; browser back/forward work
 - Sortable columns (↓ = A–Z / low→high, ↑ = Z–A / high→low; every table starts sorted A–Z by meaning), per-table print, A4-friendly print layout
-- A section opens showing just its first table; the rest are one click away. Opening a table collapses the others in its category, so a category never shows more than one open at a time. An **Expand all** toggle above the tables opens every table in the section at once (and back to the one-open default), and steps aside while you search
+- A section you haven't touched opens showing just its first table; the rest are one click away. Once you expand or collapse anything (or use Expand all), that section keeps its layout when you navigate away and back — only an untouched section falls to the first-table default. Opening a table collapses the others in its category, so a category never shows more than one open at a time. An **Expand all** toggle above the tables opens every table in the section at once (and back), and steps aside while you search
 - A **Show polite** toggle switches verb tables between the plain/dictionary form and the polite 〜ます form; it only appears while the Verbs table is actually expanded (not just present-but-collapsed)
 - "Manage rows" lets you hide individual rows you've already memorized, per table, with a one-click "Show all" to bring them back
 - **Flashcards**: turn any vocabulary row into an FSRS-6-scheduled flashcard (see below)
