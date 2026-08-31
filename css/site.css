@@ -36,14 +36,17 @@
      ------------------------------------------------------------------- */
   /* Text: four deliberate steps down. The Japanese column sits at the
      darkest step so the eye finds it first -- through colour, not size or
-     weight. Meaning is one step lighter, romaji another, furigana a light
-     blue-grey that belongs to the Japanese rather than floating over it. */
+     weight. Meaning is one step lighter, then romaji. Furigana keeps its
+     blue-grey cast but is held to the same contrast floor as romaji -- it's
+     a reading aid, so it has to stay legible; size and position (small,
+     above the kanji) are what keep it from competing. All body-text tokens
+     clear WCAG AA (>= 4.5:1) on --paper. */
   --ink: #2f3944;            /* primary -- page/section titles, Japanese */
   --ink-2: #3f4854;          /* meaning column -- dark, a hair below --ink */
   --muted: #5f6b79;          /* secondary -- labels, active nav siblings */
-  --romaji: #727d8b;         /* romaji column -- a soft grey, clearly third */
+  --romaji: #616d7b;         /* romaji column -- soft grey, clearly third, still AA */
   --faint: #8996a3;          /* tertiary -- counts, captions, chevrons */
-  --furigana: #8592a2;       /* reading over kanji -- light blue-grey, JP family */
+  --furigana: #64707e;       /* reading over kanji -- blue-grey, AA-legible */
 
   --page-bg: #eceff3;        /* cool grey behind the sheet */
   --paper: #ffffff;          /* the sheet, table surface */
@@ -147,9 +150,9 @@
   --ink: #e6eaee;
   --ink-2: #d3dae1;
   --muted: #9aa6b3;
-  --romaji: #8894a2;
-  --faint: #707c8a;
-  --furigana: #8894a4;
+  --romaji: #99a5b3;
+  --faint: #808c9a;
+  --furigana: #9ba8b7;
 
   --page-bg: #191d23;
   --paper: #23282f;
@@ -868,12 +871,13 @@ body.show-polite .verb-form-plain { display: none; }
 body.show-polite .verb-form-polite { display: block; }
 
 /* Furigana: always visible, never behind hover/click/a setting. A clear
-   tier down (~0.5em, lighter), with a 9px floor so it stays readable when
-   the Japanese steps down on small screens; kept off the row height by a
-   tight line-height; ruby-align:start keeps the kanji flush with the column. */
+   tier down (~0.58em, lighter), with an 11px floor -- small kana need the
+   extra pixels to stay readable, especially the ones a learner is here to
+   read. Kept off the row height by a tight line-height; ruby-align:start
+   keeps the kanji flush with the column. */
 .furigana {
   font-family: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", sans-serif;
-  font-size: max(9px, .5em);
+  font-size: max(11px, .58em);
   font-weight: 400;
   line-height: 1.1;
   color: var(--furigana);
@@ -1543,7 +1547,7 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
   font-size: var(--fs-nav);
   color: var(--ink);
 }
-.fc-missed-jp .furigana { font-size: .5em; }
+.fc-missed-jp .furigana { font-size: max(10px, .62em); }
 .fc-jp-slash { color: var(--faint); padding: 0 2px; }
 /* One supporting line: romaji (muted italic) · English (legible ink). */
 .fc-missed-gloss { flex: 0 1 auto; min-width: 0; font-size: var(--fs-small); line-height: 1.4; }
