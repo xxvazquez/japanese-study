@@ -139,18 +139,24 @@ window.SakuraStudy.flashcards.scheduling = (function () {
     }
     return out;
   }
-  // The queue keeps its learning -> review -> new priority, but every bucket
-  // is shuffled (so no two sessions march through the same order) and then
-  // spaced by word (so you never get the same word twice in a row while its
-  // other directions are still available).
+  // What's studied in a session is: every card that's due (learning,
+  // relearning or review -- state != 0 with due <= now) plus that day's
+  // allowance of brand-new cards. Those used to be kept in strict
+  // learning -> review -> new order, which meant the same due cards led
+  // every single session -- it never *felt* random even though each bucket
+  // was shuffled. Now the whole lot is pooled and shuffled together, so the
+  // order is genuinely different every day regardless of what's due or what
+  // was just added. It's still spaced by word afterwards (so the same
+  // word's other directions never land back to back).
   function buildQueue(now) {
     var c = getCache();
     var studyable = studyableCards();
-    var learning = shuffle(studyable.filter(function (card) { return (card.state === 1 || card.state === 3) && new Date(card.due) <= now; }));
-    var review = shuffle(studyable.filter(function (card) { return card.state === 2 && new Date(card.due) <= now; }));
+    var due = studyable.filter(function (card) {
+      return card.state !== 0 && new Date(card.due) <= now;
+    });
     var fresh = shuffle(studyable.filter(function (card) { return card.state === 0; }))
       .slice(0, Math.max(0, c.settings.queue_new_cards_per_day));
-    return spaceByVocab(learning).concat(spaceByVocab(review), spaceByVocab(fresh))
+    return spaceByVocab(shuffle(due.concat(fresh)))
       .map(function (card) { return card.id; });
   }
   function computeStats(now) {
