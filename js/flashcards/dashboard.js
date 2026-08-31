@@ -35,6 +35,25 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   function getSession() { return session; }
   function setSession(v) { session = v; }
 
+  // The Dashboard is a snapshot -- if you sit on it while a learning step's
+  // due time passes, "Study now" should light up on its own rather than
+  // staying dead until you navigate. A slow poll re-renders only when the
+  // ready-to-study count actually changes, so it's a no-op almost always.
+  var dashboardTimer = null;
+  var lastReadyCount = -1;
+  function stopDashboardPoll() { if (dashboardTimer) { clearInterval(dashboardTimer); dashboardTimer = null; } }
+  function startDashboardPoll() {
+    stopDashboardPoll();
+    dashboardTimer = setInterval(function () {
+      if (session || document.body.dataset.activePage !== "flashcards" ||
+          window.SakuraStudy.flashcards.getActiveTab() !== "dashboard") {
+        stopDashboardPoll();
+        return;
+      }
+      if (readyToStudy(new Date()).length !== lastReadyCount) rerender();
+    }, 60000);
+  }
+
   // Nothing added yet -- a dashboard of zeroes and empty charts tells a new
   // user nothing. Show only what to do next: add some vocabulary.
   function renderEmptyDashboard(panel) {
@@ -59,6 +78,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   }
 
   function renderDashboard(panel, stats) {
+    stopDashboardPoll();
     if (session) { renderReview(panel); return; }
     if (stats.total === 0) { renderEmptyDashboard(panel); return; }
     var retentionText = stats.estimatedRetention == null ? "—" : Math.round(stats.estimatedRetention * 100) + "%";
@@ -103,6 +123,8 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     var btn = document.getElementById("fcStudyNow");
     if (btn) btn.addEventListener("click", startSession);
     renderWordsToReview();
+    lastReadyCount = ready.length;
+    startDashboardPoll();
   }
   function statTile(value, label, variant) {
     var cls = variant ? " fc-stat-" + variant : "";

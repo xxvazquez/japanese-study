@@ -60,11 +60,12 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   function visibleSectionTables() {
     return [...document.querySelectorAll('#vocabulary .table-section:not(.page-hidden):not(.search-hidden)')];
   }
-  // Accordion default: the first table of each category open, the rest closed.
+  // Accordion default: the section's first table open, the rest closed --
+  // immediate content without the "why is *this* set of tables open?" of a
+  // first-per-category rule. Everything else is one click (or Expand all).
   function collapseToAccordion(list) {
-    const seen = {};
-    list.forEach(function (s) {
-      if (!seen[s.dataset.category]) { seen[s.dataset.category] = true; expandSection(s); }
+    list.forEach(function (s, i) {
+      if (i === 0) expandSection(s);
       else collapseSection(s);
     });
   }
@@ -156,15 +157,14 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // A section switch always starts from the accordion default.
     document.body.classList.remove('expand-all-mode');
     syncExpandAllBtn();
-    // Reveal this section's tables; within it, open the first table of each
-    // category and collapse the rest (one open table per category).
-    const seen = {};
+    // Reveal this section's tables; open only its first, collapse the rest.
+    let firstShown = false;
     document.querySelectorAll('#vocabulary .table-section').forEach(function (s) {
       const inSection = s.dataset.section === name;
       s.classList.toggle('page-hidden', !inSection);
       s.classList.remove('search-hidden');
       if (!inSection) return;
-      if (!seen[s.dataset.category]) { seen[s.dataset.category] = true; expandSection(s); }
+      if (!firstShown) { firstShown = true; expandSection(s); }
       else collapseSection(s);
     });
     document.querySelectorAll('#vocabulary .cat-heading').forEach(function (h) {

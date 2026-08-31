@@ -102,15 +102,10 @@ async function main() {
     return tindexMenu.hidden === false && document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "true";
   })());
   check("clicking outside closes it", (() => { document.body.click(); return tindexMenu.hidden === true; })());
-  check("one table per category is expanded on landing", (() => {
-    const seen = {};
-    let ok = true;
-    document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)').forEach(s => {
-      const first = !seen[s.dataset.category];
-      seen[s.dataset.category] = true;
-      if (s.classList.contains("collapsed") === first) ok = false;
-    });
-    return ok;
+  check("only the section's first table is open on landing", (() => {
+    const tables = [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')];
+    return tables.length > 1 && !tables[0].classList.contains("collapsed")
+      && tables.slice(1).every(s => s.classList.contains("collapsed"));
   })());
 
   console.log("Four-item top navigation");
@@ -246,21 +241,16 @@ async function main() {
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const expandAllBtn = document.getElementById("expandAllBtn");
   const accordionIntact = () => {
-    const seen = {};
-    let ok = true;
-    document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)').forEach(s => {
-      const first = !seen[s.dataset.category];
-      seen[s.dataset.category] = true;
-      if (s.classList.contains("collapsed") === first) ok = false;
-    });
-    return ok;
+    const tables = [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')];
+    return tables.length > 1 && !tables[0].classList.contains("collapsed")
+      && tables.slice(1).every(s => s.classList.contains("collapsed"));
   };
   check("the expand-all control starts as 'Expand all'", !!expandAllBtn && expandAllBtn.textContent === "Expand all" && expandAllBtn.getAttribute("aria-pressed") === "false");
   expandAllBtn.click();
   check("clicking it expands every visible Vocabulary table", [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')].every(s => !s.classList.contains("collapsed")));
   check("...the button flips to 'Collapse all' and body carries expand-all-mode", expandAllBtn.textContent === "Collapse all" && expandAllBtn.getAttribute("aria-pressed") === "true" && document.body.classList.contains("expand-all-mode"));
   expandAllBtn.click();
-  check("clicking again snaps back to the one-open-per-category accordion", accordionIntact() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
+  check("clicking again snaps back to just the section's first table open", accordionIntact() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
   check("switching sections clears expand-all mode", (() => {
     expandAllBtn.click();
     document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
