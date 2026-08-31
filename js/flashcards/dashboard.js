@@ -93,7 +93,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
       statTile(retentionText, "Estimated retention") +
       "</div>" +
       (settings.longest_streak > streak ? '<p class="fc-note fc-longest-streak">Longest streak: ' + settings.longest_streak + " day" + (settings.longest_streak === 1 ? "" : "s") + ".</p>" : "") +
-      '<p class="fc-note fc-retention-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</p>' +
+      (stats.estimatedRetention == null ? "" : '<p class="fc-note fc-retention-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</p>') +
       '<div class="fc-viz-grid">' +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Card progress</h3>' + stateBreakdownChart(stats) + "</div>" +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Reviews this week</h3>' + (weeklyActivity ? weeklyActivityChart(weeklyActivity) : '<p class="fc-note">Loading…</p>') + "</div>" +
@@ -232,11 +232,11 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     window.SakuraStudy.flashcards.refreshRowToggleButtons();
   }
 
-  // Card-state breakdown -- a single stacked bar (New/Learning/Review),
-  // colors reused from the existing palette (New: neutral faint, Learning:
-  // the site's rose accent for "in progress", Review: brand teal for
-  // "established") rather than introducing new hues. SVG attributes (not
-  // style="") so the computed widths don't run into the page's CSP.
+  // Card-state breakdown -- a single stacked bar (New/Learning/Review) as a
+  // light-to-dark ramp of the one accent hue (see .fc-seg-* in site.css):
+  // an ordinal progression, so a sequential ramp reads better than three
+  // similar tones. SVG attributes (not style="") so the computed widths
+  // don't run into the page's CSP.
   function stateBreakdownChart(stats) {
     var segs = [
       { n: stats.newCount, cls: "fc-seg-new", label: "New" },
@@ -376,10 +376,13 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   function weeklyActivityChart(days) {
     var max = Math.max(1, Math.max.apply(null, days.map(function (d) { return d.count; })));
     var cols = days.map(function (d) {
-      var barH = d.count ? Math.max(6, Math.round((d.count / max) * 100)) : 3;
+      // A day with no reviews is a flat 2-unit baseline (reads as "nothing
+      // here", not a stunted bar), and its count label is dropped so the row
+      // isn't a wall of zeroes.
+      var barH = d.count ? Math.max(8, Math.round((d.count / max) * 100)) : 2;
       var barCls = d.count ? "fc-week-bar" : "fc-week-bar fc-week-bar-empty";
       return '<div class="fc-week-col">' +
-        '<span class="fc-week-count">' + d.count + "</span>" +
+        '<span class="fc-week-count">' + (d.count || "") + "</span>" +
         '<svg viewBox="0 0 10 100" preserveAspectRatio="none" class="fc-week-barsvg" aria-hidden="true">' +
         '<rect class="' + barCls + '" x="0" y="' + (100 - barH) + '" width="10" height="' + barH + '"></rect></svg>' +
         '<span class="fc-week-label">' + esc(d.label) + "</span></div>";

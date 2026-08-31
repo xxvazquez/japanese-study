@@ -1107,7 +1107,10 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
    thin top accent (a color hint, not a loud fill) so the row reads as more
    than a flat spreadsheet of numbers. */
-.fc-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 18px; }
+/* 2x2 on narrow screens (four tiles, so it stays even -- no orphan on its
+   own row), one row of four once there's width for it. */
+.fc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+@media (min-width: 620px) { .fc-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .fc-stat-tile {
   position: relative;
   background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
@@ -1146,23 +1149,26 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
 
 .fc-breakdown-bar-wrap { border-radius: 8px; overflow: hidden; background: var(--surface); }
 .fc-breakdown-bar { display: block; width: 100%; height: 16px; }
-.fc-seg-new { fill: var(--faint); background: var(--faint); }
-.fc-seg-learning { fill: var(--irregular); background: var(--irregular); }
+/* One hue, three clearly separated steps -- an ordinal New -> Learning ->
+   Review progression, so a light-to-dark ramp of the accent reads better
+   (and stays distinguishable) than three similar mid-tones. */
+.fc-seg-new { fill: color-mix(in srgb, var(--accent) 20%, var(--surface)); background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
+.fc-seg-learning { fill: color-mix(in srgb, var(--accent) 60%, var(--paper)); background: color-mix(in srgb, var(--accent) 60%, var(--paper)); }
 .fc-seg-review { fill: var(--accent); background: var(--accent); }
 .fc-breakdown-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
 .fc-legend-item { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-small); }
-.fc-legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.fc-legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
 
 /* Plain HTML flex columns, not one big SVG -- text sized in real CSS px
    (predictable at any viewport) with only the bar itself as a tiny per-bar
    SVG shape (proportional height, no inline style="" needed for the CSP,
    and nothing inside it to be mis-scaled since it holds no text). */
-.fc-week-chart { display: flex; align-items: flex-end; gap: 8px; height: 76px; }
+.fc-week-chart { display: flex; align-items: flex-end; gap: 6px; height: 84px; }
 .fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
-.fc-week-count { display: block; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
+.fc-week-count { display: block; min-height: 1.4em; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
 .fc-week-barsvg { display: block; width: 100%; flex: 1 1 auto; min-height: 0; }
 .fc-week-bar { fill: var(--accent); }
-.fc-week-bar-empty { fill: var(--line-strong); }
+.fc-week-bar-empty { fill: var(--line); }
 .fc-week-label { display: block; margin-top: 6px; font-size: var(--fs-micro); color: var(--faint); }
 
 .fc-cta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }

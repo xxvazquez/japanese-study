@@ -190,7 +190,10 @@ window.SakuraStudy.flashcards.scheduling = (function () {
     return {
       total: cards.length, newCount: newCount, learningCount: learningCount, reviewCount: reviewCount,
       dueCount: dueCount, reviewsCompleted: reviewsCompleted,
-      estimatedRetention: retN ? retSum / retN : null
+      // Below a handful of reviewed cards the average is almost pure noise
+      // (one card at 100% reads as "100% retention"), so hold it back until
+      // there's enough to mean something.
+      estimatedRetention: retN >= 5 ? retSum / retN : null
     };
   }
 
