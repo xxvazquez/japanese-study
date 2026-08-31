@@ -49,6 +49,11 @@ window.SakuraStudy.flashcards.views = (function () {
       '<li><span class="fc-status fc-status-active">' + STATUS_META.active.glyph + '</span> In flashcards</li>' +
       '<li><span class="fc-status fc-status-due">' + STATUS_META.due.glyph + '</span> Due for review now</li>' +
       '</ul></div>' +
+      '<div class="fc-settings-section"><h3>Review sessions</h3>' +
+      '<ul class="fc-help-list">' +
+      '<li>Each rating is saved the moment you pick it, so <span class="fc-legend-term">End session</span> (top-right of the card) never loses anything — it just stops early and shows the wrap-up.</li>' +
+      '<li>The wrap-up counts what you reviewed and how many you got right; <span class="fc-legend-term">Keep going</span> appears when more cards are ready.</li>' +
+      '</ul></div>' +
       '<div class="fc-settings-section"><h3>Review keyboard shortcuts</h3>' +
       '<ul class="fc-help-list">' +
       '<li><kbd>Space</kbd> or <kbd>Enter</kbd> — check your answer</li>' +

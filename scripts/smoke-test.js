@@ -407,6 +407,22 @@ async function main() {
   check("adding a word in guest mode updates the count with zero network calls", totalTileAfter === "4");
   if (storageUsable) check("its data actually lives in localStorage (not just in-memory)", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
 
+  console.log("Flashcards: review session bookends");
+  document.getElementById("fcStudyNow").click();
+  check("Study now opens a review card", !!document.querySelector(".fc-review-card"));
+  check("the review card has an in-session way out", !!document.getElementById("fcEndSession"));
+  document.getElementById("fcAnswerInput").value = "definitely-not-right";
+  document.getElementById("fcAnswerForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  check("checking the answer reveals the four rating buttons", document.querySelectorAll(".fc-rating-btn").length === 4);
+  document.querySelector('.fc-rating-btn[data-rating="again"]').click();
+  await flush();
+  document.getElementById("fcEndSession").click();
+  const doneText = (document.querySelector(".fc-session-done") || {}).textContent || "";
+  check("ending mid-session shows a wrap-up, not a blank panel", /reviewed/.test(doneText));
+  check("the wrap-up counts the card just reviewed", /1 reviewed/.test(doneText) && /correct/.test(doneText));
+  document.getElementById("fcBackToDashboard").click();
+  check("Back to Dashboard leaves the session for the dashboard", !document.querySelector(".fc-session-done") && !!document.querySelector(".fc-stats-grid"));
+
   console.log("Flashcards: Study Directions setting");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
   const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];

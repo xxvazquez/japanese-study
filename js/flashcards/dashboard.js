@@ -390,8 +390,12 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   // -----------------------------------------------------------------------
   // Review session flow
   // -----------------------------------------------------------------------
+  function newSession(queue) {
+    return { queue: queue, index: 0, checked: false, preview: null, correct: null,
+      reviewedCount: 0, correctCount: 0, seen: {}, done: false };
+  }
   function startSession() {
-    session = { queue: buildQueue(new Date()), index: 0, checked: false, preview: null, correct: null, reviewedCount: 0 };
+    session = newSession(buildQueue(new Date()));
     rerender();
   }
   // Practice one word now (from "Missed today") -- all of its active cards,
@@ -400,7 +404,16 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     var ids = studyableCards().filter(function (c) { return c.vocabId === vocabId; }).map(function (c) { return c.id; });
     if (!ids.length) return;
     window.SakuraStudy.flashcards.setActiveTab("dashboard");
-    session = { queue: shuffle(ids), index: 0, checked: false, preview: null, correct: null, reviewedCount: 0 };
+    session = newSession(shuffle(ids));
+    rerender();
+  }
+  // Leaving a session mid-way: if any cards were reviewed, show the same
+  // wrap-up screen a finished session gets (progress is already saved per
+  // card); if none were, just drop straight back to the Dashboard.
+  function endSession() {
+    if (!session) return;
+    if (!session.reviewedCount) { session = null; rerender(); return; }
+    session.done = true;
     rerender();
   }
   // Extracted so the keyboard shortcut and the form's own submit both check
@@ -418,10 +431,33 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     rerender();
   }
 
+  function renderSessionDone(panel) {
+    var reviewed = session.reviewedCount;
+    var html = '<div class="fc-session-done">';
+    if (!reviewed) {
+      html += '<p class="fc-session-done-title">Nothing to review right now</p>';
+    } else {
+      var correct = session.correctCount || 0;
+      var pct = Math.round((correct / reviewed) * 100);
+      var streak = getCache().settings.current_streak || 0;
+      html += '<p class="fc-session-done-title">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
+        '<p class="fc-session-done-stats">' + reviewed + " reviewed · " + correct + " correct (" + pct + "%)</p>" +
+        (streak ? '<p class="fc-session-done-streak">Day streak: ' + streak + "</p>" : "");
+    }
+    var moreReady = buildQueue(new Date()).some(function (id) { return !session.seen[id]; });
+    html += '<div class="fc-cta-row">' +
+      (moreReady ? '<button type="button" class="fc-btn fc-btn-primary" id="fcStudyMore">Keep going</button>' : "") +
+      '<button type="button" class="fc-btn' + (moreReady ? "" : " fc-btn-primary") + '" id="fcBackToDashboard">Back to Dashboard</button>' +
+      "</div></div>";
+    panel.innerHTML = html;
+    document.getElementById("fcBackToDashboard").addEventListener("click", function () { session = null; rerender(); });
+    var more = document.getElementById("fcStudyMore");
+    if (more) more.addEventListener("click", function () { startSession(); });
+  }
+
   function renderReview(panel) {
-    if (!session.queue.length || session.index >= session.queue.length) {
-      panel.innerHTML = '<div class="fc-session-done"><p>' + (session.reviewedCount ? "Session complete — " + session.reviewedCount + " card" + (session.reviewedCount === 1 ? "" : "s") + " reviewed." : "Nothing is due right now.") + '</p><button type="button" class="fc-btn" id="fcBackToDashboard">Back to Dashboard</button></div>';
-      document.getElementById("fcBackToDashboard").addEventListener("click", function () { session = null; rerender(); });
+    if (session.done || !session.queue.length || session.index >= session.queue.length) {
+      renderSessionDone(panel);
       return;
     }
     var cardId = session.queue[session.index];
@@ -432,7 +468,8 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     var now = new Date();
 
     var html = '<div class="fc-review-card">' +
-      '<div class="fc-review-meta"><span>' + esc(DIRECTION_LABEL[card.direction]) + "</span><span>" + (session.index + 1) + " / " + session.queue.length + "</span></div>" +
+      '<div class="fc-review-meta"><span>' + esc(DIRECTION_LABEL[card.direction]) + " · " + (session.index + 1) + " / " + session.queue.length + "</span>" +
+      '<button type="button" class="fc-session-exit" id="fcEndSession">End session</button></div>' +
       '<div class="fc-prompt-label">' + esc(askLabelFor(card.direction)) + "</div>" +
       '<div class="fc-prompt"' + (prompt.lang ? ' lang="ja"' : "") + ">" + (prompt.html || esc(prompt.text)) + "</div>" +
       '<form class="fc-answer-form" id="fcAnswerForm"><input id="fcAnswerInput" type="text" autocomplete="off" placeholder="' + esc(answerPlaceholderFor(card.direction)) + '" ' + (session.checked ? "disabled" : "autofocus") + '>' +
@@ -454,6 +491,8 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     html += "</div>";
     panel.innerHTML = html;
 
+    var endBtn = document.getElementById("fcEndSession");
+    if (endBtn) endBtn.addEventListener("click", endSession);
     var input = document.getElementById("fcAnswerInput");
     if (input && !session.checked) input.focus();
     var form = document.getElementById("fcAnswerForm");
@@ -507,7 +546,9 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     // mistake insights so the Dashboard recomputes them on the next visit.
     weeklyActivity = null;
     invalidateInsights();
+    session.seen[cardId] = true;
     session.reviewedCount++;
+    if (session.correct === true) session.correctCount++;
     session.index++;
     session.checked = false;
     session.userAnswer = "";
