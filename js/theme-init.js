@@ -1,15 +1,19 @@
 // Runs in <head>, before first paint, so the page never flashes the wrong
-// theme. Resolves to an explicit light/dark on <html data-theme>: a stored
-// choice wins, otherwise the OS preference. The rest of the theme logic
-// (the toggle, persistence) lives in js/vocab/interactions.js.
+// theme. Two attributes on <html>: data-theme-choice is what the user picked
+// ("system" | "light" | "dark"; absent storage = system), data-theme is the
+// resolved light/dark that the CSS actually keys off. The rest of the theme
+// logic (the toggle, live OS-change following, persistence) lives in
+// js/vocab/interactions.js.
 (function () {
   "use strict";
-  var t;
+  var choice;
   try {
-    t = window.localStorage && localStorage.getItem("sakura-theme");
-  } catch (e) { t = null; }
-  if (t !== "light" && t !== "dark") {
-    t = (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light";
-  }
-  document.documentElement.setAttribute("data-theme", t);
+    choice = window.localStorage && localStorage.getItem("sakura-theme");
+  } catch (e) { choice = null; }
+  if (choice !== "light" && choice !== "dark") choice = "system";
+  var resolved = choice === "system"
+    ? ((window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) ? "dark" : "light")
+    : choice;
+  document.documentElement.setAttribute("data-theme", resolved);
+  document.documentElement.setAttribute("data-theme-choice", choice);
 })();

@@ -27,7 +27,7 @@ Two colours do a narrow functional job and nothing decorative: a calm slate wash
 ## What's here
 
 - `index.html` — the page shell: header (wordmark + light/dark toggle), the four-item navigation, the vocabulary-section page (`#tableIndex` directory + sticky search/controls + tables) and the Flashcards page. Its `<script>` block documents the load order.
-- `js/theme-init.js` — tiny `<head>` script: sets `<html data-theme>` (stored choice, else OS preference) before the first paint so the theme never flashes.
+- `js/theme-init.js` — tiny `<head>` script: sets `<html data-theme-choice>` (`system` \| `light` \| `dark`) and the resolved `<html data-theme>` (`light` \| `dark`, what the CSS keys off) before the first paint so the theme never flashes.
 - `css/site.css` — styling and print rules
 - `fonts/InterVariable.woff2` — self-hosted [Inter](https://rsms.me/inter/) variable font (SIL OFL, `fonts/Inter.LICENSE.txt`) for all Latin/UI text; one local file, no external font runtime. Japanese keeps its Noto stack.
 - `fonts/SpaceGrotesk.woff2` — self-hosted [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) (SIL OFL, `fonts/SpaceGrotesk.LICENSE.txt`), latin weight 400 only, used solely for the `sakura` wordmark.
@@ -63,8 +63,8 @@ No framework, no build step. Just open `index.html`.
 - A **Show polite** toggle switches verb tables between the plain/dictionary form and the polite 〜ます form; it only appears while the Verbs table is actually expanded (not just present-but-collapsed)
 - "Manage rows" lets you hide individual rows you've already memorized, per table, with a one-click "Show all" to bring them back
 - **Flashcards**: turn any vocabulary row into an FSRS-6-scheduled flashcard (see below)
-- Furigana sits over the actual kanji it belongs to, not the whole word, and is always shown — never behind a hover or a toggle; it keeps a 9px floor so it stays readable when the Japanese steps down on narrow screens
-- A **light / dark** toggle in the header (`js/theme-init.js` applies the choice — a stored preference, else the OS setting — before first paint; the rest is in `interactions.js`)
+- Furigana sits over the actual kanji it belongs to, not the whole word, and is always shown — never behind a hover or a toggle; it keeps an 11px floor so small kana stay readable when the Japanese steps down on narrow screens, with a touch of extra row padding above the Japanese cell so it never touches the row rule
+- A header theme control that cycles **System → Light → Dark** (icon and label reflect the current mode); "System" follows the OS setting live. `js/theme-init.js` applies it before first paint, the rest is in `interactions.js`; a stored value means an explicit Light/Dark, its absence means System
 - On mobile the sheet goes full-width; the four-item navigation still fits on one line
 - Installable as a PWA on iPhone and Android, and works offline once visited (see below)
 

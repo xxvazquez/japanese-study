@@ -624,25 +624,45 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       });
     }
 
-    // Light / dark theme. js/theme-init.js already set <html data-theme>
-    // before paint; this just wires the toggle and persists the choice.
+    // Light / dark / system theme. js/theme-init.js already set <html
+    // data-theme + data-theme-choice> before paint; this wires the toggle
+    // (a 3-way cycle: System -> Light -> Dark -> System), keeps "system"
+    // following the OS live, and persists the choice.
     const THEME_KEY = 'sakura-theme';
+    const THEME_ORDER = ['system', 'light', 'dark'];
+    const THEME_LABEL = { system: 'System', light: 'Light', dark: 'Dark' };
     const themeToggle = document.getElementById('themeToggle');
-    function applyTheme(mode) {
-      document.documentElement.setAttribute('data-theme', mode);
+    const darkMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+    function currentThemeChoice() {
+      const c = document.documentElement.getAttribute('data-theme-choice');
+      return c === 'light' || c === 'dark' ? c : 'system';
+    }
+    function applyThemeChoice(choice) {
+      const resolved = choice === 'system' ? (darkMedia && darkMedia.matches ? 'dark' : 'light') : choice;
+      document.documentElement.setAttribute('data-theme', resolved);
+      document.documentElement.setAttribute('data-theme-choice', choice);
       if (themeToggle) {
-        themeToggle.setAttribute('aria-label', mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
-        themeToggle.title = mode === 'dark' ? 'Light mode' : 'Dark mode';
+        const next = THEME_ORDER[(THEME_ORDER.indexOf(choice) + 1) % THEME_ORDER.length];
+        themeToggle.setAttribute('aria-label', 'Theme: ' + THEME_LABEL[choice] + '. Switch to ' + THEME_LABEL[next] + '.');
+        themeToggle.title = 'Theme: ' + THEME_LABEL[choice];
       }
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', mode === 'dark' ? '#191d23' : '#f4f6f8');
-      try { localStorage.setItem(THEME_KEY, mode); } catch (e) {}
+      if (meta) meta.setAttribute('content', resolved === 'dark' ? '#191d23' : '#f4f6f8');
+      try {
+        if (choice === 'system') localStorage.removeItem(THEME_KEY);
+        else localStorage.setItem(THEME_KEY, choice);
+      } catch (e) {}
     }
     if (themeToggle) {
-      applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light');
+      applyThemeChoice(currentThemeChoice());
       themeToggle.addEventListener('click', function () {
-        applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+        applyThemeChoice(THEME_ORDER[(THEME_ORDER.indexOf(currentThemeChoice()) + 1) % THEME_ORDER.length]);
       });
+    }
+    if (darkMedia) {
+      const onOsThemeChange = function () { if (currentThemeChoice() === 'system') applyThemeChoice('system'); };
+      if (darkMedia.addEventListener) darkMedia.addEventListener('change', onOsThemeChange);
+      else if (darkMedia.addListener) darkMedia.addListener(onOsThemeChange);
     }
 
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a

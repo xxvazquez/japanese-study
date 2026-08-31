@@ -272,11 +272,12 @@ body {
   cursor: pointer;
 }
 .theme-toggle:hover { color: var(--ink); border-color: var(--muted); }
-.theme-toggle svg { display: block; }
-/* Show the icon for the theme the button switches TO. */
-.theme-toggle .theme-icon-light { display: none; }
-:root[data-theme="dark"] .theme-toggle .theme-icon-dark { display: none; }
-:root[data-theme="dark"] .theme-toggle .theme-icon-light { display: block; }
+/* Show the icon for the mode the button is CURRENTLY in (system / light /
+   dark); clicking cycles to the next. Default (no/other choice) = system. */
+.theme-toggle svg { display: none; }
+:root:not([data-theme-choice="light"]):not([data-theme-choice="dark"]) .theme-toggle .theme-icon-system { display: block; }
+:root[data-theme-choice="light"] .theme-toggle .theme-icon-light { display: block; }
+:root[data-theme-choice="dark"] .theme-toggle .theme-icon-dark { display: block; }
 
 /* --- Horizontal navigation --------------------------------------- */
 /* Four short items -- they fit on one line at every real width, so this is a
@@ -820,7 +821,10 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
   white-space: nowrap;
 }
 .vocab td {
-  padding: 9px 14px 9px 0;
+  /* Asymmetric on purpose: the Japanese cell carries furigana above its
+     kanji, so a little more room on top keeps the reading clear of the row's
+     upper hairline while the bottom stays tight for density. */
+  padding: 9px 14px 6px 0;
   border-bottom: 1px solid var(--line);
   vertical-align: middle;
   font-size: var(--fs-english);
@@ -959,8 +963,7 @@ body.mode-romaji .vocab td:nth-child(3) .row-hide-btn { color: var(--faint) !imp
 
 /* --- Responsive -------------------------------------------------- */
 @media (min-width: 641px) {
-  .vocab td { padding-top: 10px; padding-bottom: 10px; }
-  .vocab td.jp { line-height: 1.5; }
+  .vocab td { padding-top: 10px; padding-bottom: 7px; }
 }
 
 @media (max-width: 640px) {

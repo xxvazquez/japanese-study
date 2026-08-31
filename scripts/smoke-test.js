@@ -167,13 +167,21 @@ async function main() {
   window.dispatchEvent(new window.Event("popstate"));
   check("an empty hash routes back to Vocabulary", document.body.dataset.activeSection === "vocabulary");
 
-  console.log("Dark-mode toggle");
+  console.log("Theme toggle (System / Light / Dark cycle)");
   const themeBtn = document.getElementById("themeToggle");
-  const before = document.documentElement.getAttribute("data-theme");
+  const themeChoice = () => document.documentElement.getAttribute("data-theme-choice");
+  const themeResolved = () => document.documentElement.getAttribute("data-theme");
+  check("starts following the system (no explicit choice)", themeChoice() === "system");
   themeBtn.click();
-  check("clicking the toggle flips <html data-theme>", document.documentElement.getAttribute("data-theme") !== before && ["light", "dark"].includes(document.documentElement.getAttribute("data-theme")));
+  check("first click pins an explicit Light", themeChoice() === "light" && themeResolved() === "light");
   themeBtn.click();
-  check("clicking again flips it back", document.documentElement.getAttribute("data-theme") === before);
+  check("second click goes Dark", themeChoice() === "dark" && themeResolved() === "dark");
+  themeBtn.click();
+  check("third click returns to System", themeChoice() === "system");
+  check("the button shows the icon for the current mode", (() => {
+    const vis = (sel) => window.getComputedStyle(themeBtn.querySelector(sel)).display !== "none";
+    return vis(".theme-icon-system") && !vis(".theme-icon-light") && !vis(".theme-icon-dark");
+  })());
 
   console.log("Jumping to a table from the dropdown");
   // On Grammar: open the menu, jump to Verbs, menu closes.
