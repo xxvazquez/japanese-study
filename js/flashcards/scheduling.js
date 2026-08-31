@@ -139,24 +139,34 @@ window.SakuraStudy.flashcards.scheduling = (function () {
     }
     return out;
   }
-  // What's studied in a session is: every card that's due (learning,
-  // relearning or review -- state != 0 with due <= now) plus that day's
-  // allowance of brand-new cards. Those used to be kept in strict
-  // learning -> review -> new order, which meant the same due cards led
-  // every single session -- it never *felt* random even though each bucket
-  // was shuffled. Now the whole lot is pooled and shuffled together, so the
-  // order is genuinely different every day regardless of what's due or what
-  // was just added. It's still spaced by word afterwards (so the same
-  // word's other directions never land back to back).
+  // A learning/relearning step is meant to come back in minutes -- making
+  // someone sit out a 10-minute step before they can finish a session is
+  // silly, so those count as "ready" a short way ahead of their due time
+  // (Anki calls this the learn-ahead limit). Review cards, whose intervals
+  // are days, still only count once they are genuinely due.
+  var LEARN_AHEAD_MS = 20 * 60 * 1000;
+  function readyToStudy(now) {
+    var t = (now || new Date()).getTime();
+    return studyableCards().filter(function (card) {
+      if (card.state === 0) return false;
+      var due = new Date(card.due).getTime();
+      if (card.state === 1 || card.state === 3) return due <= t + LEARN_AHEAD_MS;
+      return due <= t;
+    });
+  }
+  // What's studied in a session is: every card that's ready (readyToStudy)
+  // plus that day's allowance of brand-new cards. These used to be kept in
+  // strict learning -> review -> new order, which meant the same due cards
+  // led every single session -- it never *felt* random even though each
+  // bucket was shuffled. Now the whole lot is pooled and shuffled together,
+  // so the order is genuinely different every day regardless of what's due
+  // or what was just added. It's still spaced by word afterwards (so the
+  // same word's other directions never land back to back).
   function buildQueue(now) {
     var c = getCache();
-    var studyable = studyableCards();
-    var due = studyable.filter(function (card) {
-      return card.state !== 0 && new Date(card.due) <= now;
-    });
-    var fresh = shuffle(studyable.filter(function (card) { return card.state === 0; }))
+    var fresh = shuffle(studyableCards().filter(function (card) { return card.state === 0; }))
       .slice(0, Math.max(0, c.settings.queue_new_cards_per_day));
-    return spaceByVocab(shuffle(due.concat(fresh)))
+    return spaceByVocab(shuffle(readyToStudy(now).concat(fresh)))
       .map(function (card) { return card.id; });
   }
   function computeStats(now) {
@@ -189,6 +199,6 @@ window.SakuraStudy.flashcards.scheduling = (function () {
     retrievabilityOf: retrievabilityOf, formatInterval: formatInterval, formatWhen: formatWhen,
     fsrsRowFields: fsrsRowFields,
     activeCards: activeCards, studyableCards: studyableCards, shuffle: shuffle,
-    buildQueue: buildQueue, computeStats: computeStats
+    readyToStudy: readyToStudy, buildQueue: buildQueue, computeStats: computeStats
   };
 })();

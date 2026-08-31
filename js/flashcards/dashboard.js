@@ -19,6 +19,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   var getCache = store.getCache, localDateStr = store.localDateStr, isGuestMode = store.isGuestMode;
   var uuid = store.uuid, RATING_NAMES = store.RATING_NAMES, DIRECTION_LABEL = store.DIRECTION_LABEL;
   var studyableCards = sched.studyableCards, buildQueue = sched.buildQueue, shuffle = sched.shuffle;
+  var readyToStudy = sched.readyToStudy;
   var previewRatings = sched.previewRatings, getScheduler = sched.getScheduler, applyRating = sched.applyRating, fsrsRowFields = sched.fsrsRowFields;
   var getVocabIndex = vidx.getVocabIndex, promptFor = vidx.promptFor, askLabelFor = vidx.askLabelFor;
   var answerPlaceholderFor = vidx.answerPlaceholderFor, expectedDisplayFor = vidx.expectedDisplayFor;
@@ -49,12 +50,18 @@ window.SakuraStudy.flashcards.dashboard = (function () {
       loadReviewInsights().catch(function () { reviewInsights = emptyInsights(); }).then(function () { reviewInsightsLoading = false; rerender(); });
     }
     var newInSession = Math.min(stats.newCount, Math.max(0, settings.queue_new_cards_per_day));
+    // "Study now" is enabled exactly when a session would have something in it
+    // -- cards ready to review (incl. learning steps due within the look-ahead)
+    // plus the day's new-card allowance -- so the button and the summary above
+    // it never disagree.
+    var ready = readyToStudy(now);
+    var canStudy = ready.length + newInSession > 0;
     // Order matches the way you actually use this page: read the due / next-review
     // summary, act on it (Study now), then the slower-moving context below --
     // stat tiles, charts, and finally the Words to Review table.
     panel.innerHTML =
-      '<div class="fc-top-row">' + nextReviewHtml(now) + todayProgressHtml() + "</div>" +
-      '<div class="fc-cta-row fc-cta-row-primary"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (stats.dueCount + newInSession === 0 ? " disabled" : "") + ">Study now</button></div>" +
+      '<div class="fc-top-row">' + nextReviewHtml(now, ready, newInSession) + todayProgressHtml() + "</div>" +
+      '<div class="fc-cta-row fc-cta-row-primary"><button type="button" class="fc-btn fc-btn-primary" id="fcStudyNow"' + (canStudy ? "" : " disabled") + ">Study now</button></div>" +
       '<div class="fc-stats-grid">' +
       statTile(streak, "Day streak", "streak") +
       statTile(stats.total, "Total cards") +
@@ -116,20 +123,35 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     if (dayDiff < 7) return d.toLocaleDateString(undefined, { weekday: "long" }) + " at " + time;
     return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " at " + time;
   }
-  function nextReviewHtml(now) {
+  // The summary above "Study now". Three honest states, always matching the
+  // button: something to do now / nothing now but more coming later today /
+  // nothing today. "Ready" is what a session would actually pull (readyToStudy
+  // + the new-card allowance), so it never claims cards you can't start.
+  function nextReviewHtml(now, ready, newInSession) {
     var scheduled = studyableCards().filter(function (c) { return c.state !== 0; });
     var endToday = new Date(now); endToday.setHours(23, 59, 59, 999);
-    var dueToday = scheduled.filter(function (c) { return new Date(c.due) <= endToday; }).length;
+    var readyIds = {};
+    ready.forEach(function (c) { readyIds[c.id] = true; });
+    var laterToday = scheduled.filter(function (c) {
+      return !readyIds[c.id] && new Date(c.due) <= endToday;
+    }).length;
     var futureTs = scheduled
       .map(function (c) { return new Date(c.due).getTime(); })
       .filter(function (t) { return t > now.getTime(); })
       .sort(function (a, b) { return a - b; });
     var nextTs = futureTs.length ? futureTs[0] : null;
+    var readyNow = ready.length + newInSession;
     var title, sub, variant;
-    if (dueToday > 0) {
+    if (readyNow > 0) {
       variant = "due";
-      title = dueToday + " card" + (dueToday === 1 ? "" : "s") + " due today";
-      sub = "Next review: " + (nextTs ? verboseUntil(now, nextTs) : "now");
+      title = readyNow + " to study";
+      sub = laterToday > 0
+        ? laterToday + " more due later today"
+        : (nextTs ? "Next review: " + friendlyWhen(now, nextTs) : "");
+    } else if (laterToday > 0) {
+      variant = "clear";
+      title = "All caught up";
+      sub = "Next review: " + verboseUntil(now, nextTs);
     } else {
       variant = "clear";
       title = "All caught up";
@@ -137,7 +159,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     }
     return '<div class="fc-next-review fc-next-review-' + variant + '">' +
       '<span class="fc-next-review-title">' + esc(title) + "</span>" +
-      '<span class="fc-next-review-sub">' + esc(sub) + "</span></div>";
+      (sub ? '<span class="fc-next-review-sub">' + esc(sub) + "</span>" : "") + "</div>";
   }
 
   // "Missed today" -- a calm shortlist of words to revisit. One row per word:
