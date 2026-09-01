@@ -97,7 +97,8 @@ async function main() {
 
   console.log("Table icons");
   const ic = window.SakuraStudy.icons;
-  check("the icon set is exposed with grouped names", ic && ic.groups.length > 0 && ic.names.length > 20);
+  check("the icon set is exposed with grouped names", ic && ic.groups.length > 0 && ic.names.length > 120);
+  check("every grouped icon name resolves to a real path", ic.groups.every(g => g.names.length > 0 && g.names.every(n => ic.has(n) && ic.render(n).indexOf("<svg") === 0)));
   check("render() emits a stroke-only inline SVG for a known name", /^<svg[^>]*stroke="currentColor"/.test(ic.render("coffee")) && ic.render("coffee").indexOf("fill=\"currentColor\"") === -1);
   check("render() emits an <img> for an uploaded data URL", /^<img /.test(ic.render("data:image/png;base64,AAAA")));
   check("render() degrades to nothing for an unknown value", ic.render("definitely-not-an-icon") === "");

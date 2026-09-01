@@ -743,16 +743,18 @@ body {
   text-transform: uppercase; letter-spacing: .05em;
 }
 .icon-picker-group:first-child .icon-picker-group-label { margin-top: 2px; }
-.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 3px; }
 .icon-cell {
   appearance: none; border: 1px solid transparent; background: transparent;
-  border-radius: 7px; padding: 8px;
+  border-radius: 7px; padding: 7px;
   color: var(--ink); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   aspect-ratio: 1;
 }
 .icon-cell[hidden] { display: none; }
-.icon-cell .si { width: 20px; height: 20px; }
+/* Match the ~16-18px the icon shows at in a section header, so the picker
+   preview reads at the same scale as the page. */
+.icon-cell .si { width: 17px; height: 17px; }
 .icon-cell:hover { background: var(--surface); border-color: var(--line-strong); }
 .icon-cell.selected { border-color: var(--section); background: var(--section-soft); color: var(--section-strong); }
 .icon-picker-foot {
