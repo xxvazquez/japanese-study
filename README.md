@@ -182,7 +182,7 @@ npm run generate:vocab-ids  # assigns a permanent id to any vocab row that doesn
 npm run vendor:libs         # re-copies vendor/ts-fsrs.js and vendor/supabase.js after a version bump
 ```
 
-Run `npm run validate` before committing data changes — it'll catch duplicate entries, missing fields, missing/duplicate ids, that sort of thing. `npm test` is heavier and checks real behavior (search, keyboard nav, print, flashcards navigation and answer-checking), worth running before anything that touches `app.js` or `flashcards.js`.
+Run `npm run validate` before committing data changes — it'll catch duplicate entries, missing fields, missing/duplicate ids, that sort of thing. `npm test` is heavier and checks real behavior (search, keyboard nav, print, flashcards navigation and answer-checking), worth running before anything that touches the `js/vocab/` or `js/flashcards/` code.
 
 ## Deploying
 
