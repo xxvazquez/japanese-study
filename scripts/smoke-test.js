@@ -490,6 +490,30 @@ async function main() {
   check("afterprint clears print-only", !document.body.classList.contains("print-only"));
   check("afterprint clears print-target", !document.querySelector('.table-section[data-table="0"]').classList.contains("print-target"));
 
+  console.log("Print a whole section or the whole reference");
+  document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
+  const printMenuBtn = document.querySelector('.expand-bar .print-menu-btn');
+  const printMenuList = document.querySelector('.expand-bar .print-menu .section-menu-list');
+  check("the expand bar carries a Print… menu, closed", !!printMenuBtn && printMenuBtn.getAttribute("aria-expanded") === "false" && printMenuList.hidden === true);
+  printMenuBtn.click();
+  check("clicking it opens the menu with This section / Whole reference", printMenuList.hidden === false &&
+    !!printMenuList.querySelector('.print-scope[data-scope="section"]') && !!printMenuList.querySelector('.print-scope[data-scope="all"]'));
+  printMenuList.querySelector('.print-scope[data-scope="section"]').click();
+  check("\"This section\" prints every table in the active section", document.body.classList.contains("print-only") &&
+    [...document.querySelectorAll('.table-section[data-section="grammar"]')].every(s => s.classList.contains("print-target")));
+  check("...and no other section's tables", [...document.querySelectorAll('.table-section:not([data-section="grammar"])')].every(s => !s.classList.contains("print-target")));
+  check("...even the collapsed ones in that section", [...document.querySelectorAll('.table-section[data-section="grammar"].collapsed')].length > 0 &&
+    [...document.querySelectorAll('.table-section[data-section="grammar"].collapsed')].every(s => s.classList.contains("print-target")));
+  check("the menu closed itself after the pick", printMenuList.hidden === true);
+  window.dispatchEvent(new window.Event("afterprint"));
+  check("afterprint clears every print target", !document.body.classList.contains("print-only") && !document.querySelector(".table-section.print-target"));
+  printMenuBtn.click();
+  printMenuList.querySelector('.print-scope[data-scope="all"]').click();
+  check("\"Whole reference\" prints every table on the page", document.body.classList.contains("print-only") &&
+    [...document.querySelectorAll('#vocabulary .table-section')].every(s => s.classList.contains("print-target")));
+  window.dispatchEvent(new window.Event("afterprint"));
+  check("no checkbox table-selection UI came back", !document.querySelector(".print-all, .print-selected, .table-pick"));
+
   console.log("Customize page (rename / re-icon any table)");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const gear = document.getElementById("customizeToggle");

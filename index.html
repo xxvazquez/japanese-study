@@ -52,7 +52,16 @@
       <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
     </div>
   </div>
-  <div class="expand-bar"><button type="button" id="expandAllBtn" class="expand-all-btn" aria-pressed="false">Expand all</button></div>
+  <div class="expand-bar">
+    <div class="section-menu print-menu">
+      <button type="button" class="expand-all-btn print-menu-btn" aria-haspopup="true" aria-expanded="false" title="Print more than one table">Print…</button>
+      <div class="section-menu-list" role="menu" hidden>
+        <button type="button" class="print-scope" role="menuitem" data-scope="section">This section</button>
+        <button type="button" class="print-scope" role="menuitem" data-scope="all">Whole reference</button>
+      </div>
+    </div>
+    <button type="button" id="expandAllBtn" class="expand-all-btn" aria-pressed="false">Expand all</button>
+  </div>
   <div id="vocabulary"></div>
   <div id="starredView" hidden></div>
 </section>
@@ -84,7 +93,7 @@
   <ul>
     <li>A section opens with its first table; click any title to open another (others in that category close). <strong>Expand all</strong> opens everything at once.</li>
     <li>A section remembers which tables you left open when you navigate away and back.</li>
-    <li>The printer icon on a table prints just that table as a clean A4 sheet.</li>
+    <li>The printer icon on a table prints just that table as a clean A4 sheet. <strong>Print…</strong>, by <strong>Expand all</strong>, does the whole section or the whole reference at once.</li>
   </ul>
 
   <h3>Making it yours</h3>

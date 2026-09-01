@@ -76,30 +76,7 @@ the change, not ship it.
 
 ---
 
-## 1. Section-wide and full-reference print
-
-**What:** Print an entire section (all its tables) or the whole reference, not
-just one table.
-
-**Why:** Print is per-table only right now (`printOne` in `interactions.js`).
-Printing a category or the lot for offline study is an obvious gap.
-
-**Approach:**
-- `interactions.js` `printOne(i)` becomes `printScope({table|section|all})`;
-  toggle a body class and mark the target sections `.print-target` instead of
-  exactly one.
-- A "Print section" item in… the expand-bar? or a small menu on the section
-  heading. Keep it discoverable but quiet.
-- `@media print` already hides chrome and lays tables out A4-friendly; verify
-  multi-table page breaks (`break-inside: avoid` on `.table-section`).
-
-**Files:** `js/vocab/interactions.js`, `index.html` (a control), `css/site.css`
-(`@media print`), smoke test.
-**Size:** S–M.
-
----
-
-## 2. Offline / pending-sync indicator
+## 1. Offline / pending-sync indicator
 
 **What:** A small status chip (masthead or Flashcards identity line) that shows
 when the browser is offline, and when signed-in reviews are queued but not yet
@@ -124,7 +101,7 @@ tell whether their reviews are safe.
 
 ---
 
-## 3. Reading-input practice (kana → romaji)
+## 2. Reading-input practice (kana → romaji)
 
 **What:** A drill that shows a kana word from the tables and asks you to type
 its romaji; checks with the same lenient matching flashcards use

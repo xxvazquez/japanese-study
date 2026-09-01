@@ -11,15 +11,27 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
 (function () {
   var vocab = window.SakuraStudy.vocab;
 
-  function printOne(i){
+  // Print a clean A4 sheet of one table, a whole section (all its tables), or
+  // the whole reference. Every case marks the wanted .table-section(s)
+  // .print-target and lets @media print hide the rest.
+  //   scope: 'all' | 'section' | a table id
+  function printScope(scope){
     document.body.classList.add('print-only');
     document.querySelectorAll('.table-section').forEach(s=>s.classList.remove('print-target'));
-    const target = document.querySelector(`.table-section[data-table="${i}"]`);
-    if (!target) {
+    let targets;
+    if (scope === 'all') {
+      targets = document.querySelectorAll('#vocabulary .table-section');
+    } else if (scope === 'section') {
+      const name = document.body.dataset.activeSection || 'vocabulary';
+      targets = document.querySelectorAll('#vocabulary .table-section[data-section="' + name + '"]');
+    } else {
+      targets = document.querySelectorAll('.table-section[data-table="' + scope + '"]');
+    }
+    if (!targets.length) {
       document.body.classList.remove('print-only');
       return;
     }
-    target.classList.add('print-target');
+    targets.forEach(s=>s.classList.add('print-target'));
     window.print();
   }
   window.addEventListener('afterprint',()=>{
@@ -107,7 +119,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     document.querySelectorAll('.section-menu-list:not([hidden])').forEach(function (list) {
       if (list === except) return;
       list.hidden = true;
-      const btn = list.parentElement && list.parentElement.querySelector('.section-menu-btn');
+      const btn = list.parentElement && list.parentElement.querySelector('.section-menu-btn, .print-menu-btn');
       if (btn) btn.setAttribute('aria-expanded', 'false');
     });
     document.querySelectorAll('.table-section.menu-open').forEach(function (section) {
@@ -593,7 +605,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (!t || !t.closest) return;
       if (!t.closest('.section-menu')) closeSectionMenus();
       let el;
-      if ((el = t.closest('.section-menu-btn'))) {
+      if ((el = t.closest('.section-menu-btn, .print-menu-btn'))) {
         event.stopPropagation();
         const list = el.parentElement.querySelector('.section-menu-list');
         const willOpen = list.hidden;
@@ -609,7 +621,11 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       } else if ((el = t.closest('.print-one'))) {
         event.stopPropagation();
         closeSectionMenus();
-        printOne(el.closest('.table-section').dataset.table);
+        printScope(el.closest('.table-section').dataset.table);
+      } else if ((el = t.closest('.print-scope'))) {
+        event.stopPropagation();
+        closeSectionMenus();
+        printScope(el.dataset.scope);
       } else if ((el = t.closest('.manage-rows-toggle'))) {
         event.stopPropagation();
         const managing = el.closest('.table-section').classList.toggle('managing-rows');
@@ -636,7 +652,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (event.key !== 'Escape') return;
       const open = document.querySelector('.section-menu-list:not([hidden])');
       if (!open) return;
-      const btn = open.parentElement.querySelector('.section-menu-btn');
+      const btn = open.parentElement.querySelector('.section-menu-btn, .print-menu-btn');
       closeSectionMenus();
       if (btn) btn.focus();
     });

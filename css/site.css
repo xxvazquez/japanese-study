@@ -582,7 +582,7 @@ body {
 
 /* Expand all / collapse all -- a quiet text control between the toolbar and
    the tables, for reading a whole category straight through. */
-.expand-bar { display: flex; justify-content: flex-end; margin: -8px 0 6px; }
+.expand-bar { display: flex; justify-content: flex-end; align-items: center; gap: 14px; margin: -8px 0 6px; }
 .expand-bar.search-hidden { display: none; }
 .expand-all-btn {
   appearance: none;
@@ -594,7 +594,12 @@ body {
   cursor: pointer;
 }
 .expand-all-btn:hover { color: var(--section-strong); text-decoration: underline; text-underline-offset: 3px; }
-.expand-all-btn[aria-pressed="true"] { color: var(--section-strong); }
+.expand-all-btn[aria-pressed="true"],
+.print-menu-btn[aria-expanded="true"] { color: var(--section-strong); }
+/* The "Print…" menu sits in the expand bar; its trigger is a quiet text
+   control like Expand all, its dropdown reuses the table overflow menu. */
+.print-menu { position: relative; }
+.print-menu .section-menu-list { min-width: 168px; }
 
 /* --- Table section --------------------------------------------- */
 /* Not a card: no border, no fill, no shadow -- a titled group of rules.
@@ -933,7 +938,8 @@ body.icon-picker-open { overflow: hidden; }
 .table-section.menu-open { overflow: visible; }
 .section-menu-list .manage-rows-toggle,
 .section-menu-list .fc-add-table-btn,
-.section-menu-list .print-menu-item {
+.section-menu-list .print-menu-item,
+.section-menu-list .print-scope {
   appearance: none;
   border: 0;
   background: transparent;
@@ -949,7 +955,8 @@ body.icon-picker-open { overflow: hidden; }
 }
 .section-menu-list .manage-rows-toggle:hover,
 .section-menu-list .fc-add-table-btn:hover,
-.section-menu-list .print-menu-item:hover { background: var(--accent-soft); color: var(--accent-strong); }
+.section-menu-list .print-menu-item:hover,
+.section-menu-list .print-scope:hover { background: var(--accent-soft); color: var(--accent-strong); }
 .table-section.managing-rows .section-menu-list .manage-rows-toggle { color: var(--accent-strong); font-weight: 500; }
 .table-section.managing-rows .section-menu-btn { border-color: var(--accent); color: var(--accent-strong); }
 .section-menu-list .fc-add-table-btn[disabled] { opacity: .5; cursor: default; }
@@ -1271,7 +1278,17 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   .view-mode { display: none !important; }
 
   body.print-only .table-section:not(.print-target) { display: none !important; }
-  body.print-only .table-section.print-target { display: block !important; }
+  /* One or many targets (a table, a whole section, the whole reference): let
+     them flow down the page, each avoiding an internal break where it fits,
+     rather than forcing one table per sheet. A collapsed table still prints
+     its rows once it's a target. */
+  body.print-only .table-section.print-target {
+    display: block !important;
+    break-before: auto !important;
+    page-break-before: auto !important;
+    break-inside: avoid;
+  }
+  body.print-only .table-section.print-target .vocab { display: table !important; }
   body.print-only .table-section.print-target .controls,
   body.print-only .table-section.print-target .sort-button { display: none !important; }
 }
