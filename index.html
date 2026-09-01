@@ -46,12 +46,13 @@
         <button type="button" data-col="romaji" aria-pressed="false" title="Hide the Romaji column">Romaji</button>
         <button type="button" data-col="english" aria-pressed="false" title="Hide the English column">English</button>
       </div>
-      <button type="button" class="selftest-toggle" id="selftestToggle" aria-pressed="false" title="Blank the English column — tap a row to check yourself">Self-test</button>
+      <button type="button" class="selftest-toggle" id="selftestToggle" aria-pressed="false" title="Cover the English column — tap a row to reveal its answer">Cover answers</button>
       <button type="button" class="selftest-toggle" id="readingToggle" aria-pressed="false" title="Drill the kana words in view — type each one's romaji reading">Practice readings</button>
       <button type="button" class="starred-toggle" id="starredToggle" aria-pressed="false" title="Show just the words you've starred" hidden>Starred <span class="starred-count" aria-hidden="true">0</span></button>
       <button type="button" class="polite-toggle" id="politeToggle" aria-pressed="false" title="Switch verb tables between the plain form and the polite 〜ます form">Show polite</button>
       <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
     </div>
+    <p id="selftestHint" class="selftest-hint" role="status">Tap a row to reveal its answer; tap again to re-hide.</p>
   </div>
   <div class="expand-bar">
     <div class="section-menu print-menu">
@@ -86,7 +87,7 @@
   <ul>
     <li><strong>Furigana</strong> sits above the kanji. Hover or tap any kana to see its romaji.</li>
     <li>The <strong>Japanese / Furigana / Romaji / English</strong> buttons hide those columns (or just the readings) in any combination — cover one side and test yourself.</li>
-    <li><strong>Self-test</strong> blanks the English column row by row; tap a row to check that one answer, tap again to re-hide. It resets when you reload.</li>
+    <li><strong>Cover answers</strong> blanks the English column and shows a reminder to tap a row to reveal that one answer (tap again to re-hide). It resets when you reload.</li>
     <li><strong>Practice readings</strong> runs a quick kana → romaji drill over the kana-only words in view — type each one's reading, <kbd>Enter</kbd> to check, <kbd>Enter</kbd> again for the next. Score-free and session-only; search first to narrow it to a table's worth.</li>
     <li>The <strong>★</strong> at the end of a row stars it — a "keep an eye on this" list. Once you've starred anything, a <strong>Starred</strong> button appears in the toolbar and collects those words into one sortable, printable table. Stars sync with your account.</li>
     <li><strong>Show polite</strong>, on verb tables, swaps the dictionary form for the 〜ます form.</li>

@@ -369,12 +369,16 @@ async function main() {
     return hidden;
   })());
 
-  console.log("Self-test mode (blank the English column, tap a row to check)");
+  console.log("Cover answers mode (blank the English column, tap a row to check)");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const selftestBtn = document.getElementById("selftestToggle");
-  check("the control starts off", !!selftestBtn && selftestBtn.getAttribute("aria-pressed") === "false" && !document.body.classList.contains("selftest-mode"));
+  check("the control is labelled plainly", !!selftestBtn && selftestBtn.textContent.trim() === "Cover answers");
+  check("the control starts off", selftestBtn.getAttribute("aria-pressed") === "false" && !document.body.classList.contains("selftest-mode"));
+  const selftestHint = document.getElementById("selftestHint");
+  check("the how-to hint is hidden until the mode is on", !!selftestHint && window.getComputedStyle(selftestHint).display === "none");
   selftestBtn.click();
-  check("clicking it turns on selftest-mode and lights the button", document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "true" && selftestBtn.classList.contains("active"));
+  check("clicking it turns on the mode and lights the button", document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "true" && selftestBtn.classList.contains("active"));
+  check("...and the hint line appears", window.getComputedStyle(selftestHint).display !== "none" && /tap a row/i.test(selftestHint.textContent));
   const stRow = document.querySelector('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden) tbody tr');
   stRow.cells[2].click();
   check("tapping a row reveals it", stRow.classList.contains("revealed"));
@@ -382,7 +386,7 @@ async function main() {
   check("tapping again re-hides it", !stRow.classList.contains("revealed"));
   stRow.classList.add("revealed");
   selftestBtn.click();
-  check("leaving the mode clears it and every revealed row", !document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "false" && !document.querySelector("#vocabulary .vocab tbody tr.revealed"));
+  check("leaving the mode clears it, the hint, and every revealed row", !document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "false" && window.getComputedStyle(selftestHint).display === "none" && !document.querySelector("#vocabulary .vocab tbody tr.revealed"));
 
   console.log("Reading practice (kana -> romaji typing drill)");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();

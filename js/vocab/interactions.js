@@ -903,8 +903,9 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     }
     updatePoliteVisibility();
 
-    // Self-test: a session-only study aid (not persisted, like Expand all).
-    // body.selftest-mode blanks the English column via CSS; a tap on a row
+    // "Cover answers" (id/class keep the older "selftest" name): a session-only
+    // study aid, not persisted, like Expand all. body.selftest-mode blanks the
+    // English column via CSS and reveals the toolbar hint line; a tap on a row
     // adds `.revealed` to check that one answer, a second tap re-hides it.
     // Leaving the mode clears every revealed row.
     const selftestToggle = document.getElementById('selftestToggle');
