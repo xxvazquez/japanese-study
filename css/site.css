@@ -345,12 +345,14 @@ body {
   align-items: center;
   gap: 7px;
   max-width: 100%;
-  padding: 6px 10px 6px 11px;
+  padding: 4px 10px 4px 11px;
   background: var(--section-soft);
   border: 1px solid color-mix(in srgb, var(--section) 34%, var(--line));
   border-radius: var(--radius-control);
   color: var(--section-strong);
-  font: 400 13px/1 var(--font-ui);
+  /* line-height 1.4, not 1: the label sets overflow:hidden for its ellipsis,
+     so a tight line box would clip the descenders on g / p / y. */
+  font: 400 13px/1.4 var(--font-ui);
   cursor: pointer;
 }
 .tindex-trigger:hover { border-color: var(--section); }
