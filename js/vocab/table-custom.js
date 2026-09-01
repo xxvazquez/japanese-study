@@ -1,5 +1,5 @@
-// Per-table personalisation (icon now, room in the same record for a custom
-// name next) layered over the Git-only vocabulary data. localStorage is the
+// Per-table personalisation -- a custom icon and/or a custom display name --
+// layered over the Git-only vocabulary data. localStorage is the
 // immediate source of truth so
 // headers render without waiting on the network; when the flashcards feature
 // reports a signed-in account it also syncs through Supabase (see
@@ -40,14 +40,25 @@ window.SakuraStudy.tableCustom = (function () {
 
   function entry(id) { return load()[String(id)] || {}; }
   function iconOf(id) { return entry(id).icon || ""; }
+  function nameOf(id) { return entry(id).name || ""; }
   function getAll() { return JSON.parse(JSON.stringify(load())); }
 
-  function setIcon(id, icon) {
+  // Set (or, with a falsy value, clear) one field of a table's record, pruning
+  // the record entirely once it holds nothing.
+  function setField(id, field, value) {
     mutate(function () {
       var k = String(id);
-      if (icon) { cache[k] = cache[k] || {}; cache[k].icon = icon; }
-      else if (cache[k]) { delete cache[k].icon; if (!Object.keys(cache[k]).length) delete cache[k]; }
+      if (value) { cache[k] = cache[k] || {}; cache[k][field] = value; }
+      else if (cache[k]) { delete cache[k][field]; if (!Object.keys(cache[k]).length) delete cache[k]; }
     });
+  }
+  function setIcon(id, icon) { setField(id, "icon", icon); }
+  function setName(id, name) {
+    setField(id, "name", typeof name === "string" ? name.trim().slice(0, 40) : "");
+  }
+  // Drop every customisation for one table (the Customize page's per-row reset).
+  function clear(id) {
+    mutate(function () { delete cache[String(id)]; });
   }
 
   // Remote state arriving from Supabase on sign-in / auth change -- it wins
@@ -65,7 +76,8 @@ window.SakuraStudy.tableCustom = (function () {
   function setRemotePush(fn) { remotePush = fn; }
 
   return {
-    iconOf: iconOf, entry: entry, getAll: getAll, setIcon: setIcon,
+    iconOf: iconOf, nameOf: nameOf, entry: entry, getAll: getAll,
+    setIcon: setIcon, setName: setName, clear: clear,
     applyRemote: applyRemote, onChange: onChange, setRemotePush: setRemotePush,
     STORAGE_KEY: KEY
   };

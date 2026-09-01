@@ -136,6 +136,8 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         : (page !== 'flashcards' && link.dataset.section === sectionName);
       link.classList.toggle('active', on);
     });
+    const gear = document.getElementById('customizeToggle');
+    if (gear) gear.classList.toggle('active', page === 'customize');
   }
 
   // Reflect the current view in the URL hash (#vocabulary / #grammar /
@@ -156,6 +158,8 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     document.getElementById('vocabPage').hidden = false;
     const flashcardsPage = document.getElementById('flashcardsPage');
     if (flashcardsPage) flashcardsPage.hidden = true;
+    const customizePage = document.getElementById('customizePage');
+    if (customizePage) customizePage.hidden = true;
     // Reset the "jump to a table" dropdown to this section (closed).
     const tableIndex = document.getElementById('tableIndex');
     if (tableIndex) {
@@ -220,8 +224,29 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     document.getElementById('vocabPage').hidden = true;
     const flashcardsPage = document.getElementById('flashcardsPage');
     if (flashcardsPage) flashcardsPage.hidden = false;
+    const customizePage = document.getElementById('customizePage');
+    if (customizePage) customizePage.hidden = true;
     markActiveNav(null);
     setHash('flashcards', opts.fromRoute);
+    window.scrollTo({ top: 0 });
+  };
+
+  // The Customize page (rename / re-icon any table) -- a small utility screen
+  // reached from the masthead gear, not a fourth nav item. Same page-hiding
+  // plumbing as Flashcards; js/vocab/customize.js owns everything inside it.
+  vocab.showCustomizePage = function (opts) {
+    opts = opts || {};
+    if (vocab.clearSearchQuery) vocab.clearSearchQuery();
+    document.body.dataset.activeSection = '';
+    document.body.dataset.activePage = 'customize';
+    document.getElementById('vocabPage').hidden = true;
+    const flashcardsPage = document.getElementById('flashcardsPage');
+    if (flashcardsPage) flashcardsPage.hidden = true;
+    const customizePage = document.getElementById('customizePage');
+    if (customizePage) customizePage.hidden = false;
+    if (window.SakuraStudy.customize) window.SakuraStudy.customize.render(customizePage);
+    markActiveNav(null);
+    setHash('customize', opts.fromRoute);
     window.scrollTo({ top: 0 });
   };
 
@@ -241,6 +266,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const h = (location.hash || '').replace(/^#/, '');
     const m = h.match(/^table-(.+)$/);
     if (h === 'flashcards') { vocab.showFlashcardsPage({ fromRoute: true }); return; }
+    if (h === 'customize') { vocab.showCustomizePage({ fromRoute: true }); return; }
     if (m && document.getElementById('table-' + m[1])) { goToTable(m[1], { fromRoute: true }); return; }
     if (h === 'grammar' || h === 'travel') { showSection(h, { fromRoute: true }); return; }
     showSection('vocabulary', { fromRoute: true });
@@ -580,6 +606,13 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     if (wordmark) {
       wordmark.addEventListener('click', function (event) { event.preventDefault(); showSection('vocabulary'); });
     }
+    const customizeToggle = document.getElementById('customizeToggle');
+    if (customizeToggle) {
+      customizeToggle.addEventListener('click', function () {
+        if (document.body.dataset.activePage === 'customize') showSection('vocabulary');
+        else vocab.showCustomizePage();
+      });
+    }
 
     // Table-index dropdown -- rendered once. The trigger opens/closes the
     // menu; picking a table jumps to it and closes; outside-click / Esc
@@ -720,14 +753,22 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (kr) kr.classList.toggle('kr-on');
     });
 
-    // Table icons: click a section's icon -> pick -> saved immediately, and
-    // the chosen icon swaps in wherever that table shows (header + directory).
-    function refreshTableIcon(id) {
+    // Table personalisation: a chosen icon or custom name (from the section
+    // icon picker, or the Customize page) swaps in wherever that table shows --
+    // its header and the "jump to a table" directory -- without a re-render.
+    function shippedTitle(id) {
+      const t = (window.SakuraStudy.data.vocabularyTables || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      return t ? t.title : null;
+    }
+    function refreshTable(id) {
       const tc = window.SakuraStudy.tableCustom, glyph = window.SakuraStudy.vocab.tableIconGlyph(id);
       const has = !!tc.iconOf(id);
-      document.querySelectorAll('.section-icon-btn[data-icon-for="' + id + '"] .section-icon').forEach(function (slot) {
-        slot.classList.toggle('section-icon-empty', !has);
-        slot.innerHTML = glyph;
+      const title = window.SakuraStudy.vocab.tableTitle(id, shippedTitle(id));
+      document.querySelectorAll('#vocabulary .table-section[data-table="' + id + '"]').forEach(function (section) {
+        const slot = section.querySelector('.section-icon');
+        if (slot) { slot.classList.toggle('section-icon-empty', !has); slot.innerHTML = glyph; }
+        const text = section.querySelector('.section-title-text');
+        if (text && title) text.textContent = title;
       });
       document.querySelectorAll('#tindexMenu a[data-target="' + id + '"]').forEach(function (a) {
         let el = a.querySelector('.tindex-icon');
@@ -735,10 +776,13 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
           if (!el) { el = document.createElement('span'); el.className = 'tindex-icon'; a.querySelector('.tindex-count').after(el); }
           el.innerHTML = glyph;
         } else if (el) { el.remove(); }
+        const tname = a.querySelector('.tindex-tname');
+        if (tname && title) tname.textContent = title;
       });
+      if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
     }
-    function refreshAllTableIcons() {
-      document.querySelectorAll('.section-icon-btn[data-icon-for]').forEach(function (b) { refreshTableIcon(b.dataset.iconFor); });
+    function refreshAllTables() {
+      document.querySelectorAll('#vocabulary .table-section[data-table]').forEach(function (s) { refreshTable(s.dataset.table); });
     }
     document.addEventListener('click', function (event) {
       const btn = event.target.closest && event.target.closest('.section-icon-btn');
@@ -750,7 +794,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     });
     // Redraw on any change -- a local pick, or icons arriving from another
     // device on sign-in (Supabase sync).
-    if (window.SakuraStudy.tableCustom) window.SakuraStudy.tableCustom.onChange(refreshAllTableIcons);
+    if (window.SakuraStudy.tableCustom) window.SakuraStudy.tableCustom.onChange(refreshAllTables);
 
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
     // section or table can be linked to and survives a reload.

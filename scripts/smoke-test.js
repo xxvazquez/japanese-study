@@ -421,6 +421,31 @@ async function main() {
   check("afterprint clears print-only", !document.body.classList.contains("print-only"));
   check("afterprint clears print-target", !document.querySelector('.table-section[data-table="0"]').classList.contains("print-target"));
 
+  console.log("Customize page (rename / re-icon any table)");
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  const gear = document.getElementById("customizeToggle");
+  check("the masthead has a Customize gear", !!gear);
+  check("the Customize page starts hidden", document.getElementById("customizePage").hidden === true);
+  gear.click();
+  check("clicking the gear reveals the Customize page", document.getElementById("customizePage").hidden === false);
+  check("...and hides the vocabulary view", document.getElementById("vocabPage").hidden === true);
+  check("no nav link is active on the Customize page", !document.querySelector('#siteNav .site-nav-link.active'));
+  const czRows = document.querySelectorAll("#customizePage .cz-row");
+  check("it lists every one of the 23 tables", czRows.length === 23);
+  check("each row has a name field and a reset control", [...czRows].every(r => r.querySelector(".cz-row-name") && r.querySelector(".cz-row-reset")));
+  check("each row's icon button reuses the shared picker hook", [...czRows].every(r => r.querySelector('.section-icon-btn[data-icon-for]')));
+  const czInput = document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-name');
+  check("a table with no custom name shows its original as the placeholder", czInput.placeholder === "Drinks" && czInput.value === "");
+  czInput.value = "My Drinks";
+  czInput.dispatchEvent(new window.Event("change", { bubbles: true }));
+  check("committing a custom name updates the vocabulary header in place", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "My Drinks");
+  check("...and the table directory", document.querySelector('#tindexMenu a[data-target="1"] .tindex-tname').textContent === "My Drinks");
+  check("...and the reset control becomes enabled", document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').disabled === false);
+  document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').click();
+  check("reset restores the shipped name everywhere", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "Drinks" && window.SakuraStudy.tableCustom.nameOf("1") === "");
+  gear.click();
+  check("clicking the gear again returns to the vocabulary view", document.getElementById("vocabPage").hidden === false && document.getElementById("customizePage").hidden === true);
+
   console.log("Flashcards: page navigation");
   check("no console errors from vendor/flashcards scripts loading", true); // JSDOM.fromFile above would have rejected on a thrown top-level error
   const flashcardsLink = document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]');

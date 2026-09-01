@@ -177,10 +177,18 @@ window.SakuraStudy.flashcards.views = (function () {
           // "Add table". A row list is only worth expanding when actually
           // picking through individual words, so that's opt-in per table.
           var expanded = !!manageExpandedTables[tableId];
+          // Show the same custom name and icon the reader set on the vocabulary
+          // page / Customize page, so a table reads identically in both places.
+          var vocabNs = window.SakuraStudy.vocab;
+          var displayTitle = vocabNs.tableTitle ? vocabNs.tableTitle(tableId, table.title) : table.title;
+          var tc = window.SakuraStudy.tableCustom;
+          var iconHtml = (tc && tc.iconOf(tableId) && vocabNs.tableIconGlyph)
+            ? '<span class="fc-manage-table-icon">' + vocabNs.tableIconGlyph(tableId) + "</span>" : "";
           html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
             '<div class="fc-manage-table-head">' +
-            '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(table.title) + '">' + CHEVRON_ICON + "</button>" +
-            '<span class="fc-manage-table-label"><span class="fc-manage-table-title">' + esc(table.title) + '</span>' +
+            '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(displayTitle) + '">' + CHEVRON_ICON + "</button>" +
+            iconHtml +
+            '<span class="fc-manage-table-label"><span class="fc-manage-table-title">' + esc(displayTitle) + '</span>' +
             '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span></span>";
           // Table-level actions per filter. "all" shows only the actions that
           // actually apply -- "Add table" until it's fully added, "Pause table"

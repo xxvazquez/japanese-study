@@ -42,6 +42,7 @@ const VERSIONED = [
   'js/vocab/icon-picker.js',
   'js/vocab/render.js',
   'js/vocab/interactions.js',
+  'js/vocab/customize.js',
   'vendor/ts-fsrs.js',
   'vendor/supabase.js',
   'js/flashcards/store.js',

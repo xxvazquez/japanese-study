@@ -177,15 +177,16 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     }
     if (controls.print) ctrlParts.push('<button type="button" class="print-one print-icon-btn" aria-label="Print this table" title="Print this table">' + PRINT_ICON + '</button>');
     var defaultSort = o.defaultSort !== false;
+    var title = tableTitle(o.id, o.title);
     return '<section class="table-section ' + (o.sectionClass || '') + (o.collapsed ? ' collapsed' : '') +
       '" data-table="' + o.id + '" data-category="' + esc(o.category || '') + '"' +
       (o.section ? ' data-section="' + esc(o.section) + '"' : '') +
       ' id="table-' + o.id + '">' +
       '<div class="section-head">' +
-      '<button type="button" class="section-icon-btn" data-icon-for="' + o.id + '" title="Choose an icon" aria-label="Choose an icon for ' + esc(o.title) + '">' + tableIconSlot(o.id) + '</button>' +
+      '<button type="button" class="section-icon-btn" data-icon-for="' + o.id + '" title="Choose an icon" aria-label="Choose an icon for ' + esc(title) + '">' + tableIconSlot(o.id) + '</button>' +
       '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="' + (o.collapsed ? 'false' : 'true') + '" aria-controls="vocab-' + o.id + '">' +
       '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span>' +
-      '<span class="section-title-text">' + esc(o.title) + '</span>' +
+      '<span class="section-title-text">' + esc(title) + '</span>' +
       '</button></h2>' +
       '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
       '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
@@ -227,6 +228,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     var tc = window.SakuraStudy.tableCustom;
     return tc ? tc.iconOf(id) : '';
   }
+  // The name to show for a table: the reader's custom name (Customize page) if
+  // they've set one, otherwise the name shipped in the dataset. Used everywhere
+  // a table is labelled -- section header, table directory, Flashcards Manage.
+  function tableTitle(id, fallback) {
+    var tc = window.SakuraStudy.tableCustom;
+    var custom = tc ? tc.nameOf(id) : '';
+    return custom || fallback || '';
+  }
+  vocab.tableTitle = tableTitle;
   // Just the inner glyph -- shared by the section header button and the
   // table-directory rows so a chosen icon shows everywhere the table does.
   function tableIconGlyph(id) {
@@ -292,7 +302,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
           return '<a href="#table-' + t.id + '" data-target="' + t.id + '" role="menuitem">' +
             '<span class="tindex-count" title="' + t.rows.length + ' entries">' + t.rows.length + '</span>' +
             (tableIconValue(t.id) ? '<span class="tindex-icon">' + tableIconGlyph(t.id) + '</span>' : '') +
-            '<span class="tindex-tname">' + esc(t.title) + '</span></a>';
+            '<span class="tindex-tname">' + esc(tableTitle(t.id, t.title)) + '</span></a>';
         }).join('');
         // Multi-category sections (Vocabulary) get a quiet, non-interactive
         // category label above each group; a single-category section is a
