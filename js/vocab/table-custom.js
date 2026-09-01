@@ -1,5 +1,6 @@
-// Per-table personalisation -- a custom icon and/or a custom display name --
-// layered over the Git-only vocabulary data. localStorage is the
+// Per-table personalisation -- a custom icon, a custom display name, and a
+// custom running order for tables and categories -- layered over the Git-only
+// vocabulary data. localStorage is the
 // immediate source of truth so
 // headers render without waiting on the network; when the flashcards feature
 // reports a signed-in account it also syncs through Supabase (see
@@ -57,8 +58,54 @@ window.SakuraStudy.tableCustom = (function () {
     setField(id, "name", typeof name === "string" ? name.trim().slice(0, 40) : "");
   }
   // Drop every customisation for one table (the Customize page's per-row reset).
+  // Order lives under a separate key, so a table keeps its custom position.
   function clear(id) {
     mutate(function () { delete cache[String(id)]; });
+  }
+
+  // ---- Running order -------------------------------------------------------
+  // One reserved record, "__order", holds the custom sequence the reader set
+  // on the Customize page:
+  //   { tables: { [categoryName]: [tableId, ...] },
+  //     categories: { [sectionName]: [categoryName, ...] } }
+  // A list only names the items the reader has moved; anything unlisted keeps
+  // its default (A-Z) position after them. Table ids are never "__order", so
+  // this can't collide with a real table's record.
+  var ORDER_KEY = "__order";
+  function orderRecord() {
+    var o = load()[ORDER_KEY];
+    return o && typeof o === "object" ? o : {};
+  }
+  function tableOrder(categoryName) {
+    var t = orderRecord().tables || {};
+    return Array.isArray(t[categoryName]) ? t[categoryName].map(String) : null;
+  }
+  function categoryOrder(sectionName) {
+    var c = orderRecord().categories || {};
+    return Array.isArray(c[sectionName]) ? c[sectionName].slice() : null;
+  }
+  function setTableOrder(categoryName, ids) {
+    mutate(function () {
+      var rec = cache[ORDER_KEY] && typeof cache[ORDER_KEY] === "object" ? cache[ORDER_KEY] : {};
+      rec.tables = rec.tables || {};
+      rec.tables[categoryName] = (ids || []).map(String);
+      cache[ORDER_KEY] = rec;
+    });
+  }
+  function setCategoryOrder(sectionName, names) {
+    mutate(function () {
+      var rec = cache[ORDER_KEY] && typeof cache[ORDER_KEY] === "object" ? cache[ORDER_KEY] : {};
+      rec.categories = rec.categories || {};
+      rec.categories[sectionName] = (names || []).slice();
+      cache[ORDER_KEY] = rec;
+    });
+  }
+  function hasCustomOrder() {
+    var rec = orderRecord();
+    return !!((rec.tables && Object.keys(rec.tables).length) || (rec.categories && Object.keys(rec.categories).length));
+  }
+  function resetOrder() {
+    mutate(function () { delete cache[ORDER_KEY]; });
   }
 
   // Reconcile with the account's copy on sign-in. Per table: the account wins
@@ -90,6 +137,9 @@ window.SakuraStudy.tableCustom = (function () {
   return {
     iconOf: iconOf, nameOf: nameOf, entry: entry, getAll: getAll,
     setIcon: setIcon, setName: setName, clear: clear,
+    tableOrder: tableOrder, categoryOrder: categoryOrder,
+    setTableOrder: setTableOrder, setCategoryOrder: setCategoryOrder,
+    hasCustomOrder: hasCustomOrder, resetOrder: resetOrder,
     applyRemote: applyRemote, onChange: onChange, setRemotePush: setRemotePush,
     STORAGE_KEY: KEY
   };

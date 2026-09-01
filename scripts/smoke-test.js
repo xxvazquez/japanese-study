@@ -451,6 +451,49 @@ async function main() {
   check("...and the reset control becomes enabled", document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').disabled === false);
   document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').click();
   check("reset restores the shipped name everywhere", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "Drinks" && window.SakuraStudy.tableCustom.nameOf("1") === "");
+
+  console.log("Customize page: reordering tables and categories");
+  const foodGroup = () => [...document.querySelectorAll("#customizePage .cz-group")].find(g => g.querySelector(".cz-group-name").textContent === "Food & Ingredients");
+  check("rows carry move-up / move-down controls", foodGroup().querySelectorAll(".cz-row .cz-move-up").length > 0 && foodGroup().querySelectorAll(".cz-row .cz-move-down").length > 0);
+  check("the first row's move-up and the last row's move-down are disabled", (() => {
+    const rows = [...foodGroup().querySelectorAll(".cz-row")];
+    return rows[0].querySelector(".cz-move-up").disabled && rows[rows.length - 1].querySelector(".cz-move-down").disabled;
+  })());
+  const foodIdsBefore = [...foodGroup().querySelectorAll(".cz-row")].map(r => r.dataset.tableId);
+  foodGroup().querySelector(".cz-row .cz-move-down").click();
+  const foodIdsAfter = [...foodGroup().querySelectorAll(".cz-row")].map(r => r.dataset.tableId);
+  check("moving a table down swaps it past the next one", foodIdsAfter[0] === foodIdsBefore[1] && foodIdsAfter[1] === foodIdsBefore[0]);
+  check("the vocabulary section order follows in place", (() => {
+    const secs = [...document.querySelectorAll('#vocabulary .table-section[data-category="Food & Ingredients"]')].map(s => s.dataset.table);
+    return secs[0] === foodIdsBefore[1] && secs[1] === foodIdsBefore[0];
+  })());
+  check("the table directory follows too", (() => {
+    const grp = [...document.querySelectorAll("#tindexMenu .tindex-cat-group")].find(g => g.querySelector(".tindex-cat-name") && g.querySelector(".tindex-cat-name").textContent === "Food & Ingredients");
+    const links = [...grp.querySelectorAll("a[data-target]")].map(a => a.dataset.target);
+    return links[0] === foodIdsBefore[1] && links[1] === foodIdsBefore[0];
+  })());
+  const vocabCats = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.SakuraStudy.vocab.sectionOf(c) === "vocabulary");
+  const firstVocabGroup = [...document.querySelectorAll("#customizePage .cz-group")].find(g => g.querySelector(".cz-group-name").textContent === vocabCats[0]);
+  check("a multi-category section's headers carry move controls", !!firstVocabGroup.querySelector(".cz-group-title .cz-move-down"));
+  check("Grammar (single category in its section) has no category move controls", (() => {
+    const g = [...document.querySelectorAll("#customizePage .cz-group")].find(x => x.querySelector(".cz-group-name").textContent === "Grammar");
+    return !g.querySelector(".cz-group-title .cz-move-btn");
+  })());
+  firstVocabGroup.querySelector(".cz-group-title .cz-move-down").click();
+  const vocabCatsAfter = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.SakuraStudy.vocab.sectionOf(c) === "vocabulary");
+  check("moving a category down reorders the section", vocabCatsAfter[0] === vocabCats[1] && vocabCatsAfter[1] === vocabCats[0]);
+  check("...and the vocabulary category headings follow", (() => {
+    const heads = [...document.querySelectorAll('#vocabulary .cat-heading[data-section="vocabulary"]')].map(h => h.dataset.category);
+    return heads[0] === vocabCats[1] && heads[1] === vocabCats[0];
+  })());
+  check("a Reset order control appears once something is reordered", !!document.querySelector("#customizePage .cz-reset-order"));
+  document.querySelector("#customizePage .cz-reset-order").click();
+  check("Reset order clears the custom sequence and hides the control", !window.SakuraStudy.tableCustom.hasCustomOrder() && !document.querySelector("#customizePage .cz-reset-order"));
+  check("...and the section order returns to A-Z", (() => {
+    const secs = [...document.querySelectorAll('#vocabulary .table-section[data-category="Food & Ingredients"]')].map(s => s.querySelector(".section-title-text").textContent);
+    return secs[0] === "Cooking Ingredients" && secs[1] === "Drinks";
+  })());
+
   gear.click();
   check("clicking the gear again returns to the vocabulary view", document.getElementById("vocabPage").hidden === false && document.getElementById("customizePage").hidden === true);
 

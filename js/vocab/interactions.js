@@ -150,9 +150,20 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     try { history.pushState(null, '', '#' + h); } catch (e) { location.hash = h; }
   }
 
+  // Re-sequence #vocabulary + the table directory to the current custom order
+  // (Customize page), then keep search's order snapshot in step. Cheap and
+  // idempotent -- safe to call on every section entry and order change.
+  function applyTableOrder() {
+    if (vocab.reflowLayout) vocab.reflowLayout();
+    if (vocab.resyncLayoutSnapshot) vocab.resyncLayoutSnapshot();
+    if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
+  }
+  vocab.applyTableOrder = applyTableOrder;
+
   function showSection(name, opts) {
     opts = opts || {};
     if (vocab.clearSearchQuery) vocab.clearSearchQuery();
+    applyTableOrder();
     document.body.dataset.activeSection = name;
     document.body.dataset.activePage = name;
     document.getElementById('vocabPage').hidden = false;
@@ -290,6 +301,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // restored verbatim when a search is cleared, since ranking reorders the
     // sections while a query is active.
     const vocabOrder = [...vocabHost.children];
+    // vocab.reflowLayout() (a Customize-page reorder) physically moves these
+    // same nodes, so re-take the snapshots afterwards or "clear search" would
+    // snap the page back to the pre-reorder sequence.
+    vocab.resyncLayoutSnapshot = function () {
+      sections.length = 0; headings.length = 0; vocabOrder.length = 0;
+      vocabHost.querySelectorAll('.table-section').forEach(function (s) { sections.push(s); });
+      vocabHost.querySelectorAll('.cat-heading').forEach(function (h) { headings.push(h); });
+      [...vocabHost.children].forEach(function (c) { vocabOrder.push(c); });
+    };
 
     // Column visibility: each toolbar button hides its own thing (the
     // Japanese / Romaji / English columns, or just the furigana readings),
@@ -782,6 +802,10 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
     }
     function refreshAllTables() {
+      // A custom-order change (or order synced from another device) needs the
+      // headings/sections physically re-sequenced and the directory rebuilt...
+      applyTableOrder();
+      // ...then the section headers get their icon/name refreshed in place.
       document.querySelectorAll('#vocabulary .table-section[data-table]').forEach(function (s) { refreshTable(s.dataset.table); });
     }
     document.addEventListener('click', function (event) {

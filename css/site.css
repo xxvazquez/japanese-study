@@ -797,18 +797,33 @@ body.icon-picker-open { overflow: hidden; }
 .cz-tips strong { color: var(--ink); font-weight: 600; }
 .cz-group { margin-top: 26px; }
 .cz-group-title {
-  display: flex; align-items: baseline; gap: 8px;
+  display: flex; align-items: center; gap: 8px;
   margin: 0 0 8px; padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
   font-size: var(--fs-small); font-weight: 600;
   text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
 }
 .cz-group-count { font-weight: 400; color: var(--faint); }
+.cz-reset-order {
+  appearance: none; border: 0; background: transparent; padding: 0;
+  font: inherit; color: var(--accent-dark); cursor: pointer; text-transform: none;
+  letter-spacing: 0;
+}
+.cz-reset-order:hover { text-decoration: underline; }
 .cz-list { list-style: none; margin: 0; padding: 0; }
 .cz-row {
   display: flex; align-items: center; gap: 10px;
   padding: 9px 0; border-bottom: 1px solid var(--line);
 }
+.cz-move { flex: 0 0 auto; display: flex; flex-direction: column; }
+.cz-move-btn {
+  appearance: none; border: 0; background: transparent; padding: 0;
+  width: 20px; height: 15px; display: flex; align-items: center; justify-content: center;
+  color: var(--faint); cursor: pointer;
+}
+.cz-move-btn:hover:not([disabled]) { color: var(--ink); }
+.cz-move-btn[disabled] { opacity: .28; cursor: default; }
+.cz-group-title .cz-move { flex-direction: row; margin-right: 2px; }
 .cz-row-icon { width: 20px; height: 20px; }
 .cz-row-field { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .cz-row-original { font-size: var(--fs-micro); color: var(--faint); }

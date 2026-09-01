@@ -1,6 +1,7 @@
 // The Customize page (SakuraStudy.customize) -- one place to give any
-// vocabulary table a custom name and icon. Reached from the gear in the
-// masthead (#customize); routing and show/hide live in js/vocab/interactions.js.
+// vocabulary table a custom name, icon, and running order. Reached from the
+// gear in the masthead (#customize); routing and show/hide live in
+// js/vocab/interactions.js.
 //
 // It writes through SakuraStudy.tableCustom, the same per-table personalisation
 // store the inline section-header icon picker uses, so a change here shows up on
@@ -11,41 +12,61 @@ window.SakuraStudy.customize = (function () {
   "use strict";
 
   var esc = window.SakuraStudy.shared.escapeHtml;
-  var built = false;
   var hostEl = null;
+  var wired = false;
+  var pendingFocus = null;
 
   function tc() { return window.SakuraStudy.tableCustom; }
+  function V() { return window.SakuraStudy.vocab; }
   function tables() { return window.SakuraStudy.data.vocabularyTables || []; }
 
-  // Category (A-Z) > table (A-Z by its shipped name) -- the same grouping the
-  // vocabulary page and the table directory use.
+  var ARROW_UP = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 13.5V4.5M4.5 9 9 4.5 13.5 9"/></svg>';
+  var ARROW_DOWN = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.5v9M4.5 9 9 13.5 13.5 9"/></svg>';
+
+  // Section (fixed: Vocabulary / Grammar / Travel) > category (custom order,
+  // then A-Z) > table (custom order, then A-Z) -- the exact sequence the
+  // vocabulary page and the table directory now lay out in.
   function grouped() {
-    var byCat = {};
-    tables().forEach(function (t) {
-      var cat = t.category || "Tables";
-      (byCat[cat] = byCat[cat] || []).push(t);
+    var bySec = { vocabulary: [], grammar: [], travel: [] };
+    tables().forEach(function (t) { bySec[V().sectionOf(t.category)].push(t); });
+    var out = [];
+    ["vocabulary", "grammar", "travel"].forEach(function (sec) {
+      var byCat = {};
+      bySec[sec].forEach(function (t) {
+        var c = t.category || "Tables";
+        (byCat[c] = byCat[c] || []).push(t);
+      });
+      var names = V().orderedCategoryNames(Object.keys(byCat), sec);
+      names.forEach(function (name, i) {
+        out.push({
+          section: sec, name: name,
+          canMoveUp: names.length > 1 && i > 0,
+          canMoveDown: names.length > 1 && i < names.length - 1,
+          tables: V().orderTables(name, byCat[name])
+        });
+      });
     });
-    return Object.keys(byCat).sort(function (a, b) { return a.localeCompare(b); }).map(function (cat) {
-      return {
-        name: cat,
-        tables: byCat[cat].slice().sort(function (a, b) { return a.title.localeCompare(b.title); })
-      };
-    });
+    return out;
   }
 
-  function iconSlot(id) {
-    return window.SakuraStudy.vocab.tableIconGlyph
-      ? window.SakuraStudy.vocab.tableIconGlyph(id) : "";
-  }
+  function iconSlot(id) { return V().tableIconGlyph ? V().tableIconGlyph(id) : ""; }
   function isCustomised(id) {
     var e = tc() ? tc().entry(id) : {};
     return !!(e.icon || e.name);
   }
+  function moveBtns(kind, key, canUp, canDown) {
+    return '<span class="cz-move">' +
+      '<button type="button" class="cz-move-btn cz-move-up" data-move="' + kind + '" data-key="' + esc(String(key)) +
+        '" data-dir="-1"' + (canUp ? "" : " disabled") + ' aria-label="Move up" title="Move up">' + ARROW_UP + "</button>" +
+      '<button type="button" class="cz-move-btn cz-move-down" data-move="' + kind + '" data-key="' + esc(String(key)) +
+        '" data-dir="1"' + (canDown ? "" : " disabled") + ' aria-label="Move down" title="Move down">' + ARROW_DOWN + "</button>" +
+      "</span>";
+  }
 
-  function rowHtml(t) {
+  function rowHtml(t, canUp, canDown) {
     var name = tc() ? tc().nameOf(t.id) : "";
-    var customised = isCustomised(t.id);
     return '<li class="cz-row" data-table-id="' + t.id + '">' +
+      moveBtns("table", t.id, canUp, canDown) +
       '<button type="button" class="section-icon-btn cz-row-icon" data-icon-for="' + t.id +
         '" title="Choose an icon" aria-label="Choose an icon for ' + esc(name || t.title) + '">' +
         '<span class="section-icon' + (tc() && tc().iconOf(t.id) ? "" : " section-icon-empty") + '">' + iconSlot(t.id) + "</span></button>" +
@@ -56,84 +77,125 @@ window.SakuraStudy.customize = (function () {
         '<span class="cz-row-original"' + (name ? "" : " hidden") + ">Originally " + esc(t.title) + "</span>" +
       "</label>" +
       '<button type="button" class="cz-row-reset" data-reset-for="' + t.id + '"' +
-        (customised ? "" : " disabled") + ' title="Restore this table’s original name and icon">Reset</button>' +
+        (isCustomised(t.id) ? "" : " disabled") + ' title="Restore this table’s original name and icon">Reset</button>' +
       "</li>";
   }
 
   function html() {
     var groups = grouped().map(function (g) {
-      return '<section class="cz-group">' +
-        '<h3 class="cz-group-title">' + esc(g.name) +
-          '<span class="cz-group-count">' + g.tables.length + "</span></h3>" +
-        '<ul class="cz-list">' + g.tables.map(rowHtml).join("") + "</ul></section>";
+      var rows = g.tables.map(function (t, i) {
+        return rowHtml(t, i > 0, i < g.tables.length - 1);
+      }).join("");
+      var head = '<h3 class="cz-group-title">' +
+        (g.canMoveUp || g.canMoveDown ? moveBtns("category", g.name, g.canMoveUp, g.canMoveDown) : "") +
+        '<span class="cz-group-name">' + esc(g.name) + "</span>" +
+        '<span class="cz-group-count">' + g.tables.length + "</span></h3>";
+      return '<section class="cz-group">' + head + '<ul class="cz-list">' + rows + "</ul></section>";
     }).join("");
+    var canResetOrder = tc() && tc().hasCustomOrder();
     return '<div class="cz-intro">' +
       "<h2>Customize tables</h2>" +
-      '<p>Give any vocabulary table your own name and icon. Changes save as you make them and show up everywhere the table appears — its section header, the “Jump to a table” list, and Flashcards › Manage.</p>' +
+      '<p>Give any vocabulary table your own name and icon, and put the tables and categories in the order you want. Changes save as you make them and show up everywhere the table appears — its section header, the “Jump to a table” list, and Flashcards › Manage.</p>' +
       "<ul class=\"cz-tips\">" +
-        "<li><strong>Icon</strong> — click the icon on a row to open the picker. It has ~165 line icons in five groups, plus an “Upload image…” option for your own.</li>" +
+        "<li><strong>Icon</strong> — click the icon on a row to open the picker (~165 line icons, plus “Upload image…” for your own).</li>" +
         "<li><strong>Name</strong> — type in the field. Leave it empty to keep the original (shown in grey).</li>" +
-        "<li><strong>Reset</strong> puts a single table back to how it shipped.</li>" +
-        "<li>Signed in on the Flashcards page? Your names and icons sync to your other devices. As a guest they’re saved in this browser only.</li>" +
+        "<li><strong>Order</strong> — the ▲▼ buttons move a table within its category, or a category within its section." +
+          (canResetOrder ? ' <button type="button" class="cz-reset-order" data-reset-order>Reset order</button>' : "") + "</li>" +
+        "<li><strong>Reset</strong> puts a single table’s name and icon back to how it shipped.</li>" +
+        "<li>Signed in on the Flashcards page? Your changes sync to your other devices. As a guest they’re saved in this browser only.</li>" +
       "</ul></div>" + groups;
   }
 
-  function refresh() {
-    if (!built || !hostEl) return;
-    hostEl.querySelectorAll(".cz-row").forEach(function (row) {
-      var id = row.dataset.tableId;
-      var slot = row.querySelector(".section-icon");
-      if (slot) {
-        slot.classList.toggle("section-icon-empty", !(tc() && tc().iconOf(id)));
-        slot.innerHTML = iconSlot(id);
-      }
-      var name = tc() ? tc().nameOf(id) : "";
-      var input = row.querySelector(".cz-row-name");
-      if (input && document.activeElement !== input) input.value = name;
-      var original = row.querySelector(".cz-row-original");
-      if (original) original.hidden = !name;
-      var reset = row.querySelector(".cz-row-reset");
-      if (reset) reset.disabled = !isCustomised(id);
-    });
+  function desiredRowIds() {
+    var ids = [];
+    grouped().forEach(function (g) { g.tables.forEach(function (t) { ids.push(String(t.id)); }); });
+    return ids;
   }
+
+  // ---- moves --------------------------------------------------------------
+  function categoriesInSection(sec) {
+    var names = {};
+    tables().forEach(function (t) {
+      if (V().sectionOf(t.category) === sec) names[t.category || "Tables"] = 1;
+    });
+    return V().orderedCategoryNames(Object.keys(names), sec);
+  }
+  function moveOne(list, item, dir) {
+    var i = list.indexOf(item), j = i + dir;
+    if (i < 0 || j < 0 || j >= list.length) return null;
+    list.splice(i, 1);
+    list.splice(j, 0, item);
+    return list;
+  }
+  function moveTable(id, dir) {
+    var t = tables().filter(function (x) { return String(x.id) === String(id); })[0];
+    if (!t) return;
+    var cat = t.category || "Tables";
+    var sameCat = tables().filter(function (x) { return (x.category || "Tables") === cat; });
+    var ids = V().orderTables(cat, sameCat).map(function (x) { return String(x.id); });
+    if (moveOne(ids, String(id), dir)) {
+      pendingFocus = '.cz-row[data-table-id="' + id + '"] .cz-move-btn:not([disabled])';
+      tc().setTableOrder(cat, ids);
+    }
+  }
+  function moveCategory(name, dir) {
+    var sec = V().sectionOf(name);
+    var names = categoriesInSection(sec);
+    if (moveOne(names, name, dir)) {
+      pendingFocus = '.cz-group-title .cz-move-btn[data-key="' + cssAttr(name) + '"]:not([disabled])';
+      tc().setCategoryOrder(sec, names);
+    }
+  }
+  function cssAttr(v) { return String(v).replace(/["\\]/g, "\\$&"); }
 
   function commitName(input) {
     var row = input.closest(".cz-row");
-    if (!row) return;
-    tc().setName(row.dataset.tableId, input.value);
+    if (row) tc().setName(row.dataset.tableId, input.value);
+  }
+
+  // ---- lifecycle --------------------------------------------------------
+  function wire(host) {
+    // A committed name edit (blur / Enter) -- "change", not "input", so this
+    // doesn't write to storage (and push to the account) on every keystroke.
+    host.addEventListener("change", function (e) {
+      if (e.target.classList.contains("cz-row-name")) commitName(e.target);
+    });
+    host.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && e.target.classList.contains("cz-row-name")) {
+        e.preventDefault();
+        commitName(e.target);
+        e.target.blur();
+      }
+    });
+    host.addEventListener("click", function (e) {
+      var move = e.target.closest && e.target.closest(".cz-move-btn");
+      if (move && !move.disabled) {
+        var dir = Number(move.dataset.dir);
+        if (move.dataset.move === "table") moveTable(move.dataset.key, dir);
+        else moveCategory(move.dataset.key, dir);
+        return;
+      }
+      var reset = e.target.closest && e.target.closest(".cz-row-reset");
+      if (reset && tc()) { tc().clear(reset.dataset.resetFor); return; }
+      if (e.target.closest && e.target.closest(".cz-reset-order") && tc()) tc().resetOrder();
+      // .section-icon-btn is handled by the delegated picker hook in
+      // interactions.js.
+    });
+    if (tc()) tc().onChange(function () { if (hostEl) render(hostEl); });
   }
 
   function render(host) {
     host = host || hostEl;
     if (!host) return;
     hostEl = host;
-    if (!built) {
-      host.innerHTML = html();
-      built = true;
-      // A committed edit (blur / Enter). Using "change" rather than "input"
-      // keeps this from writing to storage -- and pushing to the account -- on
-      // every keystroke.
-      host.addEventListener("change", function (e) {
-        if (e.target && e.target.classList.contains("cz-row-name")) commitName(e.target);
-      });
-      host.addEventListener("keydown", function (e) {
-        if (e.key === "Enter" && e.target && e.target.classList.contains("cz-row-name")) {
-          e.preventDefault();
-          commitName(e.target);
-          e.target.blur();
-        }
-      });
-      host.addEventListener("click", function (e) {
-        var reset = e.target.closest && e.target.closest(".cz-row-reset");
-        if (reset && tc()) tc().clear(reset.dataset.resetFor);
-        // The icon buttons reuse .section-icon-btn, so the delegated picker
-        // handler in interactions.js opens the picker for them already.
-      });
-      if (tc()) tc().onChange(refresh);
-    } else {
-      refresh();
+    host.innerHTML = html();
+    if (!wired) { wire(host); wired = true; }
+    if (pendingFocus) {
+      var el = host.querySelector(pendingFocus);
+      if (el) el.focus();
+      pendingFocus = null;
     }
   }
 
-  return { render: render, refresh: refresh };
+  return { render: render, refresh: function () { if (hostEl) render(hostEl); }, desiredRowIds: desiredRowIds };
 })();

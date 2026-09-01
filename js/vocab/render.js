@@ -260,19 +260,51 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // name/count category header as the vocabulary sections, instead of a plain
   // unstyled heading of its own.
   vocab.categoryHeaderHtml = categoryHeaderHtml;
-  // Group tables by category (alphabetical categories, alphabetical tables
-  // within each) -- used both to lay out #vocabulary and by the Flashcards
-  // Manage tab.
-  function groupByCategory(tables) {
+  // Reorder `items` to honour a reader's custom sequence: anything named in
+  // `customList` comes first, in that order; everything else keeps its prior
+  // (A-Z) order after them. Array.sort is stable, so the untouched tail holds.
+  function applyCustomOrder(items, customList, keyFn) {
+    if (!customList || !customList.length) return items;
+    var pos = {};
+    customList.forEach(function (k, i) { pos[k] = i; });
+    return items.slice().sort(function (a, b) {
+      var pa = keyFn(a) in pos ? pos[keyFn(a)] : Infinity;
+      var pb = keyFn(b) in pos ? pos[keyFn(b)] : Infinity;
+      return pa - pb;
+    });
+  }
+  // Category names for a section, A-Z then shuffled by the reader's custom
+  // category order (Customize page). `section` may be omitted (no custom order).
+  function orderedCategoryNames(names, section) {
+    var sorted = names.slice().sort(function (a, b) { return a.localeCompare(b); });
+    var tc = window.SakuraStudy.tableCustom;
+    var custom = tc && section ? tc.categoryOrder(section) : null;
+    return applyCustomOrder(sorted, custom, function (x) { return x; });
+  }
+  // Tables within a category, A-Z by (display) title then shuffled by the
+  // reader's custom table order for that category.
+  function orderTables(categoryName, tables) {
+    var sorted = tables.slice().sort(function (a, b) {
+      return tableTitle(a.id, a.title).localeCompare(tableTitle(b.id, b.title));
+    });
+    var tc = window.SakuraStudy.tableCustom;
+    var custom = tc ? tc.tableOrder(categoryName) : null;
+    return applyCustomOrder(sorted, custom, function (t) { return String(t.id); });
+  }
+  vocab.orderedCategoryNames = orderedCategoryNames;
+  vocab.orderTables = orderTables;
+  // Group tables by category, honouring the reader's custom category/table
+  // order for `section` (falls back to A-Z). Used to lay out #vocabulary, the
+  // table directory, and (via the exposed helpers) the Flashcards Manage tab.
+  function groupByCategory(tables, section) {
     var byName = {};
     tables.forEach(function (t) {
       var name = t.category || 'Tables';
       if (!byName[name]) byName[name] = [];
       byName[name].push(t);
     });
-    var names = Object.keys(byName).sort(function (a, b) { return a.localeCompare(b); });
-    return names.map(function (name) {
-      return { name: name, tables: byName[name].slice().sort(function (a, b) { return a.title.localeCompare(b.title); }) };
+    return orderedCategoryNames(Object.keys(byName), section).map(function (name) {
+      return { name: name, tables: orderTables(name, byName[name]) };
     });
   }
   // The four-item top navigation: the three vocabulary sections plus
@@ -294,7 +326,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     var bySection = { vocabulary: [], grammar: [], travel: [] };
     tables.forEach(function (t) { bySection[sectionOf(t.category)].push(t); });
     var panels = SECTION_ORDER.map(function (sec) {
-      var groups = groupByCategory(bySection[sec]);
+      var groups = groupByCategory(bySection[sec], sec);
       var multiCat = groups.length > 1;
       var wide = bySection[sec].length > 5;
       var body = groups.map(function (g) {
@@ -336,7 +368,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     tables.forEach(function (t) { bySection[sectionOf(t.category)].push(t); });
     var html = '';
     SECTION_ORDER.forEach(function (sec) {
-      groupByCategory(bySection[sec]).forEach(function (g) {
+      groupByCategory(bySection[sec], sec).forEach(function (g) {
         if (sec === 'vocabulary') {
           html += '<h2 class="cat-heading page-hidden" data-section="' + sec + '" data-category="' + esc(g.name) + '">' +
             esc(g.name) + '<span class="cat-heading-count" title="' + g.tables.length + ' tables" aria-label="' + g.tables.length + ' tables">' + g.tables.length + '</span></h2>';
@@ -359,4 +391,33 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   document.querySelectorAll('.vocab tbody').forEach(function (tbody) {
     [...tbody.querySelectorAll('tr')].forEach(function (row, i) { row.dataset.originalIndex = i; });
   });
+
+  // Re-sequence the already-rendered #vocabulary headings/sections and rebuild
+  // the table directory to match the current custom order (Customize page).
+  // No re-render -- existing section nodes keep their expand/collapse state,
+  // hidden rows, and sort. Called by interactions.js after an order change and
+  // on section navigation.
+  function reflowLayout() {
+    if (!host || !vocabularyTables) return;
+    var bySection = { vocabulary: [], grammar: [], travel: [] };
+    vocabularyTables.forEach(function (t) { bySection[sectionOf(t.category)].push(t); });
+    var ordered = [];
+    SECTION_ORDER.forEach(function (sec) {
+      groupByCategory(bySection[sec], sec).forEach(function (g) {
+        if (sec === 'vocabulary') {
+          var h = host.querySelector('.cat-heading[data-section="vocabulary"][data-category="' + cssAttr(g.name) + '"]');
+          if (h) ordered.push(h);
+        }
+        g.tables.forEach(function (t) {
+          var s = host.querySelector('.table-section[data-table="' + t.id + '"]');
+          if (s) ordered.push(s);
+        });
+      });
+    });
+    ordered.forEach(function (el) { host.appendChild(el); });
+    if (indexHost) indexHost.innerHTML = renderTableIndex(vocabularyTables);
+  }
+  // Escape a category name for use inside a [data-category="..."] selector.
+  function cssAttr(v) { return String(v).replace(/["\\]/g, '\\$&'); }
+  vocab.reflowLayout = reflowLayout;
 })();
