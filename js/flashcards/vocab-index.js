@@ -24,10 +24,19 @@ window.SakuraStudy.flashcards.vocabIndex = (function () {
       .replace(/[ēê]/g, "e").replace(/[ōô]/g, "o");
   }
 
+  // Long vowels can't be typed on a normal keyboard, so answer-checking is
+  // length-insensitive: after the macrons are folded (ō -> o), "ou"/"oo" ->
+  // "o", any doubled vowel -> single. Applied to BOTH the stored answer and
+  // the typed one, so "koohii" / "kouhii" / "kōhī" all compare equal.
+  function foldLongVowels(v) {
+    return v.replace(/ou/g, "o").replace(/([aiueo])\1+/g, "$1");
+  }
+
   function normalizeAnswer(s, romaji) {
     var v = String(s == null ? "" : s).trim().replace(/\s+/g, " ").toLowerCase();
     if (romaji) {
       v = foldMacrons(v);
+      v = foldLongVowels(v);
       v = v.replace(/^~/, "");
     }
     return v;

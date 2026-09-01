@@ -182,6 +182,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       (o.section ? ' data-section="' + esc(o.section) + '"' : '') +
       ' id="table-' + o.id + '">' +
       '<div class="section-head">' +
+      '<button type="button" class="section-icon-btn" data-icon-for="' + o.id + '" title="Choose an icon" aria-label="Choose an icon for ' + esc(o.title) + '">' + tableIconSlot(o.id) + '</button>' +
       '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="' + (o.collapsed ? 'false' : 'true') + '" aria-controls="vocab-' + o.id + '">' +
       '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span>' +
       '<span class="section-title-text">' + esc(o.title) + '</span>' +
@@ -219,6 +220,25 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   };
 
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
+  // Empty icon slot -- a quiet dashed square, "click to choose". Filled slots
+  // render the chosen icon (js/vocab/icons.js) or an uploaded image instead.
+  var EMPTY_ICON = '<svg class="si" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 3.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>';
+  function tableIconValue(id) {
+    var tc = window.SakuraStudy.tableCustom;
+    return tc ? tc.iconOf(id) : '';
+  }
+  // Just the inner glyph -- shared by the section header button and the
+  // table-directory rows so a chosen icon shows everywhere the table does.
+  function tableIconGlyph(id) {
+    var v = tableIconValue(id);
+    var svg = v && window.SakuraStudy.icons ? window.SakuraStudy.icons.render(v) : '';
+    return svg || EMPTY_ICON;
+  }
+  function tableIconSlot(id) {
+    var v = tableIconValue(id);
+    return '<span class="section-icon' + (v ? '' : ' section-icon-empty') + '">' + tableIconGlyph(id) + '</span>';
+  }
+  vocab.tableIconGlyph = tableIconGlyph;
   // Category header -- just the name and its table count. No decorative
   // icon: the categories read fine as plain labels, and an icon per row
   // would be noise on what is meant to be a quiet reference index.
@@ -271,6 +291,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         var links = g.tables.map(function (t) {
           return '<a href="#table-' + t.id + '" data-target="' + t.id + '" role="menuitem">' +
             '<span class="tindex-count" title="' + t.rows.length + ' entries">' + t.rows.length + '</span>' +
+            (tableIconValue(t.id) ? '<span class="tindex-icon">' + tableIconGlyph(t.id) + '</span>' : '') +
             '<span class="tindex-tname">' + esc(t.title) + '</span></a>';
         }).join('');
         // Multi-category sections (Vocabulary) get a quiet, non-interactive

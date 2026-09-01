@@ -720,6 +720,33 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       if (kr) kr.classList.toggle('kr-on');
     });
 
+    // Table icons: click a section's icon -> pick -> saved immediately, and
+    // the chosen icon swaps in wherever that table shows (header + directory).
+    function refreshTableIcon(id) {
+      const tc = window.SakuraStudy.tableCustom, glyph = window.SakuraStudy.vocab.tableIconGlyph(id);
+      const has = !!tc.iconOf(id);
+      document.querySelectorAll('.section-icon-btn[data-icon-for="' + id + '"] .section-icon').forEach(function (slot) {
+        slot.classList.toggle('section-icon-empty', !has);
+        slot.innerHTML = glyph;
+      });
+      document.querySelectorAll('#tindexMenu a[data-target="' + id + '"]').forEach(function (a) {
+        let el = a.querySelector('.tindex-icon');
+        if (has) {
+          if (!el) { el = document.createElement('span'); el.className = 'tindex-icon'; a.querySelector('.tindex-count').after(el); }
+          el.innerHTML = glyph;
+        } else if (el) { el.remove(); }
+      });
+    }
+    document.addEventListener('click', function (event) {
+      const btn = event.target.closest && event.target.closest('.section-icon-btn');
+      if (!btn || !window.SakuraStudy.iconPicker) return;
+      const id = btn.dataset.iconFor;
+      window.SakuraStudy.iconPicker.open(window.SakuraStudy.tableCustom.iconOf(id), function (value) {
+        window.SakuraStudy.tableCustom.setIcon(id, value);
+        refreshTableIcon(id);
+      }, btn);
+    });
+
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
     // section or table can be linked to and survives a reload.
     routeFromHash();

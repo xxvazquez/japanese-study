@@ -680,6 +680,105 @@ body {
   .section-head { align-items: flex-start; }
   .section-title-text { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; }
   .section-toggle-icon { margin-top: 3px; }
+  .section-icon-btn { margin-top: 1px; }
+}
+
+/* --- Table icons ------------------------------------------------- */
+/* A single icon element -- a built-in line SVG or an uploaded raster. */
+.si { display: block; width: 100%; height: 100%; object-fit: contain; }
+.section-icon-btn {
+  flex: 0 0 auto;
+  appearance: none; border: 0; background: transparent; padding: 0;
+  width: 18px; height: 18px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color .12s ease, opacity .12s ease;
+}
+.section-icon { display: block; width: 100%; height: 100%; }
+.section-icon-btn:hover { color: var(--section-strong); }
+/* The empty slot is a quiet dashed square -- present but barely there until
+   the header (or the slot) is hovered/focused. */
+.section-icon-btn .section-icon-empty { color: var(--line-strong); }
+.section-head:hover .section-icon-btn .section-icon-empty,
+.section-icon-btn:focus-visible .section-icon-empty { color: var(--faint); }
+.table-section.collapsed .section-icon-btn { width: 16px; height: 16px; }
+
+.tindex-icon { flex: 0 0 auto; width: 15px; height: 15px; color: var(--muted); }
+
+/* --- Icon picker ---------------------------------------------------- */
+.icon-picker-root[hidden] { display: none; }
+.icon-picker-scrim {
+  position: fixed; inset: 0; z-index: 90;
+  background: color-mix(in srgb, var(--ink) 32%, transparent);
+}
+.icon-picker {
+  position: fixed; z-index: 91;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(440px, calc(100vw - 32px));
+  max-height: min(560px, calc(100vh - 64px));
+  display: flex; flex-direction: column;
+  background: var(--paper);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--shadow-menu);
+  overflow: hidden;
+}
+.icon-picker-head { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
+.icon-picker-search {
+  flex: 1 1 auto; min-width: 0;
+  appearance: none; border: 1px solid var(--line-strong); border-radius: 6px;
+  background: var(--paper); color: var(--ink);
+  font: 400 var(--fs-small)/1 var(--font-ui); padding: 7px 10px;
+}
+.icon-picker-close {
+  flex: 0 0 auto; appearance: none; border: 0; background: transparent;
+  color: var(--faint); cursor: pointer; padding: 4px; border-radius: 6px;
+}
+.icon-picker-close:hover { color: var(--ink); }
+.icon-picker-body { flex: 1 1 auto; overflow: auto; padding: 8px 12px 12px; }
+.icon-picker-group[hidden] { display: none; }
+.icon-picker-group-label {
+  margin: 12px 0 6px; color: var(--muted);
+  font: 600 var(--fs-micro)/1 var(--font-ui);
+  text-transform: uppercase; letter-spacing: .05em;
+}
+.icon-picker-group:first-child .icon-picker-group-label { margin-top: 2px; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(38px, 1fr)); gap: 4px; }
+.icon-cell {
+  appearance: none; border: 1px solid transparent; background: transparent;
+  border-radius: 7px; padding: 8px;
+  color: var(--ink); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  aspect-ratio: 1;
+}
+.icon-cell[hidden] { display: none; }
+.icon-cell .si { width: 20px; height: 20px; }
+.icon-cell:hover { background: var(--surface); border-color: var(--line-strong); }
+.icon-cell.selected { border-color: var(--section); background: var(--section-soft); color: var(--section-strong); }
+.icon-picker-foot {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 10px 12px; border-top: 1px solid var(--line);
+}
+.icon-picker-upload {
+  font: 500 var(--fs-small)/1 var(--font-ui); color: var(--accent-dark);
+  cursor: pointer;
+}
+.icon-picker-upload:hover { text-decoration: underline; }
+.icon-picker-remove {
+  appearance: none; border: 0; background: transparent;
+  font: 400 var(--fs-small)/1 var(--font-ui); color: var(--faint); cursor: pointer;
+}
+.icon-picker-remove:hover { color: var(--wrong); }
+.icon-picker-remove[hidden] { display: none; }
+body.icon-picker-open { overflow: hidden; }
+@media (max-width: 560px) {
+  .icon-picker {
+    left: 0; right: 0; bottom: 0; top: auto; transform: none;
+    width: auto; max-width: none;
+    max-height: 80vh;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    border-bottom: 0;
+  }
 }
 
 .controls {

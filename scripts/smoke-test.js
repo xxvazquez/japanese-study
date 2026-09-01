@@ -95,6 +95,19 @@ async function main() {
   check("the romaji stays out of the cell's textContent", !/[a-z]/i.test(kataCell.textContent) && !/[a-z]/i.test(hiraCell.textContent));
   check("furigana readings are left plain (not decorated)", !document.querySelector('#vocabulary td.jp ruby .kr'));
 
+  console.log("Table icons");
+  const ic = window.SakuraStudy.icons;
+  check("the icon set is exposed with grouped names", ic && ic.groups.length > 0 && ic.names.length > 20);
+  check("render() emits a stroke-only inline SVG for a known name", /^<svg[^>]*stroke="currentColor"/.test(ic.render("coffee")) && ic.render("coffee").indexOf("fill=\"currentColor\"") === -1);
+  check("render() emits an <img> for an uploaded data URL", /^<img /.test(ic.render("data:image/png;base64,AAAA")));
+  check("render() degrades to nothing for an unknown value", ic.render("definitely-not-an-icon") === "");
+  check("the icon picker module is available", !!(window.SakuraStudy.iconPicker && window.SakuraStudy.iconPicker.open));
+  check("every table header has an icon button", [...document.querySelectorAll("#vocabulary .table-section")].every(s => !!s.querySelector(".section-head > .section-icon-btn[data-icon-for]")));
+  check("an untouched table shows the empty (dashed) slot, not a chosen icon", (() => {
+    const slot = document.querySelector(".section-icon-btn .section-icon");
+    return slot.classList.contains("section-icon-empty") && slot.querySelector('svg[stroke-dasharray]');
+  })());
+
   console.log("Default landing page is Vocabulary");
   check("vocabulary page is visible on load", document.getElementById("vocabPage").hidden === false);
   check("flashcards page starts hidden", document.getElementById("flashcardsPage").hidden === true);
@@ -537,6 +550,11 @@ async function main() {
   check("test hooks are exposed", !!fc);
   check("normalizeAnswer trims/collapses/lowercases", fc.normalizeAnswer("  Hot   Water  ", false) === "hot water");
   check("normalizeAnswer folds macrons for romaji", fc.normalizeAnswer("Kōhī", true) === "kohi");
+  check("romaji answer-checking is long-vowel insensitive (can't type macrons)",
+    fc.normalizeAnswer("koohii", true) === fc.normalizeAnswer("Kōhī", true)
+    && fc.normalizeAnswer("kouhii", true) === fc.normalizeAnswer("Kōhī", true)
+    && fc.normalizeAnswer("satou", true) === fc.normalizeAnswer("satō", true)
+    && fc.normalizeAnswer("gakkou", true) === fc.normalizeAnswer("gakkō", true));
   check("normalizeAnswer strips a leading ~ for romaji (counters)", fc.normalizeAnswer("~ko", true) === "ko");
   const vocabIndex = fc.getVocabIndex();
   const beerEntry = Object.values(vocabIndex).find(e => e.englishDisplay === "beer");
