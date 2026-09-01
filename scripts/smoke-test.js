@@ -588,6 +588,10 @@ async function main() {
     firstManageTable.querySelector('[data-table-action="add-table"]') &&
     !firstManageTable.querySelector('[data-table-action="remove-table"]') &&
     !firstManageTable.querySelector('.fc-manage-table-actions .fc-btn[disabled]'));
+  check("each table action carries both a text label and an icon (CSS drops the label to icon-only when narrow)", (() => {
+    const b = firstManageTable.querySelector('.fc-manage-table-actions .fc-btn-tableaction');
+    return b && b.querySelector('.fc-btn-tx') && b.querySelector('.fc-btn-ic svg') && b.getAttribute('aria-label') === 'Add table';
+  })());
   check("a multi-table category offers 'Add all'", !!document.querySelector('#fcPanelManage [data-cat-action="add-cat"]'));
   firstManageTable.querySelector(".fc-manage-table-toggle").click(); // sync render -- re-query fresh, this reference is now stale
   check("clicking the toggle expands just that table", !document.querySelector("#fcPanelManage .fc-manage-table").classList.contains("fc-manage-table-collapsed"));

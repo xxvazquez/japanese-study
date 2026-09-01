@@ -265,12 +265,14 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // (A-Z) order after them. Array.sort is stable, so the untouched tail holds.
   function applyCustomOrder(items, customList, keyFn) {
     if (!customList || !customList.length) return items;
-    var pos = {};
+    var pos = Object.create(null);
     customList.forEach(function (k, i) { pos[k] = i; });
+    var at = function (x) { var k = keyFn(x); return k in pos ? pos[k] : Infinity; };
     return items.slice().sort(function (a, b) {
-      var pa = keyFn(a) in pos ? pos[keyFn(a)] : Infinity;
-      var pb = keyFn(b) in pos ? pos[keyFn(b)] : Infinity;
-      return pa - pb;
+      var pa = at(a), pb = at(b);
+      // Two unlisted items (both Infinity) compare equal -- never `Infinity -
+      // Infinity` (NaN), which is undefined behaviour in a sort comparator.
+      return pa === pb ? 0 : pa - pb;
     });
   }
   // Category names for a section, A-Z then shuffled by the reader's custom

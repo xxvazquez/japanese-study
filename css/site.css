@@ -844,7 +844,7 @@ body.icon-picker-open { overflow: hidden; }
 }
 .cz-row-reset:hover:not([disabled]) { color: var(--ink); border-color: var(--muted); }
 .cz-row-reset[disabled] { opacity: .4; cursor: default; }
-.fc-manage-table-icon { flex: 0 0 auto; width: 16px; height: 16px; color: var(--muted); }
+.fc-manage-table-icon { flex: 0 0 auto; align-self: center; width: 15px; height: 15px; color: var(--muted); }
 
 /* --- Help page (#help) ------------------------------------------- */
 .page-help { max-width: 680px; }
@@ -1418,31 +1418,7 @@ body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !imp
 .fc-btn[disabled] { opacity: .5; cursor: not-allowed; }
 .fc-btn-primary { background: var(--section); border-color: var(--section); color: var(--paper); }
 .fc-btn-primary:hover { background: var(--section-strong); border-color: var(--section-strong); color: var(--paper); }
-.fc-btn-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
-.fc-btn-danger:hover { background: var(--danger-soft); color: var(--danger-dark); border-color: var(--danger-dark); }
 .fc-note { color: var(--muted); font-size: var(--fs-small); }
-/* Instructions: a short list, not a dense paragraph. Terms are set apart by
-   color (accent), never bold -- the page already carries enough weight. */
-.fc-manage-legend {
-  margin: 10px 0 16px;
-  padding: 0;
-  max-width: 66ch;
-  list-style: none;
-  color: var(--muted);
-  font-size: var(--fs-small);
-  line-height: 1.5;
-}
-.fc-manage-legend li { position: relative; padding-left: 14px; margin: 4px 0; }
-.fc-manage-legend li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: .55em;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--line-strong);
-}
 .fc-legend-term { color: var(--accent-dark); }
 
 /* Manage: reuses the overview list-row pattern. Filter pills match the
@@ -1521,19 +1497,16 @@ body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !imp
 }
 .fc-manage-table-progress { flex: 0 0 auto; color: var(--muted); font-size: var(--fs-micro); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .fc-manage-table-actions { grid-area: actions; display: flex; gap: 6px; white-space: nowrap; }
+.fc-btn-tableaction { gap: 6px; }
+.fc-btn-ic { display: none; }
+.fc-btn-ic svg { display: block; }
+/* The actions live in their own grid column and never wrap. When the row is
+   narrow AND a table shows two of them, drop the labels so both fit as icon
+   buttons on the name's line rather than stacking beneath it. */
 @media (max-width: 560px) {
-  .fc-manage-table-head {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "toggle label"
-      "actions actions";
-    row-gap: 10px;
-  }
-  .fc-manage-table-actions { justify-content: stretch; }
-  .fc-manage-table-actions .fc-btn { flex: 1 1 auto; }
-  /* A single action doesn't need to stretch edge-to-edge -- keep it compact. */
-  .fc-manage-table-actions:has(> .fc-btn:only-child) { justify-content: flex-start; }
-  .fc-manage-table-actions:has(> .fc-btn:only-child) .fc-btn { flex: 0 0 auto; }
+  .fc-manage-table-actions:has(.fc-btn:nth-of-type(2)) .fc-btn-tableaction { padding: 5px 8px; }
+  .fc-manage-table-actions:has(.fc-btn:nth-of-type(2)) .fc-btn-tx { display: none; }
+  .fc-manage-table-actions:has(.fc-btn:nth-of-type(2)) .fc-btn-ic { display: block; }
 }
 /* Category-wide "Add all", sitting just under the category summary. */
 .fc-manage-cat-actions { margin: 4px 0 14px; }

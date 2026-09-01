@@ -37,6 +37,35 @@ window.SakuraStudy.flashcards.views = (function () {
   // the vocab modules since it's a tiny, self-contained bit of markup.
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
 
+  // The per-table Manage actions. Each button carries both a text label and an
+  // icon; CSS drops the label to icon-only on a narrow screen when a table
+  // shows two of them, so they never wrap onto their own row.
+  var SVG_OPEN = '<svg viewBox="0 0 18 18" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+  var TABLE_ACTIONS = {
+    "add-table": {
+      label: "Add table",
+      title: "Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)",
+      icon: SVG_OPEN + '<path d="M9 4v10M4 9h10"/></svg>'
+    },
+    "remove-table": {
+      label: "Pause table",
+      title: "Pauses every word in this table — keeps all progress, add the table back anytime to resume",
+      icon: SVG_OPEN + '<path d="M6 4v10M12 4v10"/></svg>'
+    },
+    "restore-table": {
+      label: "Restore table",
+      title: "Resumes reviewing every paused word in this table with its previous progress intact",
+      icon: SVG_OPEN + '<path d="M3 9a6 6 0 1 1 1.8 4.3M3 13V9h4"/></svg>'
+    }
+  };
+  function tableActionBtn(action, tableId) {
+    var a = TABLE_ACTIONS[action];
+    return '<button type="button" class="fc-btn fc-btn-tableaction" data-table-action="' + action +
+      '" data-table-id="' + tableId + '" title="' + esc(a.title) + '" aria-label="' + esc(a.label) + '">' +
+      '<span class="fc-btn-ic" aria-hidden="true">' + a.icon + '</span>' +
+      '<span class="fc-btn-tx">' + a.label + '</span></button>';
+  }
+
   function renderHelp(panel) {
     panel.innerHTML =
       '<div class="fc-settings-section"><h3>Adding &amp; pausing vocabulary</h3>' +
@@ -187,8 +216,7 @@ window.SakuraStudy.flashcards.views = (function () {
           html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
             '<div class="fc-manage-table-head">' +
             '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(displayTitle) + '">' + CHEVRON_ICON + "</button>" +
-            iconHtml +
-            '<span class="fc-manage-table-label"><span class="fc-manage-table-title">' + esc(displayTitle) + '</span>' +
+            '<span class="fc-manage-table-label">' + iconHtml + '<span class="fc-manage-table-title">' + esc(displayTitle) + '</span>' +
             '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span></span>";
           // Table-level actions per filter. "all" shows only the actions that
           // actually apply -- "Add table" until it's fully added, "Pause table"
@@ -197,21 +225,13 @@ window.SakuraStudy.flashcards.views = (function () {
           // point of that view); "Archived" gets Restore table.
           if (manageFilter === "all") {
             var actions = "";
-            if (addedCount < table.ids.length) {
-              actions += '<button type="button" class="fc-btn" data-table-action="add-table" data-table-id="' + tableId + '" title="Adds every word in this table to your flashcards (skips any row you’ve hidden on the vocabulary page)">Add table</button>';
-            }
-            if (addedCount) {
-              actions += '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Keeps every word’s progress — add the table back anytime to pick up where you left off">Pause table</button>';
-            }
+            if (addedCount < table.ids.length) actions += tableActionBtn("add-table", tableId);
+            if (addedCount) actions += tableActionBtn("remove-table", tableId);
             html += '<div class="fc-manage-table-actions">' + actions + "</div>";
           } else if (manageFilter === "mine" && addedCount) {
-            html += '<div class="fc-manage-table-actions">' +
-              '<button type="button" class="fc-btn" data-table-action="remove-table" data-table-id="' + tableId + '" title="Pauses every word in this table — keeps all progress, add the table back anytime to resume">Pause table</button>' +
-              "</div>";
+            html += '<div class="fc-manage-table-actions">' + tableActionBtn("remove-table", tableId) + "</div>";
           } else if (manageFilter === "archived") {
-            html += '<div class="fc-manage-table-actions">' +
-              '<button type="button" class="fc-btn" data-table-action="restore-table" data-table-id="' + tableId + '" title="Resumes reviewing every paused word in this table with its previous progress intact">Restore table</button>' +
-              "</div>";
+            html += '<div class="fc-manage-table-actions">' + tableActionBtn("restore-table", tableId) + "</div>";
           }
           html += "</div><div class=\"fc-manage-list\">";
           table.ids.forEach(function (id) {

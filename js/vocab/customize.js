@@ -106,12 +106,6 @@ window.SakuraStudy.customize = (function () {
       "</ul></div>" + groups;
   }
 
-  function desiredRowIds() {
-    var ids = [];
-    grouped().forEach(function (g) { g.tables.forEach(function (t) { ids.push(String(t.id)); }); });
-    return ids;
-  }
-
   // ---- moves --------------------------------------------------------------
   function categoriesInSection(sec) {
     var names = {};
@@ -197,5 +191,5 @@ window.SakuraStudy.customize = (function () {
     }
   }
 
-  return { render: render, refresh: function () { if (hostEl) render(hostEl); }, desiredRowIds: desiredRowIds };
+  return { render: render };
 })();

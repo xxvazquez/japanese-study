@@ -140,7 +140,6 @@ window.SakuraStudy.tableCustom = (function () {
     tableOrder: tableOrder, categoryOrder: categoryOrder,
     setTableOrder: setTableOrder, setCategoryOrder: setCategoryOrder,
     hasCustomOrder: hasCustomOrder, resetOrder: resetOrder,
-    applyRemote: applyRemote, onChange: onChange, setRemotePush: setRemotePush,
-    STORAGE_KEY: KEY
+    applyRemote: applyRemote, onChange: onChange, setRemotePush: setRemotePush
   };
 })();
