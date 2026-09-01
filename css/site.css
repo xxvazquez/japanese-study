@@ -1259,7 +1259,7 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
     --line: #cfcfcf; --line-strong: #9a9a9a;
     --section: #555; --section-strong: #444;
   }
-  .masthead, .site-nav, .vocab-toolbar, .cat-heading, .table-index, .expand-bar, #readingPracticeView { display: none !important; }
+  .masthead, .site-nav, .vocab-toolbar, .cat-heading, .table-index, .expand-bar { display: none !important; }
   .app-frame { max-width: none; margin: 0; border: 0; border-radius: 0; }
   .page { padding: 0; }
   .page-title { display: none; }
@@ -1398,56 +1398,6 @@ body.starred-mode #tableIndex,
 body.starred-mode .expand-bar { display: none !important; }
 .starred-empty { color: var(--muted); font-size: var(--fs-nav-sub); padding: 4px 0 0; }
 
-/* Reading practice: same swap as Starred -- the "Practice readings" toggle
-   hides the list and shows a one-word-at-a-time kana->romaji drill in
-   #readingPracticeView. Session-only, echoes the Flashcards review card. */
-body.reading-practice-mode #vocabulary,
-body.reading-practice-mode #tableIndex,
-body.reading-practice-mode #starredView,
-body.reading-practice-mode .expand-bar { display: none !important; }
-.rp-card {
-  max-width: 460px; margin: 0 auto; background: var(--paper);
-  border: 1px solid var(--line); border-radius: 8px; padding: 22px 20px;
-}
-.rp-meta { display: flex; justify-content: space-between; align-items: baseline; color: var(--faint); font-size: var(--fs-micro); margin-bottom: 18px; }
-.rp-exit { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: var(--faint); cursor: pointer; }
-.rp-exit:hover { color: var(--wrong); text-decoration: underline; }
-.rp-prompt-label { color: var(--muted); font-size: var(--fs-micro); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 8px; }
-.rp-word { font-size: 24px; line-height: 1.3; margin: 0 0 18px; color: var(--ink); }
-.rp-form { display: flex; gap: 8px; margin-bottom: 12px; }
-.rp-form input {
-  flex: 1 1 auto; min-width: 0; height: 36px; border: 1px solid var(--line); border-radius: 7px;
-  padding: 0 11px; font-size: var(--fs-body); color: var(--ink); background: var(--surface);
-}
-.rp-form input:focus-visible { border-color: var(--section); outline: none; }
-.rp-btn {
-  appearance: none; border: 1px solid var(--line-strong); background: var(--paper); border-radius: 6px;
-  padding: 0 14px; min-height: 36px; font: 400 var(--fs-small)/1 var(--font-ui); color: var(--ink); cursor: pointer;
-}
-.rp-btn:hover { border-color: var(--muted); }
-.rp-btn-primary { background: color-mix(in srgb, var(--section) 18%, var(--paper)); border-color: var(--section); color: var(--section-strong); font-weight: 500; }
-.rp-result {
-  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
-  margin-bottom: 10px; padding-left: 10px; border-left: 3px solid transparent; font-size: var(--fs-small);
-}
-.rp-result.rp-correct { border-left-color: var(--accent); }
-.rp-result.rp-incorrect { border-left-color: var(--rose); }
-.rp-result-label { font-weight: 600; }
-.rp-result.rp-correct .rp-result-label { color: var(--accent-dark); }
-.rp-result.rp-incorrect .rp-result-label { color: var(--rose-dark); }
-.rp-your { color: var(--muted); }
-.rp-reveal {
-  display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; padding: 10px 12px;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
-}
-.rp-reveal-label { flex: 0 0 auto; font-size: var(--fs-micro); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); }
-.rp-expected { color: var(--ink); font-weight: 600; font-size: var(--fs-nav-sub); }
-.rp-message { color: var(--muted); font-size: var(--fs-nav-sub); line-height: 1.55; }
-.rp-message p { margin: 0 0 8px; }
-.rp-message-hint { color: var(--faint); font-size: var(--fs-small); }
-.rp-summary { color: var(--ink); font-size: var(--fs-nav-sub); margin: 0 0 16px; }
-.rp-summary strong { font-weight: 600; }
-.rp-actions { display: flex; gap: 8px; margin-top: 14px; }
 /* Manage mode overlays two action icons on the English column; on narrow
    screens give that column extra room (borrowed from romaji) so its text
    never gets crushed into a sliver behind the icons. */
@@ -1742,6 +1692,21 @@ body.reading-practice-mode .expand-bar { display: none !important; }
 .fc-session-done-stats { margin: 0 0 4px; font-size: var(--fs-nav-sub); color: var(--muted); }
 .fc-session-done-streak { margin: 0 0 8px; font-size: var(--fs-small); color: var(--faint); }
 .fc-session-done .fc-cta-row { justify-content: center; margin-top: 18px; }
+
+/* Kana tab. The review card reuses every .fc-review-* / .fc-rating-* rule
+   above; only the prompt glyph and the group picker need their own styling. */
+.fc-prompt-kana { font-size: 44px; line-height: 1.15; margin-bottom: 20px; }
+.fc-prompt-kana-word { font-size: 30px; }
+.fc-kana-groups { display: flex; flex-wrap: wrap; gap: 14px; margin: 16px 0 4px; }
+.fc-kana-fieldset {
+  border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 12px;
+  display: flex; flex-direction: column; gap: 8px; min-width: 180px;
+}
+.fc-kana-fieldset legend { padding: 0 4px; font: 600 var(--fs-small)/1 var(--font-ui); color: var(--muted); }
+.fc-kana-group { display: flex; align-items: center; gap: 8px; font-size: var(--fs-nav-sub); color: var(--ink); cursor: pointer; }
+.fc-kana-group input { accent-color: var(--section); }
+.fc-kana-group-n { color: var(--faint); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
+.fc-kana-summary { margin: 12px 0 16px; font-size: var(--fs-small); color: var(--muted); }
 
 /* Dashboard before anything is added -- a single next step, not a wall of
    zeroes. */

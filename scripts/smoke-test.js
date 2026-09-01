@@ -388,37 +388,6 @@ async function main() {
   selftestBtn.click();
   check("leaving the mode clears it, the hint, and every revealed row", !document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "false" && window.getComputedStyle(selftestHint).display === "none" && !document.querySelector("#vocabulary .vocab tbody tr.revealed"));
 
-  console.log("Reading practice (kana -> romaji typing drill)");
-  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
-  const rp = window.SakuraStudy.readingPractice;
-  check("the module is exposed", !!rp && typeof rp.collectPool === "function");
-  check("isAllKana distinguishes kana headwords from kanji ones", rp.isAllKana("こうちゃ") && !rp.isAllKana("お茶") && !rp.isAllKana(""));
-  const pool = rp.collectPool();
-  check("collectPool gathers the kana words in view (and nothing with kanji)", pool.length > 20 && pool.every(p => rp.isAllKana(p.jp)));
-  check("every pool item carries accepted answers and a display reading", pool.every(p => p.answers.length > 0 && !!p.reading));
-  const coffee = pool.find(p => p.jp === "コーヒー");
-  check("long-vowel spellings all pass the check (koohii / kouhii / kōhī for コーヒー)",
-    !!coffee && rp.checkReading(coffee.answers, "koohii") && rp.checkReading(coffee.answers, "kouhii") && rp.checkReading(coffee.answers, "kōhī"));
-  check("a clearly wrong reading is rejected", !!coffee && !rp.checkReading(coffee.answers, "ramen"));
-
-  const readingBtn = document.getElementById("readingToggle");
-  check("the toolbar offers a 'Practice readings' toggle", !!readingBtn && readingBtn.getAttribute("aria-pressed") === "false");
-  readingBtn.click();
-  check("starting it swaps the list for the drill panel", document.body.classList.contains("reading-practice-mode")
-    && !document.getElementById("readingPracticeView").hidden && readingBtn.classList.contains("active")
-    && window.getComputedStyle(document.getElementById("vocabulary")).display === "none");
-  const drillWord = document.querySelector("#readingPracticeView .rp-word");
-  check("the drill shows one kana word to read", !!drillWord && rp.isAllKana(drillWord.textContent));
-  document.getElementById("rpInput").value = window.SakuraStudy.kanaRomaji.toRomaji(drillWord.textContent);
-  document.getElementById("rpForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
-  check("checking the derived reading marks it correct", !!document.querySelector("#readingPracticeView .rp-result.rp-correct"));
-  document.getElementById("rpForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })); // advance
-  check("advancing moves on (next card or the wrap-up)",
-    !!document.querySelector("#readingPracticeView .rp-word") || /You read/.test(document.querySelector("#readingPracticeView .rp-summary").textContent));
-  document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
-  check("navigating away drops the drill", !document.body.classList.contains("reading-practice-mode") && document.getElementById("readingPracticeView").hidden);
-  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
-
   console.log("Star / favourite rows");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const tc = window.SakuraStudy.tableCustom;
@@ -756,6 +725,53 @@ async function main() {
   check("the wrap-up counts the card just reviewed", /1 reviewed/.test(doneText) && /correct/.test(doneText));
   document.getElementById("fcBackToDashboard").click();
   check("Back to Dashboard leaves the session for the dashboard", !document.querySelector(".fc-session-done") && !!document.querySelector(".fc-stats-grid"));
+
+  console.log("Flashcards: Kana tab");
+  const kd = window.SakuraStudy.flashcards.kanaData;
+  check("the kana tables expose the named groups per script with counts", (() => {
+    const g = kd.groups();
+    return g.length === 10 && g.filter(x => x.script === "hiragana").length === 5
+      && g.find(x => x.id === "hira-gojuon").count === 46
+      && g.find(x => x.id === "hira-yoon").count === 33
+      && g.find(x => x.id === "kata-dakuten").count === 20
+      && g.find(x => x.id === "hira-handakuten").count === 5
+      && g.find(x => x.label === "Yōon (combinations)");
+  })());
+  const kh = window.SakuraStudy.flashcards.kana.__testHooks;
+  const shiItem = kd.itemsFor(["hira-gojuon"]).find(it => it.kana === "し");
+  check("a kana item carries its romaji derived from the reading layer", !!shiItem && shiItem.romaji === "shi");
+  check("checking accepts the Hepburn spelling and a common alternate, rejects a wrong one",
+    kh.checkKana(shiItem, "shi") && kh.checkKana(shiItem, " SI ") && !kh.checkKana(shiItem, "chi"));
+  const sokuon = kd.itemsFor(["hira-sokuon"]);
+  check("sokuon is drilled as short doubled-consonant words", sokuon.length > 3 && sokuon.every(it => it.word && it.kana.length > 1 && /[a-z]/.test(it.romaji)));
+
+  document.querySelector('.fc-tab[data-tab="kana"]').click();
+  check("the Kana tab opens on a group picker with a Study button", !!document.getElementById("fcKanaStart") && document.querySelectorAll("#fcPanelKana .fc-kana-group-cb").length === 10);
+  check("hiragana gojūon is on by default", document.querySelector('#fcPanelKana .fc-kana-group-cb[data-group="hira-gojuon"]').checked);
+  // Each toggle re-renders the panel, so re-query the checkbox every time.
+  document.querySelector('#fcPanelKana .fc-kana-group-cb[data-group="hira-gojuon"]').click();
+  check("clearing every group disables Study and says so", document.getElementById("fcKanaStart").disabled && /at least one/i.test(document.getElementById("fcKanaSummary").textContent));
+  document.querySelector('#fcPanelKana .fc-kana-group-cb[data-group="hira-gojuon"]').click();
+  check("re-selecting a group re-enables Study", !document.getElementById("fcKanaStart").disabled);
+  if (storageUsable) check("the group choice is saved to its own key", /hira-gojuon/.test(readLocalStorage("sakura-kana-v1") || ""));
+
+  document.getElementById("fcKanaStart").click();
+  check("Study now opens a kana review card", !!document.querySelector("#fcPanelKana .fc-review-card .fc-prompt-kana"));
+  const kanaGlyph = document.querySelector("#fcPanelKana .fc-prompt-kana").textContent;
+  document.getElementById("fcKanaInput").value = window.SakuraStudy.kanaRomaji.toRomaji(kanaGlyph);
+  document.getElementById("fcKanaForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  check("a correct reading is marked correct with four FSRS-timed ratings", (() => {
+    const p = document.getElementById("fcPanelKana");
+    return !!p.querySelector(".fc-result.fc-correct") && p.querySelectorAll(".fc-rating-btn").length === 4
+      && [...p.querySelectorAll(".fc-rating-interval")].every(e => e.textContent.length > 0);
+  })());
+  document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
+  check("rating advances to the next card", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
+  if (storageUsable) check("the reviewed kana is now an FSRS card in local storage", /"reps":1/.test(readLocalStorage("sakura-kana-v1") || ""));
+  document.getElementById("fcKanaEnd").click();
+  check("ending shows a wrap-up", /reviewed/.test((document.querySelector("#fcPanelKana .fc-session-done") || {}).textContent || ""));
+  document.getElementById("fcKanaBack").click();
+  check("Back to groups returns to the picker, now showing progress", !!document.getElementById("fcKanaStart") && /started/.test(document.getElementById("fcKanaSummary").textContent));
 
   console.log("Flashcards: Settings tab");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
