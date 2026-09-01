@@ -288,6 +288,23 @@ window.SakuraStudy.flashcards.dataOps = (function () {
   // Outbox / sync -- offline reviews computed locally, queued, then synced.
   // -----------------------------------------------------------------------
   var syncing = false;
+
+  // A tiny observable for the UI's offline / pending-sync chip: current
+  // connectivity plus how many reviews are still queued locally. Guest mode
+  // has nothing to sync, so its pending count is always 0 (an offline hint
+  // is still meaningful there). Fired on connectivity changes and every time
+  // the outbox depth moves.
+  var syncStateListeners = [];
+  function onSyncStateChange(fn) { syncStateListeners.push(fn); }
+  function getSyncState() {
+    var online = typeof navigator === "undefined" || navigator.onLine !== false;
+    var pending = isGuestMode() ? 0 : (getCache().logsOutbox || []).length;
+    return { online: online, pending: pending };
+  }
+  function notifySyncStateChange() {
+    var st = getSyncState();
+    syncStateListeners.forEach(function (fn) { try { fn(st); } catch (e) {} });
+  }
   async function syncOutbox() {
     if (syncing || !configured() || !currentUser()) return;
     syncing = true;
@@ -304,9 +321,11 @@ window.SakuraStudy.flashcards.dataOps = (function () {
         if (outcome === "retry") break;
         c.logsOutbox.shift();
         saveCache();
+        notifySyncStateChange();
       }
     } finally {
       syncing = false;
+      notifySyncStateChange();
     }
   }
   async function syncOne(entry) {
@@ -327,7 +346,8 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     entry.resultCard = replayed.card;
     return "done";
   }
-  window.addEventListener("online", function () { syncOutbox(); });
+  window.addEventListener("online", function () { notifySyncStateChange(); syncOutbox(); });
+  window.addEventListener("offline", function () { notifySyncStateChange(); });
 
   return {
     configured: configured, getClient: getClient, currentUser: currentUser,
@@ -339,6 +359,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     saveFsrsSettings: saveFsrsSettings, saveQueueSettings: saveQueueSettings,
     saveDirectionSettings: saveDirectionSettings, refreshData: refreshData,
     saveTableCustomRemote: saveTableCustomRemote,
-    recordStudyActivity: recordStudyActivity, syncOutbox: syncOutbox
+    recordStudyActivity: recordStudyActivity, syncOutbox: syncOutbox,
+    onSyncStateChange: onSyncStateChange, getSyncState: getSyncState
   };
 })();

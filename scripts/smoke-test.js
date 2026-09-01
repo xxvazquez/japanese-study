@@ -662,6 +662,23 @@ async function main() {
   guestBtn.click();
   check("choosing it goes straight to the Dashboard tab, no session needed", !!document.querySelector("#fcPanelDashboard"));
   check("it's labeled as on-device, not signed in", document.getElementById("flashcardsPage").textContent.includes("Using this device only"));
+
+  // Offline / pending-sync chip: quiet while online and clean, surfaced as a
+  // live status when the connection drops (which is meaningful even in guest
+  // mode, where nothing is queued), cleared again on reconnect.
+  check("the sync chip is present and quiet while online", (() => {
+    const chip = document.getElementById("fcSyncChip");
+    return chip && chip.hidden === true && chip.getAttribute("aria-live") === "polite";
+  })());
+  Object.defineProperty(window.navigator, "onLine", { configurable: true, value: false });
+  window.dispatchEvent(new window.Event("offline"));
+  check("going offline surfaces the chip as a live status", (() => {
+    const chip = document.getElementById("fcSyncChip");
+    return chip && chip.hidden === false && /offline/i.test(chip.textContent);
+  })());
+  Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
+  window.dispatchEvent(new window.Event("online"));
+  check("coming back online hides it again", document.getElementById("fcSyncChip").hidden === true);
   if (storageUsable) check("guest mode is remembered in localStorage", readLocalStorage("sakura-flashcards-mode") === "guest");
   check("with nothing added yet, the Dashboard shows an empty state (not a grid of zeroes)",
     !document.querySelector(".fc-stats-grid") && /No flashcards yet/.test(document.querySelector("#fcPanelDashboard").textContent));
