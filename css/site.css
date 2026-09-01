@@ -685,7 +685,11 @@ body {
 
 /* --- Table icons ------------------------------------------------- */
 /* A single icon element -- a built-in line SVG or an uploaded raster. */
+/* Lucide ships at stroke-width 2 on a 24 grid; the app's own icons sit around
+   1.5 on an 18 grid. Lighten these to match so they don't read as heavier than
+   everything else on the page. */
 .si { display: block; width: 100%; height: 100%; object-fit: contain; }
+svg.si { stroke-width: 1.6; }
 .section-icon-btn {
   flex: 0 0 auto;
   appearance: none; border: 0; background: transparent; padding: 0;
@@ -743,18 +747,18 @@ body {
   text-transform: uppercase; letter-spacing: .05em;
 }
 .icon-picker-group:first-child .icon-picker-group-label { margin-top: 2px; }
-.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(34px, 1fr)); gap: 3px; }
+.icon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(30px, 1fr)); gap: 2px; }
 .icon-cell {
   appearance: none; border: 1px solid transparent; background: transparent;
-  border-radius: 7px; padding: 7px;
+  border-radius: 7px; padding: 6px;
   color: var(--ink); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   aspect-ratio: 1;
 }
 .icon-cell[hidden] { display: none; }
-/* Match the ~16-18px the icon shows at in a section header, so the picker
-   preview reads at the same scale as the page. */
-.icon-cell .si { width: 17px; height: 17px; }
+/* Same scale as the icon shows at in a section header, so the picker preview
+   isn't heavier than the rest of the page. */
+.icon-cell .si { width: 15px; height: 15px; }
 .icon-cell:hover { background: var(--surface); border-color: var(--line-strong); }
 .icon-cell.selected { border-color: var(--section); background: var(--section-soft); color: var(--section-strong); }
 .icon-picker-foot {
