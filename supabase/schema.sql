@@ -97,6 +97,12 @@ alter table public.flashcard_settings add column if not exists enabled_jp_ro boo
 alter table public.flashcard_settings add column if not exists enabled_ro_en boolean not null default true;
 alter table public.flashcard_settings add column if not exists enabled_en_ro boolean not null default true;
 
+-- Per-table personalisation for the vocabulary page (the icon you pick for a
+-- table header, keyed by the table's permanent id). Not a flashcards concept
+-- -- it just rides along in this per-user settings row so it syncs across
+-- devices without a table of its own. Shape: { "<tableId>": { "icon": "..." } }.
+alter table public.flashcard_settings add column if not exists table_custom jsonb not null default '{}'::jsonb;
+
 alter table public.flashcards enable row level security;
 alter table public.review_logs enable row level security;
 alter table public.flashcard_settings enable row level security;

@@ -107,6 +107,27 @@ async function main() {
     const slot = document.querySelector(".section-icon-btn .section-icon");
     return slot.classList.contains("section-icon-empty") && slot.querySelector('svg[stroke-dasharray]');
   })());
+  check("choosing an icon updates the header and directory in place", (() => {
+    const btn = document.querySelector('.section-icon-btn[data-icon-for]');
+    const id = btn.dataset.iconFor;
+    window.SakuraStudy.tableCustom.setIcon(id, "coffee");
+    const slot = btn.querySelector(".section-icon");
+    const dir = document.querySelector('#tindexMenu a[data-target="' + id + '"] .tindex-icon');
+    const ok = !slot.classList.contains("section-icon-empty")
+      && /viewBox="0 0 24 24"/.test(slot.innerHTML) && !slot.querySelector("[stroke-dasharray]")
+      && dir && /viewBox="0 0 24 24"/.test(dir.innerHTML);
+    window.SakuraStudy.tableCustom.setIcon(id, ""); // reset
+    return ok;
+  })());
+  check("remote state (sign-in sync) replaces the local set and redraws", (() => {
+    const btn = document.querySelector('.section-icon-btn[data-icon-for]');
+    const id = btn.dataset.iconFor;
+    window.SakuraStudy.tableCustom.applyRemote({ [id]: { icon: "star" } });
+    const shown = window.SakuraStudy.tableCustom.iconOf(id) === "star"
+      && /viewBox="0 0 24 24"/.test(btn.querySelector(".section-icon").innerHTML);
+    window.SakuraStudy.tableCustom.applyRemote({}); // reset
+    return shown && window.SakuraStudy.tableCustom.iconOf(id) === "";
+  })());
 
   console.log("Default landing page is Vocabulary");
   check("vocabulary page is visible on load", document.getElementById("vocabPage").hidden === false);

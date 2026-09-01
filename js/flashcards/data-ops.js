@@ -110,6 +110,11 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     c.userId = user.id;
     c.lastSyncedAt = new Date().toISOString();
     saveCache();
+    // The vocabulary page's per-table icons live in this same row -- hand
+    // them to their own store so a header icon set on another device shows up.
+    if (window.SakuraStudy.tableCustom) {
+      window.SakuraStudy.tableCustom.applyRemote(settingsRow.table_custom || {});
+    }
   }
 
   async function addVocabRemote(vocabId) { return addVocabsRemote([vocabId]); }
@@ -145,6 +150,12 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     var client = getClient(), user = currentUser();
     var res = await client.from("flashcard_settings").update(patch).eq("user_id", user.id);
     if (res.error) throw res.error;
+  }
+  // Vocabulary-page table icons ride along in the same settings row so they
+  // sync across devices (see js/vocab/table-custom.js).
+  async function saveTableCustomRemote(obj) {
+    if (!getClient() || !currentUser()) return;
+    return saveFsrsSettingsRemote({ table_custom: obj || {} });
   }
   async function saveQueueSettingsRemote(patch) {
     return saveFsrsSettingsRemote(patch);
@@ -327,6 +338,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     archiveVocab: archiveVocab, archiveVocabs: archiveVocabs,
     saveFsrsSettings: saveFsrsSettings, saveQueueSettings: saveQueueSettings,
     saveDirectionSettings: saveDirectionSettings, refreshData: refreshData,
+    saveTableCustomRemote: saveTableCustomRemote,
     recordStudyActivity: recordStudyActivity, syncOutbox: syncOutbox
   };
 })();

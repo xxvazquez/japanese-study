@@ -13,6 +13,8 @@ The Flashcards section stores your learning data (which vocab entries you've add
 2. Paste the contents of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
 3. This creates `flashcards`, `review_logs`, and `flashcard_settings`, all with Row Level Security enabled so each signed-in user only ever sees their own rows.
 
+`schema.sql` is written so the **whole file is safe to paste and re-run any time it changes** (new columns are added with `add column if not exists`, nothing is dropped) — so if you set up Supabase before a feature that needs a schema change (e.g. the vocabulary-page table icons, which sync through `flashcard_settings.table_custom`), just re-run the file.
+
 ## 3. Enable email/password sign-in
 
 1. Go to **Authentication** → **Providers** and confirm **Email** is enabled (it is by default).

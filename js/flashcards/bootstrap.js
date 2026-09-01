@@ -167,6 +167,14 @@ window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
 
   onAuthChange(function () { invalidateInsights(); render(); refreshRowToggleButtons(); });
 
+  // Vocabulary-page table icons: while signed in, a local pick is pushed to
+  // the account (fetchAllFromServer pulls them back the other way on sign-in).
+  if (window.SakuraStudy.tableCustom) {
+    window.SakuraStudy.tableCustom.setRemotePush(function (obj) {
+      if (authState.session) dataOps.saveTableCustomRemote(obj).catch(function () {});
+    });
+  }
+
   document.addEventListener("DOMContentLoaded", function () {
     loadCache();
     initAuth();

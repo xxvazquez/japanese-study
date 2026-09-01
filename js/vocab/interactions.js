@@ -737,15 +737,20 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         } else if (el) { el.remove(); }
       });
     }
+    function refreshAllTableIcons() {
+      document.querySelectorAll('.section-icon-btn[data-icon-for]').forEach(function (b) { refreshTableIcon(b.dataset.iconFor); });
+    }
     document.addEventListener('click', function (event) {
       const btn = event.target.closest && event.target.closest('.section-icon-btn');
       if (!btn || !window.SakuraStudy.iconPicker) return;
       const id = btn.dataset.iconFor;
       window.SakuraStudy.iconPicker.open(window.SakuraStudy.tableCustom.iconOf(id), function (value) {
-        window.SakuraStudy.tableCustom.setIcon(id, value);
-        refreshTableIcon(id);
+        window.SakuraStudy.tableCustom.setIcon(id, value); // fires onChange -> redraw
       }, btn);
     });
+    // Redraw on any change -- a local pick, or icons arriving from another
+    // device on sign-in (Supabase sync).
+    if (window.SakuraStudy.tableCustom) window.SakuraStudy.tableCustom.onChange(refreshAllTableIcons);
 
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
     // section or table can be linked to and survives a reload.
