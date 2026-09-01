@@ -369,7 +369,7 @@ async function main() {
     return hidden;
   })());
 
-  console.log("Self-test mode (blank the Meaning column, tap a row to check)");
+  console.log("Self-test mode (blank the English column, tap a row to check)");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const selftestBtn = document.getElementById("selftestToggle");
   check("the control starts off", !!selftestBtn && selftestBtn.getAttribute("aria-pressed") === "false" && !document.body.classList.contains("selftest-mode"));
@@ -485,7 +485,7 @@ async function main() {
   const countersSection = document.querySelector('.table-section[data-table="0"]');
   check("there is no row-number column — Japanese leads the table", !countersSection.querySelector("td.row-num, .row-num-th"));
   const headerLabels = [...countersSection.querySelectorAll("thead th")].map(th => th.textContent.replace(/[↕↓↑]/g, "").trim());
-  check("columns are Japanese → Romaji → Meaning", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "Meaning"]));
+  check("columns are Japanese → Romaji → English", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "English"]));
 
   console.log("Manage rows");
   const drinksSectionManage = document.querySelector('.table-section[data-table="1"]');

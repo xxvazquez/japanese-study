@@ -207,7 +207,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
       '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
       '<th>Japanese</th>' +
-      sortHeader('Romaji', 1, false) + sortHeader('Meaning', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
+      sortHeader('Romaji', 1, false) + sortHeader('English', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
       o.rowsHtml + '\n  </tbody></table></section>';
   }
   function renderTable(t) {

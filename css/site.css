@@ -1201,17 +1201,17 @@ body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !imp
 }
 .view-mode button.col-hidden:hover { color: var(--muted); }
 
-/* Self-test mode: a session-only cover-and-check aid. Blank the Meaning
+/* Self-test mode: a session-only cover-and-check aid. Blank the English
    column's text row by row; a tap adds .revealed to that row to check
    just its answer. Only the text goes transparent -- widths, rules and
    the row action icons are untouched, so there's no reflow. Works
-   alongside the column toggles: if Meaning is already hidden there, this
+   alongside the column toggles: if English is already hidden there, this
    simply has nothing to do. */
 body.selftest-mode .vocab tbody td:nth-child(3) { color: transparent !important; cursor: pointer; }
 body.selftest-mode .vocab tbody td:nth-child(3) mark.search-hit { color: transparent !important; background: transparent !important; }
 body.selftest-mode .vocab tbody tr.revealed td:nth-child(3) { color: var(--ink-2) !important; }
 body.selftest-mode .vocab tbody tr.revealed td:nth-child(3) mark.search-hit { color: var(--hl-ink) !important; background: var(--hl) !important; }
-/* Keep the row action icons readable while the meaning text is blanked. */
+/* Keep the row action icons readable while the English text is blanked. */
 body.selftest-mode .vocab tbody td:nth-child(3) .row-hide-btn,
 body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--faint) !important; }
 
