@@ -120,14 +120,22 @@ async function main() {
     window.SakuraStudy.tableCustom.setIcon(id, ""); // reset
     return ok;
   })());
-  check("remote state (sign-in sync) replaces the local set and redraws", (() => {
-    const btn = document.querySelector('.section-icon-btn[data-icon-for]');
-    const id = btn.dataset.iconFor;
-    window.SakuraStudy.tableCustom.applyRemote({ [id]: { icon: "star" } });
-    const shown = window.SakuraStudy.tableCustom.iconOf(id) === "star"
-      && /viewBox="0 0 24 24"/.test(btn.querySelector(".section-icon").innerHTML);
-    window.SakuraStudy.tableCustom.applyRemote({}); // reset
-    return shown && window.SakuraStudy.tableCustom.iconOf(id) === "";
+  check("sign-in merges local customisations with the account (account wins per table, local-only kept + pushed up)", (() => {
+    const tc = window.SakuraStudy.tableCustom;
+    const secs = [...document.querySelectorAll(".section-icon-btn[data-icon-for]")];
+    const a = secs[0].dataset.iconFor, b = secs[1].dataset.iconFor;
+    tc.setIcon(a, "coffee");        // local + on the account -> account should win
+    tc.setIcon(b, "leaf");          // local only -> should survive sign-in
+    let pushed = null;
+    tc.setRemotePush((obj) => { pushed = obj; });
+    tc.applyRemote({ [a]: { icon: "star" } });
+    const ok = tc.iconOf(a) === "star"
+      && tc.iconOf(b) === "leaf"
+      && !!(pushed && pushed[b] && pushed[b].icon === "leaf")
+      && /viewBox="0 0 24 24"/.test(secs[0].querySelector(".section-icon").innerHTML);
+    tc.setRemotePush(null);
+    tc.clear(a); tc.clear(b);
+    return ok && tc.iconOf(a) === "" && tc.iconOf(b) === "";
   })());
 
   console.log("Default landing page is Vocabulary");

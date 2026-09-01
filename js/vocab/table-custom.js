@@ -61,15 +61,27 @@ window.SakuraStudy.tableCustom = (function () {
     mutate(function () { delete cache[String(id)]; });
   }
 
-  // Remote state arriving from Supabase on sign-in / auth change -- it wins
-  // over the local cache (icons are cheap to redo; simplest reconciliation).
+  // Reconcile with the account's copy on sign-in. Per table: the account wins
+  // for any table it already has (it's the shared source of truth across
+  // devices), but a table customised locally that the account doesn't know
+  // about yet -- e.g. set as a guest, before signing in -- is kept and pushed
+  // up rather than dropped.
   function applyRemote(obj) {
-    var next = obj && typeof obj === "object" ? obj : {};
+    var remote = obj && typeof obj === "object" ? obj : {};
     load();
-    if (JSON.stringify(next) === JSON.stringify(cache)) return;
-    cache = JSON.parse(JSON.stringify(next));
-    persistLocal();
-    announce();
+    var merged = {};
+    Object.keys(cache).forEach(function (k) { merged[k] = cache[k]; });
+    Object.keys(remote).forEach(function (k) { merged[k] = remote[k]; });
+    var mergedJson = JSON.stringify(merged);
+    var changedLocally = mergedJson !== JSON.stringify(cache);
+    var addsToRemote = mergedJson !== JSON.stringify(remote);
+    if (!changedLocally && !addsToRemote) return;
+    if (changedLocally) {
+      cache = JSON.parse(mergedJson);
+      persistLocal();
+      announce();
+    }
+    if (addsToRemote && remotePush) { try { remotePush(getAll()); } catch (e) {} }
   }
 
   function onChange(fn) { listeners.push(fn); }
