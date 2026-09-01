@@ -846,6 +846,29 @@ body.icon-picker-open { overflow: hidden; }
 .cz-row-reset[disabled] { opacity: .4; cursor: default; }
 .fc-manage-table-icon { flex: 0 0 auto; width: 16px; height: 16px; color: var(--muted); }
 
+/* --- Help page (#help) ------------------------------------------- */
+.page-help { max-width: 680px; }
+.page-help h2 {
+  font-size: 20px; font-weight: 600; margin: 0 0 6px; color: var(--ink);
+}
+.page-help .help-lede {
+  margin: 0 0 4px; color: var(--muted); font-size: var(--fs-small); line-height: 1.6;
+}
+.page-help h3 {
+  margin: 26px 0 8px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: var(--fs-small); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+}
+.page-help ul { margin: 0; padding-left: 18px; color: var(--ink); font-size: var(--fs-small); line-height: 1.65; }
+.page-help li { margin: 5px 0; }
+.page-help strong { font-weight: 600; }
+.page-help kbd {
+  font: 600 var(--fs-micro)/1 var(--font-ui);
+  border: 1px solid var(--line-strong); border-radius: 4px;
+  padding: 1px 5px; color: var(--muted);
+}
+
 .controls {
   margin-left: auto;
   flex: 0 0 auto;
@@ -1166,6 +1189,9 @@ body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !imp
 @media (max-width: 640px) {
   .app-frame { max-width: none; margin: 0; border: 0; border-radius: 0; }
   .masthead { padding: 11px 16px 9px; }
+  /* Make room for the help / customize / theme controls on a narrow bar. */
+  .masthead-tag { display: none; }
+  .masthead-right { gap: 8px; }
   .site-nav { padding: 0 12px; gap: 2px; }
   .site-nav-link { padding: 9px 10px; }
   .page { padding: 14px 16px 40px; }

@@ -497,6 +497,21 @@ async function main() {
   gear.click();
   check("clicking the gear again returns to the vocabulary view", document.getElementById("vocabPage").hidden === false && document.getElementById("customizePage").hidden === true);
 
+  console.log("Help page (how this works)");
+  const helpBtn = document.getElementById("helpToggle");
+  check("the masthead has a help button", !!helpBtn);
+  check("the Help page starts hidden", document.getElementById("helpPage").hidden === true);
+  helpBtn.click();
+  check("clicking it reveals the Help page and hides the reference", document.getElementById("helpPage").hidden === false && document.getElementById("vocabPage").hidden === true);
+  check("its content is a real rundown, not a stub", document.querySelectorAll("#helpPage h3").length >= 3 && /Furigana/.test(document.getElementById("helpPage").textContent));
+  check("no nav link is active on the Help page", !document.querySelector('#siteNav .site-nav-link.active'));
+  check("the help button reflects the active state", helpBtn.classList.contains("active"));
+  window.location.hash = "#help";
+  check("the #help hash routes to it", document.getElementById("helpPage").hidden === false && document.body.dataset.activePage === "help");
+  helpBtn.click();
+  check("clicking the help button again returns to the reference", document.getElementById("vocabPage").hidden === false && document.getElementById("helpPage").hidden === true);
+  window.location.hash = "";
+
   console.log("Flashcards: page navigation");
   check("no console errors from vendor/flashcards scripts loading", true); // JSDOM.fromFile above would have rejected on a thrown top-level error
   const flashcardsLink = document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]');

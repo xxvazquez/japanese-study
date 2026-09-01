@@ -138,6 +138,8 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     });
     const gear = document.getElementById('customizeToggle');
     if (gear) gear.classList.toggle('active', page === 'customize');
+    const help = document.getElementById('helpToggle');
+    if (help) help.classList.toggle('active', page === 'help');
   }
 
   // Reflect the current view in the URL hash (#vocabulary / #grammar /
@@ -166,11 +168,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     applyTableOrder();
     document.body.dataset.activeSection = name;
     document.body.dataset.activePage = name;
-    document.getElementById('vocabPage').hidden = false;
-    const flashcardsPage = document.getElementById('flashcardsPage');
-    if (flashcardsPage) flashcardsPage.hidden = true;
-    const customizePage = document.getElementById('customizePage');
-    if (customizePage) customizePage.hidden = true;
+    showStandalonePage('vocab');
     // Reset the "jump to a table" dropdown to this section (closed).
     const tableIndex = document.getElementById('tableIndex');
     if (tableIndex) {
@@ -224,6 +222,18 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     setHash('table-' + id, opts.fromRoute);
   }
 
+  // The reference (#vocabPage) plus three standalone pages that sit alongside
+  // the nav sections -- Flashcards, and the masthead's Customize and Help
+  // utility screens. Exactly one is visible; `which` is 'vocab' | 'flashcards'
+  // | 'customize' | 'help'.
+  function showStandalonePage(which) {
+    var ids = { vocab: 'vocabPage', flashcards: 'flashcardsPage', customize: 'customizePage', help: 'helpPage' };
+    Object.keys(ids).forEach(function (k) {
+      var el = document.getElementById(ids[k]);
+      if (el) el.hidden = k !== which;
+    });
+  }
+
   // Flashcards is a top-level page alongside the three vocabulary sections. Its
   // page-hiding plumbing lives here so js/flashcards/bootstrap.js can reuse it;
   // flashcards.js owns everything inside #flashcardsPage.
@@ -232,32 +242,38 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     if (vocab.clearSearchQuery) vocab.clearSearchQuery();
     document.body.dataset.activeSection = '';
     document.body.dataset.activePage = 'flashcards';
-    document.getElementById('vocabPage').hidden = true;
-    const flashcardsPage = document.getElementById('flashcardsPage');
-    if (flashcardsPage) flashcardsPage.hidden = false;
-    const customizePage = document.getElementById('customizePage');
-    if (customizePage) customizePage.hidden = true;
+    showStandalonePage('flashcards');
     markActiveNav(null);
     setHash('flashcards', opts.fromRoute);
     window.scrollTo({ top: 0 });
   };
 
-  // The Customize page (rename / re-icon any table) -- a small utility screen
-  // reached from the masthead gear, not a fourth nav item. Same page-hiding
-  // plumbing as Flashcards; js/vocab/customize.js owns everything inside it.
+  // The Customize page (rename / re-icon / reorder tables) -- a utility screen
+  // reached from the masthead gear, not a fourth nav item. js/vocab/customize.js
+  // owns everything inside it.
   vocab.showCustomizePage = function (opts) {
     opts = opts || {};
     if (vocab.clearSearchQuery) vocab.clearSearchQuery();
     document.body.dataset.activeSection = '';
     document.body.dataset.activePage = 'customize';
-    document.getElementById('vocabPage').hidden = true;
-    const flashcardsPage = document.getElementById('flashcardsPage');
-    if (flashcardsPage) flashcardsPage.hidden = true;
-    const customizePage = document.getElementById('customizePage');
-    if (customizePage) customizePage.hidden = false;
-    if (window.SakuraStudy.customize) window.SakuraStudy.customize.render(customizePage);
+    showStandalonePage('customize');
+    var customizePage = document.getElementById('customizePage');
+    if (window.SakuraStudy.customize && customizePage) window.SakuraStudy.customize.render(customizePage);
     markActiveNav(null);
     setHash('customize', opts.fromRoute);
+    window.scrollTo({ top: 0 });
+  };
+
+  // The Help page -- a static "how this works" rundown of the reference side,
+  // reached from the masthead "?" (its content lives in index.html).
+  vocab.showHelpPage = function (opts) {
+    opts = opts || {};
+    if (vocab.clearSearchQuery) vocab.clearSearchQuery();
+    document.body.dataset.activeSection = '';
+    document.body.dataset.activePage = 'help';
+    showStandalonePage('help');
+    markActiveNav(null);
+    setHash('help', opts.fromRoute);
     window.scrollTo({ top: 0 });
   };
 
@@ -278,6 +294,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const m = h.match(/^table-(.+)$/);
     if (h === 'flashcards') { vocab.showFlashcardsPage({ fromRoute: true }); return; }
     if (h === 'customize') { vocab.showCustomizePage({ fromRoute: true }); return; }
+    if (h === 'help') { vocab.showHelpPage({ fromRoute: true }); return; }
     if (m && document.getElementById('table-' + m[1])) { goToTable(m[1], { fromRoute: true }); return; }
     if (h === 'grammar' || h === 'travel') { showSection(h, { fromRoute: true }); return; }
     showSection('vocabulary', { fromRoute: true });
@@ -631,6 +648,13 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       customizeToggle.addEventListener('click', function () {
         if (document.body.dataset.activePage === 'customize') showSection('vocabulary');
         else vocab.showCustomizePage();
+      });
+    }
+    const helpToggle = document.getElementById('helpToggle');
+    if (helpToggle) {
+      helpToggle.addEventListener('click', function () {
+        if (document.body.dataset.activePage === 'help') showSection('vocabulary');
+        else vocab.showHelpPage();
       });
     }
 
