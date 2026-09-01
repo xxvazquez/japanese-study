@@ -146,6 +146,7 @@ const REFERENCE_SHELL = [
   "js/vocab/render.js",
   "js/vocab/interactions.js",
   "js/vocab/customize.js",
+  "js/vocab/reading-practice.js",
   "js/sw-register.js",
   "vendor/ts-fsrs.js",
   "vendor/supabase.js",

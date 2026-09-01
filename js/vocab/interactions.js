@@ -224,6 +224,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const section = document.querySelector('#vocabulary .table-section[data-table="' + id + '"]');
     if (!section) return;
     if (vocab.exitStarred) vocab.exitStarred();
+    if (vocab.exitReadingPractice) vocab.exitReadingPractice();
     if (document.body.dataset.activeSection !== section.dataset.section) showSection(section.dataset.section, { fromRoute: true });
     expandSection(section);
     collapseSiblingSections(section);
@@ -241,9 +242,10 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // | 'customize' | 'help'.
   function showStandalonePage(which) {
     // Leaving the reference (or switching sections within it) always drops the
-    // collected "Starred" view -- it's a filter on the vocabulary list, not a
-    // place you navigate to.
+    // collected "Starred" view and any running reading drill -- both are
+    // transient views layered on the vocabulary list, not places you navigate to.
     if (vocab.exitStarred) vocab.exitStarred();
+    if (vocab.exitReadingPractice) vocab.exitReadingPractice();
     var ids = { vocab: 'vocabPage', flashcards: 'flashcardsPage', customize: 'customizePage', help: 'helpPage' };
     Object.keys(ids).forEach(function (k) {
       var el = document.getElementById(ids[k]);
@@ -534,9 +536,12 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     };
 
     input.addEventListener('input', function () {
-      // Searching leaves the collected "Starred" view -- results span the
-      // whole reference, so it wouldn't make sense confined to that list.
-      if (input.value.trim() && vocab.exitStarred) vocab.exitStarred();
+      // Searching leaves the collected "Starred" view and any reading drill --
+      // results span the whole reference, so neither makes sense to stay in.
+      if (input.value.trim()) {
+        if (vocab.exitStarred) vocab.exitStarred();
+        if (vocab.exitReadingPractice) vocab.exitReadingPractice();
+      }
       runSearch();
     });
     document.getElementById('clearSearch').addEventListener('click', function () {

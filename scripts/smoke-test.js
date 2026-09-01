@@ -384,6 +384,37 @@ async function main() {
   selftestBtn.click();
   check("leaving the mode clears it and every revealed row", !document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "false" && !document.querySelector("#vocabulary .vocab tbody tr.revealed"));
 
+  console.log("Reading practice (kana -> romaji typing drill)");
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  const rp = window.SakuraStudy.readingPractice;
+  check("the module is exposed", !!rp && typeof rp.collectPool === "function");
+  check("isAllKana distinguishes kana headwords from kanji ones", rp.isAllKana("こうちゃ") && !rp.isAllKana("お茶") && !rp.isAllKana(""));
+  const pool = rp.collectPool();
+  check("collectPool gathers the kana words in view (and nothing with kanji)", pool.length > 20 && pool.every(p => rp.isAllKana(p.jp)));
+  check("every pool item carries accepted answers and a display reading", pool.every(p => p.answers.length > 0 && !!p.reading));
+  const coffee = pool.find(p => p.jp === "コーヒー");
+  check("long-vowel spellings all pass the check (koohii / kouhii / kōhī for コーヒー)",
+    !!coffee && rp.checkReading(coffee.answers, "koohii") && rp.checkReading(coffee.answers, "kouhii") && rp.checkReading(coffee.answers, "kōhī"));
+  check("a clearly wrong reading is rejected", !!coffee && !rp.checkReading(coffee.answers, "ramen"));
+
+  const readingBtn = document.getElementById("readingToggle");
+  check("the toolbar offers a 'Practice readings' toggle", !!readingBtn && readingBtn.getAttribute("aria-pressed") === "false");
+  readingBtn.click();
+  check("starting it swaps the list for the drill panel", document.body.classList.contains("reading-practice-mode")
+    && !document.getElementById("readingPracticeView").hidden && readingBtn.classList.contains("active")
+    && window.getComputedStyle(document.getElementById("vocabulary")).display === "none");
+  const drillWord = document.querySelector("#readingPracticeView .rp-word");
+  check("the drill shows one kana word to read", !!drillWord && rp.isAllKana(drillWord.textContent));
+  document.getElementById("rpInput").value = window.SakuraStudy.kanaRomaji.toRomaji(drillWord.textContent);
+  document.getElementById("rpForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  check("checking the derived reading marks it correct", !!document.querySelector("#readingPracticeView .rp-result.rp-correct"));
+  document.getElementById("rpForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true })); // advance
+  check("advancing moves on (next card or the wrap-up)",
+    !!document.querySelector("#readingPracticeView .rp-word") || /You read/.test(document.querySelector("#readingPracticeView .rp-summary").textContent));
+  document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
+  check("navigating away drops the drill", !document.body.classList.contains("reading-practice-mode") && document.getElementById("readingPracticeView").hidden);
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+
   console.log("Star / favourite rows");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const tc = window.SakuraStudy.tableCustom;

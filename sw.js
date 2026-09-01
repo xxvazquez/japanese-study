@@ -52,6 +52,7 @@ const VERSIONED = [
   'js/flashcards/dashboard.js',
   'js/flashcards/views.js',
   'js/flashcards/bootstrap.js',
+  'js/vocab/reading-practice.js',
   'js/sw-register.js',
 ];
 
