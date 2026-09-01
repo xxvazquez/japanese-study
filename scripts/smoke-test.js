@@ -66,28 +66,34 @@ async function main() {
   // easy to introduce by accident and easy to miss without a check like this.
   check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
 
-  console.log("Kana -> romaji reading layer (katakana)");
+  console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.SakuraStudy.kanaRomaji;
   check("the converter is exposed", kr && typeof kr.toRomaji === "function");
   const cases = {
-    "ケチャップ": "kechappu",   // ッ doubles the next consonant
+    "ケチャップ": "kechappu",   // katakana, ッ doubles the next consonant
     "マヨネーズ": "mayonēzu",   // ー -> macron
     "キャベツ": "kyabetsu",     // yoon kya
-    "ジャム": "jamu",           // ji + small ya -> ja (no y)
-    "チョコ": "choko",          // cho
-    "シュークリーム": "shūkurīmu",
-    "コーヒー": "kōhī",
-    "ラーメン": "rāmen",
     "パーティー": "pātī",
+    "だし": "dashi",            // hiragana
+    "みりん": "mirin",
+    "こしょう": "koshou",       // し + long ょう (no macron for hiragana う)
+    "きゃ": "kya",              // hiragana yoon
+    "しゅう": "shuu",
+    "ちょ": "cho",
+    "じゃ": "ja",
+    "がっこう": "gakkou",       // hiragana sokuon っ
   };
   Object.keys(cases).forEach(k => check(`${k} -> ${cases[k]}`, kr.toRomaji(k) === cases[k]));
-  // Decoration: katakana in a table cell becomes hover targets, and the romaji
-  // is NOT in the DOM text (so search/sort see only the kana).
-  const kataCell = [...document.querySelectorAll("#vocabulary td.jp")].find(td => td.querySelector(".kr"));
-  check("katakana words render .kr hover targets in the table", !!kataCell);
+  // Decoration: kana in a table cell becomes hover targets, and the romaji is
+  // NOT in the DOM text (so search/sort see only the kana).
+  const findCell = re => [...document.querySelectorAll("#vocabulary td.jp")].find(td => td.querySelector(".kr") && re.test(td.textContent));
+  const kataCell = findCell(/[ァ-ヺ]/);
+  const hiraCell = findCell(/^[ぁ-ゖ]+$/); // a pure-hiragana headword
+  check("katakana words render .kr hover targets", !!kataCell);
+  check("hiragana words render .kr hover targets too", !!hiraCell);
   check("each .kr carries its romaji in data-r", [...kataCell.querySelectorAll(".kr")].every(s => /^[a-zāīūēō]+$/.test(s.dataset.r || "")));
-  check("the romaji stays out of the cell's textContent", !/[a-z]/i.test(kataCell.textContent));
-  check("hiragana / kanji rows get no .kr wrapping", !document.querySelector('#vocabulary td.jp ruby .kr'));
+  check("the romaji stays out of the cell's textContent", !/[a-z]/i.test(kataCell.textContent) && !/[a-z]/i.test(hiraCell.textContent));
+  check("furigana readings are left plain (not decorated)", !document.querySelector('#vocabulary td.jp ruby .kr'));
 
   console.log("Default landing page is Vocabulary");
   check("vocabulary page is visible on load", document.getElementById("vocabPage").hidden === false);
