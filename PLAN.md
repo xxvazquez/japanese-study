@@ -76,36 +76,7 @@ the change, not ship it.
 
 ---
 
-## 1. Star / favourite rows
-
-**What:** A star toggle at the right edge of each vocab row (near the
-add-to-flashcards button). Starred words collect into a "Starred" view —
-either a synthetic table at the top of the vocab page or a filter.
-
-**Why:** Sits between "hide row" (I know this) and "add to flashcards" (I'll
-drill this) — a lightweight "keep an eye on this" list. Pairs naturally with
-the existing per-row controls.
-
-**Approach:**
-- Store in `SakuraStudy.tableCustom`-style: either extend `table-custom` with a
-  `starred: [vocabId,...]` reserved key, or a sibling module `starred.js` with
-  the same localStorage + `applyRemote`/`setRemotePush` sync pattern. Reserved
-  key in the existing `table_custom` blob is less plumbing (no schema change).
-- Row button like `.fc-toggle-btn` (render.js `wordRow`/`verbPairRow`), always
-  in layout, faint until hover/focus, lit when starred.
-- A "Starred (N)" entry in the table directory / a toolbar filter that uses
-  `vocab.buildVocabSection` to render the collected rows as a real sortable
-  table.
-- Syncs across devices like names/icons.
-
-**Files:** `js/vocab/table-custom.js` (or new `starred.js` + `index.html` +
-`sw.js` + `sw-test.js` + `package.json`), `render.js`, `interactions.js`,
-`css/site.css`, smoke test, README.
-**Size:** M–L.
-
----
-
-## 2. Section-wide and full-reference print
+## 1. Section-wide and full-reference print
 
 **What:** Print an entire section (all its tables) or the whole reference, not
 just one table.
@@ -128,7 +99,7 @@ Printing a category or the lot for offline study is an obvious gap.
 
 ---
 
-## 3. Offline / pending-sync indicator
+## 2. Offline / pending-sync indicator
 
 **What:** A small status chip (masthead or Flashcards identity line) that shows
 when the browser is offline, and when signed-in reviews are queued but not yet
@@ -153,7 +124,7 @@ tell whether their reviews are safe.
 
 ---
 
-## 4. Reading-input practice (kana → romaji)
+## 3. Reading-input practice (kana → romaji)
 
 **What:** A drill that shows a kana word from the tables and asks you to type
 its romaji; checks with the same lenient matching flashcards use

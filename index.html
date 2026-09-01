@@ -47,12 +47,14 @@
         <button type="button" data-col="english" aria-pressed="false" title="Hide the English column">English</button>
       </div>
       <button type="button" class="selftest-toggle" id="selftestToggle" aria-pressed="false" title="Blank the Meaning column — tap a row to check yourself">Self-test</button>
+      <button type="button" class="starred-toggle" id="starredToggle" aria-pressed="false" title="Show just the words you've starred" hidden>Starred <span class="starred-count" aria-hidden="true">0</span></button>
       <button type="button" class="polite-toggle" id="politeToggle" aria-pressed="false" title="Switch verb tables between the plain form and the polite 〜ます form">Show polite</button>
       <span id="searchCount" class="search-count" role="status" aria-live="polite" aria-atomic="true"></span>
     </div>
   </div>
   <div class="expand-bar"><button type="button" id="expandAllBtn" class="expand-all-btn" aria-pressed="false">Expand all</button></div>
   <div id="vocabulary"></div>
+  <div id="starredView" hidden></div>
 </section>
 <section id="flashcardsPage" class="page page-flashcards" hidden>
   <h2>Flashcards</h2>
@@ -74,6 +76,7 @@
     <li><strong>Furigana</strong> sits above the kanji. Hover or tap any kana to see its romaji.</li>
     <li>The <strong>Japanese / Furigana / Romaji / Meaning</strong> buttons hide those columns (or just the readings) in any combination — cover one side and test yourself.</li>
     <li><strong>Self-test</strong> blanks the Meaning column row by row; tap a row to check that one answer, tap again to re-hide. It resets when you reload.</li>
+    <li>The <strong>★</strong> at the end of a row stars it — a "keep an eye on this" list. Once you've starred anything, a <strong>Starred</strong> button appears in the toolbar and collects those words into one sortable, printable table. Stars sync with your account.</li>
     <li><strong>Show polite</strong>, on verb tables, swaps the dictionary form for the 〜ます form.</li>
   </ul>
 

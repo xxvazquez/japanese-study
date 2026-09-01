@@ -541,9 +541,11 @@ body {
 .vocab-controls { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
 /* Compact, rectangular controls -- a reference-book control, not a pill. */
 .view-mode { display: inline-flex; gap: 4px; }
-.polite-toggle[hidden] { display: none; }
+.polite-toggle[hidden],
+.starred-toggle[hidden] { display: none; }
 .view-mode button,
 .selftest-toggle,
+.starred-toggle,
 .polite-toggle {
   appearance: none;
   border: 1px solid var(--line-strong);
@@ -557,12 +559,20 @@ body {
 }
 .view-mode button:hover,
 .selftest-toggle:hover,
+.starred-toggle:hover,
 .polite-toggle:hover { color: var(--ink); border-color: var(--muted); }
+.starred-toggle .starred-count {
+  margin-left: 4px;
+  color: var(--faint);
+  font-variant-numeric: tabular-nums;
+}
+.starred-toggle.active .starred-count { color: var(--section-strong); }
 /* Active control: a section-toned fill + section-toned text and edge --
    deep enough to read as "on" at a glance, still a bordered rectangle, not
    a pill. (View-mode buttons use .col-hidden instead -- see below.) */
 .polite-toggle.active,
-.selftest-toggle.active {
+.selftest-toggle.active,
+.starred-toggle.active {
   background: color-mix(in srgb, var(--section) 18%, var(--paper));
   color: var(--section-strong);
   border-color: var(--section);
@@ -1171,6 +1181,8 @@ body.hide-furigana .vocab .furigana {
 }
 /* Keep the row action icons usable even when their column's text is hidden. */
 body.hide-english .vocab td:last-child .row-hide-btn,
+body.hide-english .vocab td:last-child .star-btn,
+body.hide-english .vocab td:last-child .star-btn svg,
 body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !important; }
 /* The pressed (= hidden) toggle reads as switched-off: struck through, muted. */
 .view-mode button.col-hidden {
@@ -1297,7 +1309,7 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   display: flex;
   opacity: 0;
   position: absolute;
-  right: 4px;
+  right: 26px;
   top: 50%;
   transform: translateY(-50%);
   appearance: none;
@@ -1318,9 +1330,51 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   .fc-toggle-btn { opacity: .5; }               /* ghosted -- present, not loud */
   .fc-toggle-btn[aria-pressed="true"] { opacity: 1; }
 }
-/* Manage rows shows both icons -- shift the toggle left of the hide button. */
-.table-section.managing-rows .fc-toggle-btn { opacity: 1; right: 28px; }
-.table-section.managing-rows .vocab tbody td:last-child { padding-right: 50px; }
+
+/* Row star / favourite toggle -- sits at the very edge of the Meaning cell,
+   inside the padding the fc-toggle already reserved. Quiet like the fc
+   toggle (revealed on hover / focus, ghosted on touch) but stays lit once
+   the word is starred, so at rest you only ever see stars on words you
+   picked. .starred = the accent fill of an "on" control. */
+.star-btn {
+  display: flex;
+  opacity: 0;
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: var(--faint);
+  cursor: pointer;
+  transition: opacity .12s ease;
+}
+.vocab tbody tr:hover .star-btn,
+.vocab tbody tr:focus-within .star-btn,
+.star-btn:focus-visible,
+.star-btn.starred { opacity: 1; }
+.star-btn:hover { color: var(--accent-dark); }
+.star-btn.starred { color: var(--accent); }
+.star-btn.starred svg { fill: currentColor; stroke: currentColor; }
+@media (hover: none) {
+  .star-btn { opacity: .5; }
+  .star-btn.starred { opacity: 1; }
+}
+/* Manage rows brings in the eye icon at the edge -- step the other two left
+   and show them all at full strength while that mode is on. */
+.table-section.managing-rows .fc-toggle-btn { opacity: 1; }
+.table-section.managing-rows .star-btn { right: 52px; opacity: 1; }
+.table-section.managing-rows .vocab tbody td:last-child { padding-right: 72px; }
+
+/* The collected "Starred" view: the toolbar toggle swaps the vocabulary
+   list (and its directory / expand bar) for one synthetic table built the
+   same way as every other, rendered into #starredView. */
+body.starred-mode #vocabulary,
+body.starred-mode #tableIndex,
+body.starred-mode .expand-bar { display: none !important; }
+.starred-empty { color: var(--muted); font-size: var(--fs-nav-sub); padding: 4px 0 0; }
 /* Manage mode overlays two action icons on the English column; on narrow
    screens give that column extra room (borrowed from romaji) so its text
    never gets crushed into a sliver behind the icons. */

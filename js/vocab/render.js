@@ -123,10 +123,26 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     if (!vocabId) return '';
     return '<button type="button" class="fc-toggle-btn" data-vocab-id="' + esc(vocabId) + '" aria-label="Add to flashcards" aria-pressed="false" title="Add to flashcards">' + FLASHCARD_ICON + '</button>';
   }
+  // Star / favourite -- a lightweight "keep an eye on this" list held in
+  // SakuraStudy.tableCustom (see js/vocab/interactions.js for the toolbar
+  // "Starred" view and js/vocab/table-custom.js for storage + sync). Rendered
+  // faint on every row, lit when starred; initial pressed state comes straight
+  // from the store so a reload / the collected view draws it right first paint.
+  var STAR_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L9 12.8 5.3 14.3l.7-4.3-3.1-3 4.3-.6Z"/></svg>';
+  function starToggleButton(vocabId) {
+    if (!vocabId) return '';
+    var tc = window.SakuraStudy.tableCustom;
+    var on = !!(tc && tc.isStarred && tc.isStarred(vocabId));
+    return '<button type="button" class="star-btn' + (on ? ' starred' : '') + '" data-vocab-id="' + esc(vocabId) +
+      '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Unstar' : 'Star') + ' this word" title="Star this word">' + STAR_ICON + '</button>';
+  }
+  function rowActions(vocabId) {
+    return starToggleButton(vocabId) + flashcardToggleButton(vocabId) + rowHideButton();
+  }
   function wordRow(row) {
     var openTag = '<tr data-vocab-id="' + esc(row.id || '') + '"' + (row.irregular ? ' class="irregular-row">' : '>');
     return openTag + jpCell(row) +
-      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
+      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + rowActions(row.id) + '</td></tr>';
   }
   // forms[0] is the plain/dictionary form, forms[1] the polite (-masu) form --
   // tag each so CSS can tint the two consistently (plain vs polite) down both
@@ -135,7 +151,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   function verbPairRow(row) {
     var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp, true) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '">' + esc(f.romaji) + '</div>'; }).join('');
-    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + flashcardToggleButton(row.id) + rowHideButton() + '</td></tr>';
+    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + rowActions(row.id) + '</td></tr>';
   }
   // isDefault marks the column the table renders sorted by (English) -- it
   // starts active and showing ↓ (A-Z); the others start neutral (↕).
