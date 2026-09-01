@@ -369,6 +369,21 @@ async function main() {
     return hidden;
   })());
 
+  console.log("Self-test mode (blank the Meaning column, tap a row to check)");
+  document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
+  const selftestBtn = document.getElementById("selftestToggle");
+  check("the control starts off", !!selftestBtn && selftestBtn.getAttribute("aria-pressed") === "false" && !document.body.classList.contains("selftest-mode"));
+  selftestBtn.click();
+  check("clicking it turns on selftest-mode and lights the button", document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "true" && selftestBtn.classList.contains("active"));
+  const stRow = document.querySelector('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden) tbody tr');
+  stRow.cells[2].click();
+  check("tapping a row reveals it", stRow.classList.contains("revealed"));
+  stRow.cells[2].click();
+  check("tapping again re-hides it", !stRow.classList.contains("revealed"));
+  stRow.classList.add("revealed");
+  selftestBtn.click();
+  check("leaving the mode clears it and every revealed row", !document.body.classList.contains("selftest-mode") && selftestBtn.getAttribute("aria-pressed") === "false" && !document.querySelector("#vocabulary .vocab tbody tr.revealed"));
+
   console.log("Table directory: every table visible at once, click to jump");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   document.querySelector(".tindex-trigger").click();

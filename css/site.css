@@ -543,6 +543,7 @@ body {
 .view-mode { display: inline-flex; gap: 4px; }
 .polite-toggle[hidden] { display: none; }
 .view-mode button,
+.selftest-toggle,
 .polite-toggle {
   appearance: none;
   border: 1px solid var(--line-strong);
@@ -555,11 +556,13 @@ body {
   white-space: nowrap;
 }
 .view-mode button:hover,
+.selftest-toggle:hover,
 .polite-toggle:hover { color: var(--ink); border-color: var(--muted); }
 /* Active control: a section-toned fill + section-toned text and edge --
    deep enough to read as "on" at a glance, still a bordered rectangle, not
    a pill. (View-mode buttons use .col-hidden instead -- see below.) */
-.polite-toggle.active {
+.polite-toggle.active,
+.selftest-toggle.active {
   background: color-mix(in srgb, var(--section) 18%, var(--paper));
   color: var(--section-strong);
   border-color: var(--section);
@@ -1176,6 +1179,20 @@ body.hide-english .vocab td:last-child .fc-toggle-btn { color: var(--faint) !imp
   text-decoration: line-through;
 }
 .view-mode button.col-hidden:hover { color: var(--muted); }
+
+/* Self-test mode: a session-only cover-and-check aid. Blank the Meaning
+   column's text row by row; a tap adds .revealed to that row to check
+   just its answer. Only the text goes transparent -- widths, rules and
+   the row action icons are untouched, so there's no reflow. Works
+   alongside the column toggles: if Meaning is already hidden there, this
+   simply has nothing to do. */
+body.selftest-mode .vocab tbody td:nth-child(3) { color: transparent !important; cursor: pointer; }
+body.selftest-mode .vocab tbody td:nth-child(3) mark.search-hit { color: transparent !important; background: transparent !important; }
+body.selftest-mode .vocab tbody tr.revealed td:nth-child(3) { color: var(--ink-2) !important; }
+body.selftest-mode .vocab tbody tr.revealed td:nth-child(3) mark.search-hit { color: var(--hl-ink) !important; background: var(--hl) !important; }
+/* Keep the row action icons readable while the meaning text is blanked. */
+body.selftest-mode .vocab tbody td:nth-child(3) .row-hide-btn,
+body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--faint) !important; }
 
 /* --- Focus + selection ------------------------------------------- */
 :focus-visible { outline: 2px solid var(--section); outline-offset: 2px; }

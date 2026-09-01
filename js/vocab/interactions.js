@@ -870,5 +870,33 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       });
     }
     updatePoliteVisibility();
+
+    // Self-test: a session-only study aid (not persisted, like Expand all).
+    // body.selftest-mode blanks the Meaning column via CSS; a tap on a row
+    // adds `.revealed` to check that one answer, a second tap re-hides it.
+    // Leaving the mode clears every revealed row.
+    const selftestToggle = document.getElementById('selftestToggle');
+    function applySelftestMode(on) {
+      document.body.classList.toggle('selftest-mode', on);
+      if (!on) document.querySelectorAll('#vocabulary .vocab tbody tr.revealed').forEach(function (r) { r.classList.remove('revealed'); });
+      if (selftestToggle) {
+        selftestToggle.classList.toggle('active', on);
+        selftestToggle.setAttribute('aria-pressed', String(on));
+      }
+    }
+    if (selftestToggle) {
+      selftestToggle.addEventListener('click', function () {
+        applySelftestMode(!document.body.classList.contains('selftest-mode'));
+      });
+    }
+    // Tap anywhere on a row -- but not on one of its buttons (sort, hide,
+    // add-to-flashcards) -- to reveal or re-hide its blanked answer.
+    document.addEventListener('click', function (event) {
+      if (!document.body.classList.contains('selftest-mode')) return;
+      const t = event.target;
+      if (!t || !t.closest || t.closest('button')) return;
+      const row = t.closest('#vocabulary .vocab tbody tr');
+      if (row) row.classList.toggle('revealed');
+    });
   });
 })();
