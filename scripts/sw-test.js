@@ -15,7 +15,7 @@ const path = require("path");
 const vm = require("vm");
 
 const ROOT = path.resolve(__dirname, "..");
-const ORIGIN = "https://sakura.test";
+const ORIGIN = "https://raume.test";
 const SCOPE = ORIGIN + "/";
 const SW_SOURCE = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
 
@@ -162,8 +162,8 @@ async function main() {
   await sw1.activate();
 
   const cacheNames = await storage.keys();
-  check("exactly one cache, named for this version", cacheNames.length === 1 && cacheNames[0] === "sakura-" + V1);
-  const cache = await storage.open("sakura-" + V1);
+  check("exactly one cache, named for this version", cacheNames.length === 1 && cacheNames[0] === "raume-" + V1);
+  const cache = await storage.open("raume-" + V1);
   check("index.html is precached (unversioned key)", cache.entries.has(resolveUrl("index.html")));
   check("root navigation target is precached", cache.entries.has(resolveUrl("./")));
   check("every maskable/app icon is precached", ["icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-192.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"].every((i) => cache.entries.has(resolveUrl(i))));
@@ -178,7 +178,7 @@ async function main() {
   console.log("Offline: the reference page loads from cache");
   online = false;
   const navRes = await sw1.handleFetch(navRequest());
-  check("navigation falls back to the cached shell", navRes && (await navRes.text()).includes("<title>sakura</title>"));
+  check("navigation falls back to the cached shell", navRes && (await navRes.text()).includes("<title>raume</title>"));
   for (const p of REFERENCE_SHELL) {
     const res = await sw1.handleFetch(assetRequest(p + "?v=" + V1));
     check("offline hit for reference asset: " + p, !!res && typeof (await res.text()) === "string");
@@ -197,8 +197,8 @@ async function main() {
   await sw2.install();
   await sw2.activate();
   const namesAfter = await storage.keys();
-  check("old deploy's cache is deleted on activate", namesAfter.length === 1 && namesAfter[0] === "sakura-" + V2);
-  check("new cache holds the new versioned URLs", (await storage.open("sakura-" + V2)).entries.has(resolveUrl("js/vocab/render.js?v=" + V2)));
+  check("old deploy's cache is deleted on activate", namesAfter.length === 1 && namesAfter[0] === "raume-" + V2);
+  check("new cache holds the new versioned URLs", (await storage.open("raume-" + V2)).entries.has(resolveUrl("js/vocab/render.js?v=" + V2)));
 
   online = false;
   const staleRes = await sw2.handleFetch(assetRequest("js/vocab/render.js?v=" + V1));

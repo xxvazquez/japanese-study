@@ -27,8 +27,8 @@ The Flashcards section stores your learning data (which vocab entries you've add
 3. Open [`js/config.js`](js/config.js) and fill them in:
 
    ```js
-   window.SakuraStudy = window.SakuraStudy || {};
-   window.SakuraStudy.config = window.SakuraStudy.config || {
+   window.RaumeStudy = window.RaumeStudy || {};
+   window.RaumeStudy.config = window.RaumeStudy.config || {
      url: "https://YOUR-PROJECT-REF.supabase.co",
      anonKey: "YOUR-ANON-PUBLIC-KEY",
    };

@@ -1,8 +1,8 @@
-// Helpers shared across more than one feature, published as SakuraStudy.shared.
+// Helpers shared across more than one feature, published as RaumeStudy.shared.
 // Deliberately tiny -- formatting that belongs to a single feature stays with
 // that feature. See the load-order comment in index.html.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.shared = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.shared = (function () {
   "use strict";
 
   // Escape text for interpolation into an HTML string. Identical behaviour to

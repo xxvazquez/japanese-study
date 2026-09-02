@@ -1,24 +1,24 @@
-// The Customize page (SakuraStudy.customize) -- one place to give any
+// The Customize page (RaumeStudy.customize) -- one place to give any
 // vocabulary table a custom name, icon, and running order. Reached from the
 // gear in the masthead (#customize); routing and show/hide live in
 // js/vocab/interactions.js.
 //
-// It writes through SakuraStudy.tableCustom, the same per-table personalisation
+// It writes through RaumeStudy.tableCustom, the same per-table personalisation
 // store the inline section-header icon picker uses, so a change here shows up on
 // the vocabulary page and in Flashcards > Manage, and syncs across devices while
 // signed in. The dataset itself is never touched.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.customize = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.customize = (function () {
   "use strict";
 
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var esc = window.RaumeStudy.shared.escapeHtml;
   var hostEl = null;
   var wired = false;
   var pendingFocus = null;
 
-  function tc() { return window.SakuraStudy.tableCustom; }
-  function V() { return window.SakuraStudy.vocab; }
-  function tables() { return window.SakuraStudy.data.vocabularyTables || []; }
+  function tc() { return window.RaumeStudy.tableCustom; }
+  function V() { return window.RaumeStudy.vocab; }
+  function tables() { return window.RaumeStudy.data.vocabularyTables || []; }
 
   var ARROW_UP = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 13.5V4.5M4.5 9 9 4.5 13.5 9"/></svg>';
   var ARROW_DOWN = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4.5v9M4.5 9 9 13.5 13.5 9"/></svg>';

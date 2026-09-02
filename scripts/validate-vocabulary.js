@@ -5,7 +5,7 @@ const page = fs.readFileSync("index.html", "utf8");
 const css = fs.readFileSync("css/site.css", "utf8");
 const sandbox = { window: {} };
 vm.runInNewContext(source, sandbox);
-const tableList = (sandbox.window.SakuraStudy && sandbox.window.SakuraStudy.data.vocabularyTables) || [];
+const tableList = (sandbox.window.RaumeStudy && sandbox.window.RaumeStudy.data.vocabularyTables) || [];
 const tableCount = tableList.length;
 const rowCount = tableList.reduce((total, t) => total + t.rows.length, 0);
 const expectedTables = 23;

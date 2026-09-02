@@ -1,7 +1,7 @@
 // Data only. Published on the single application namespace as
-// SakuraStudy.data.vocabularyTables -- see the load-order comment in index.html.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.data = { vocabularyTables: [
+// RaumeStudy.data.vocabularyTables -- see the load-order comment in index.html.
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.data = { vocabularyTables: [
   {
     id: 0,
     title: "Counters",

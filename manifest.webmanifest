@@ -1,6 +1,6 @@
 {
-  "name": "sakura — Japanese vocabulary reference",
-  "short_name": "sakura",
+  "name": "raume — Japanese vocabulary reference",
+  "short_name": "raume",
   "description": "A searchable Japanese vocabulary reference with furigana, romaji and English, organized by category.",
   "start_url": "./index.html",
   "scope": "./",

@@ -9,7 +9,7 @@
 // deploy drops the previous deploy's cache wholesale -- no stale entries, no
 // unbounded growth, and no reliance on ignoreSearch.
 const VERSION = '__CACHEBUST__';
-const CACHE = 'sakura-' + VERSION;
+const CACHE = 'raume-' + VERSION;
 
 // Requested by the browser WITHOUT a version query (navigation targets, the
 // manifest, icons). Cached under their bare URLs.

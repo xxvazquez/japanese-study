@@ -8,6 +8,8 @@
   "use strict";
   var choice;
   try {
+    // Storage key keeps the historical "sakura-" prefix so the rename doesn't
+    // reset anyone's saved theme.
     choice = window.localStorage && localStorage.getItem("sakura-theme");
   } catch (e) { choice = null; }
   if (choice !== "light" && choice !== "dark") choice = "system";

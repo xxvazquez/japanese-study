@@ -5,12 +5,12 @@
 // uploaded image, or "" for "no icon". No positioning is done in JS (the CSP
 // forbids inline styles) -- layout is all CSS, modelled on the table
 // directory's panel/scrim.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.iconPicker = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.iconPicker = (function () {
   "use strict";
 
-  var icons = window.SakuraStudy.icons;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var icons = window.RaumeStudy.icons;
+  var esc = window.RaumeStudy.shared.escapeHtml;
   var CLOSE = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M4 4l10 10M14 4L4 14"/></svg>';
   var MAX_UPLOAD_BYTES = 512 * 1024; // 512 KB source cap; downscaled to 64px anyway
 

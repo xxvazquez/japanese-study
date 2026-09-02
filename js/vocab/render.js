@@ -1,18 +1,18 @@
-// Vocabulary page -- rendering half of SakuraStudy.vocab.
+// Vocabulary page -- rendering half of RaumeStudy.vocab.
 //
 // Builds every vocabulary table (grouped section -> category -> table) and the
-// four-item top navigation from SakuraStudy.data, and owns per-table sorting.
+// four-item top navigation from RaumeStudy.data, and owns per-table sorting.
 // Runs its render
 // synchronously at load (same lifecycle as the old js/app.js). The interaction
 // half -- navigation, search, event wiring -- lives in js/vocab/interactions.js
-// and augments the same SakuraStudy.vocab object. See the load-order comment in
+// and augments the same RaumeStudy.vocab object. See the load-order comment in
 // index.html.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
 
 /* Per-table sorting: numbers, weekdays, and months sort naturally; everything else falls back to locale order. */
 (function(){
-  var vocab = window.SakuraStudy.vocab;
+  var vocab = window.RaumeStudy.vocab;
   const DAYS = {
     monday:0,tuesday:1,wednesday:2,thursday:3,friday:4,saturday:5,sunday:6,
     mon:0,tue:1,wed:2,thu:3,fri:4,sat:5,sun:6,
@@ -74,8 +74,8 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
    the markup for a table/row is written once here instead of being baked,
    repeated, and hand-edited once per row in the data file. */
 (function () {
-  var vocab = window.SakuraStudy.vocab;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var vocab = window.RaumeStudy.vocab;
+  var esc = window.RaumeStudy.shared.escapeHtml;
   // Exposed so js/flashcards/vocab-index.js can render the exact same furigana markup
   // for a vocab entry's Japanese prompt instead of duplicating this logic.
   vocab.jpSegmentsHtml = jpSegments;
@@ -83,8 +83,8 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // js/vocab/kana-romaji.js). On for the vocabulary tables; off for flashcard
   // prompts (passed straight through), where it would spoil a romaji answer.
   function jpSegments(segments, decorateKana) {
-    var plain = decorateKana && window.SakuraStudy.kanaRomaji
-      ? function (t) { return window.SakuraStudy.kanaRomaji.decorate(t); }
+    var plain = decorateKana && window.RaumeStudy.kanaRomaji
+      ? function (t) { return window.RaumeStudy.kanaRomaji.decorate(t); }
       : esc;
     return segments.map(function (seg) {
       return seg.kanji
@@ -124,14 +124,14 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     return '<button type="button" class="fc-toggle-btn" data-vocab-id="' + esc(vocabId) + '" aria-label="Add to flashcards" aria-pressed="false" title="Add to flashcards">' + FLASHCARD_ICON + '</button>';
   }
   // Star / favourite -- a lightweight "keep an eye on this" list held in
-  // SakuraStudy.tableCustom (see js/vocab/interactions.js for the toolbar
+  // RaumeStudy.tableCustom (see js/vocab/interactions.js for the toolbar
   // "Starred" view and js/vocab/table-custom.js for storage + sync). Rendered
   // faint on every row, lit when starred; initial pressed state comes straight
   // from the store so a reload / the collected view draws it right first paint.
   var STAR_ICON = '<svg viewBox="0 0 18 18" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2.5l1.9 3.9 4.3.6-3.1 3 .7 4.3L9 12.8 5.3 14.3l.7-4.3-3.1-3 4.3-.6Z"/></svg>';
   function starToggleButton(vocabId) {
     if (!vocabId) return '';
-    var tc = window.SakuraStudy.tableCustom;
+    var tc = window.RaumeStudy.tableCustom;
     var on = !!(tc && tc.isStarred && tc.isStarred(vocabId));
     return '<button type="button" class="star-btn' + (on ? ' starred' : '') + '" data-vocab-id="' + esc(vocabId) +
       '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Unstar' : 'Star') + ' this word" title="Star this word">' + STAR_ICON + '</button>';
@@ -241,14 +241,14 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // render the chosen icon (js/vocab/icons.js) or an uploaded image instead.
   var EMPTY_ICON = '<svg class="si" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 3.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>';
   function tableIconValue(id) {
-    var tc = window.SakuraStudy.tableCustom;
+    var tc = window.RaumeStudy.tableCustom;
     return tc ? tc.iconOf(id) : '';
   }
   // The name to show for a table: the reader's custom name (Customize page) if
   // they've set one, otherwise the name shipped in the dataset. Used everywhere
   // a table is labelled -- section header, table directory, Flashcards Manage.
   function tableTitle(id, fallback) {
-    var tc = window.SakuraStudy.tableCustom;
+    var tc = window.RaumeStudy.tableCustom;
     var custom = tc ? tc.nameOf(id) : '';
     return custom || fallback || '';
   }
@@ -257,7 +257,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // table-directory rows so a chosen icon shows everywhere the table does.
   function tableIconGlyph(id) {
     var v = tableIconValue(id);
-    var svg = v && window.SakuraStudy.icons ? window.SakuraStudy.icons.render(v) : '';
+    var svg = v && window.RaumeStudy.icons ? window.RaumeStudy.icons.render(v) : '';
     return svg || EMPTY_ICON;
   }
   function tableIconSlot(id) {
@@ -295,7 +295,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   // category order (Customize page). `section` may be omitted (no custom order).
   function orderedCategoryNames(names, section) {
     var sorted = names.slice().sort(function (a, b) { return a.localeCompare(b); });
-    var tc = window.SakuraStudy.tableCustom;
+    var tc = window.RaumeStudy.tableCustom;
     var custom = tc && section ? tc.categoryOrder(section) : null;
     return applyCustomOrder(sorted, custom, function (x) { return x; });
   }
@@ -305,7 +305,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     var sorted = tables.slice().sort(function (a, b) {
       return tableTitle(a.id, a.title).localeCompare(tableTitle(b.id, b.title));
     });
-    var tc = window.SakuraStudy.tableCustom;
+    var tc = window.RaumeStudy.tableCustom;
     var custom = tc ? tc.tableOrder(categoryName) : null;
     return applyCustomOrder(sorted, custom, function (t) { return String(t.id); });
   }
@@ -400,7 +400,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
   var host = document.getElementById('vocabulary');
   var navHost = document.getElementById('siteNav');
   var indexHost = document.getElementById('tableIndex');
-  var vocabularyTables = window.SakuraStudy.data.vocabularyTables;
+  var vocabularyTables = window.RaumeStudy.data.vocabularyTables;
   if (host && vocabularyTables) {
     host.innerHTML = renderAll(vocabularyTables);
     if (navHost) navHost.innerHTML = renderNav();

@@ -11,7 +11,7 @@
 
 /* Space Grotesk -- self-hosted (fonts/SpaceGrotesk.woff2, SIL OFL, see
    fonts/SpaceGrotesk.LICENSE.txt). Latin weight 400 only, and used for
-   exactly one thing: the "sakura" wordmark. A modern geometric-humanist
+   exactly one thing: the "raume" wordmark. A modern geometric-humanist
    sans that reads as personality next to Inter's neutral UI voice. */
 @font-face {
   font-family: "Space Grotesk";
@@ -29,7 +29,7 @@
 
 :root {
   /* -------------------------------------------------------------------
-     Sakura -- a quiet, editorial Japanese reference. One restrained
+     raume -- a quiet, editorial Japanese reference. One restrained
      slate-blue accent, cool grey-blue lines, blue-grey ink. No warm
      tones, no decorative colour. Hierarchy comes from size, spacing,
      position and rule weight -- not bold text or high contrast.

@@ -1,4 +1,4 @@
-// Flashcards -- the Kana tab (SakuraStudy.flashcards.kana).
+// Flashcards -- the Kana tab (RaumeStudy.flashcards.kana).
 //
 // A hiragana / katakana reading trainer that sits alongside the vocabulary
 // flashcards: pick which kana groups to drill (gojuon, dakuten, combos, per
@@ -17,17 +17,17 @@
 // kana (a flip card -- you can't type kana, so Enter/Space reveals the glyph
 // and you rate yourself). Which directions are in the queue is a per-tab
 // toggle on the group picker; both are on by default.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.kana = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.kana = (function () {
   "use strict";
 
-  var S = window.SakuraStudy.flashcards;
+  var S = window.RaumeStudy.flashcards;
   var kanaData = S.kanaData;
   var sched = S.scheduling;
   var store = S.store;
   var dataOps = S.dataOps;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var esc = window.RaumeStudy.shared.escapeHtml;
 
   var getScheduler = sched.getScheduler, previewRatings = sched.previewRatings;
   var applyRating = sched.applyRating, shuffle = sched.shuffle;

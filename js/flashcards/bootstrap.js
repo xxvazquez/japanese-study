@@ -1,4 +1,4 @@
-// Flashcards -- bootstrap controller (SakuraStudy.flashcards, root).
+// Flashcards -- bootstrap controller (RaumeStudy.flashcards, root).
 //
 // FSRS-6 spaced repetition on top of the existing vocabulary, split across
 // js/flashcards/*.js (store -> vocab-index -> scheduling -> data-ops ->
@@ -15,15 +15,15 @@
 //     under its own separate key. Every feature works the same in both.
 // No vocabulary *content* is ever stored anywhere; only each row's permanent
 // id is referenced (and in guest mode it never leaves the browser at all).
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
 (function () {
   "use strict";
 
-  var S = window.SakuraStudy.flashcards;
+  var S = window.RaumeStudy.flashcards;
   var store = S.store, vidx = S.vocabIndex, sched = S.scheduling;
   var dataOps = S.dataOps, dashboard = S.dashboard, views = S.views, kana = S.kana;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var esc = window.RaumeStudy.shared.escapeHtml;
 
   var isGuestMode = store.isGuestMode, setStoredMode = store.setStoredMode, loadCache = store.loadCache;
   var loadKanaCache = store.loadKanaCache;
@@ -208,8 +208,8 @@ window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
 
   // Vocabulary-page table icons: while signed in, a local pick is pushed to
   // the account (fetchAllFromServer pulls them back the other way on sign-in).
-  if (window.SakuraStudy.tableCustom) {
-    window.SakuraStudy.tableCustom.setRemotePush(function (obj) {
+  if (window.RaumeStudy.tableCustom) {
+    window.RaumeStudy.tableCustom.setRemotePush(function (obj) {
       if (authState.session) dataOps.saveTableCustomRemote(obj).catch(function () {});
     });
   }

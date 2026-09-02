@@ -1,19 +1,19 @@
 // Flashcards -- authentication, sync and data operations
-// (SakuraStudy.flashcards.dataOps).
+// (RaumeStudy.flashcards.dataOps).
 //
 // The Supabase client + auth, the remote store (Supabase is the source of
 // truth when signed in), the guest-mode local store (the cache itself is the
 // record), the mode-aware entry points the rest of the UI calls, the daily
 // streak, and the offline review outbox + conflict-safe sync. Nothing here
 // changes storage formats or sync semantics -- it is the same code, relocated.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.dataOps = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.dataOps = (function () {
   "use strict";
 
-  var store = window.SakuraStudy.flashcards.store;
-  var sched = window.SakuraStudy.flashcards.scheduling;
-  var vidx = window.SakuraStudy.flashcards.vocabIndex;
+  var store = window.RaumeStudy.flashcards.store;
+  var sched = window.RaumeStudy.flashcards.scheduling;
+  var vidx = window.RaumeStudy.flashcards.vocabIndex;
   var getCache = store.getCache, saveCache = store.saveCache, resetCacheForUser = store.resetCacheForUser;
   var resetKanaCacheForUser = store.resetKanaCacheForUser;
   var isGuestMode = store.isGuestMode, uuid = store.uuid, localDateStr = store.localDateStr;
@@ -26,12 +26,12 @@ window.SakuraStudy.flashcards.dataOps = (function () {
   // -----------------------------------------------------------------------
   var supabaseClient = null;
   function configured() {
-    var cfg = window.SakuraStudy.config || {};
+    var cfg = window.RaumeStudy.config || {};
     return !!(cfg.url && cfg.anonKey);
   }
   function getClient() {
     if (supabaseClient || !configured()) return supabaseClient;
-    var cfg = window.SakuraStudy.config;
+    var cfg = window.RaumeStudy.config;
     supabaseClient = window.supabase.createClient(cfg.url, cfg.anonKey);
     return supabaseClient;
   }
@@ -113,8 +113,8 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     saveCache();
     // The vocabulary page's per-table icons live in this same row -- hand
     // them to their own store so a header icon set on another device shows up.
-    if (window.SakuraStudy.tableCustom) {
-      window.SakuraStudy.tableCustom.applyRemote(settingsRow.table_custom || {});
+    if (window.RaumeStudy.tableCustom) {
+      window.RaumeStudy.tableCustom.applyRemote(settingsRow.table_custom || {});
     }
   }
 

@@ -3,8 +3,8 @@
 // the app's own inline SVGs. Paths are a hand-picked subset adapted from
 // Lucide (ISC licence, see vendor/lucide.LICENSE.txt), all on a 24x24 grid so
 // they scale cleanly at any display size.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.icons = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.icons = (function () {
   "use strict";
 
   // name -> inner SVG markup (paths only; the <svg> wrapper is added by render)

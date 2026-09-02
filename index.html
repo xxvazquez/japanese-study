@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>sakura</title>
+<title>raume</title>
 <script src="js/theme-init.js?v=__CACHEBUST__"></script>
 <link rel="stylesheet" href="css/site.css?v=__CACHEBUST__">
 <link rel="icon" href="logo.png">
@@ -11,10 +11,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="sakura">
+<meta name="apple-mobile-web-app-title" content="raume">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'self'"></head><body><div class="app-frame">
 <header class="masthead">
-  <a class="wordmark" href="#vocabulary" data-section="vocabulary">sakura</a>
+  <a class="wordmark" href="#vocabulary" data-section="vocabulary">raume</a>
   <div class="masthead-right">
     <span class="masthead-tag">Japanese Reference</span>
     <button type="button" class="masthead-gear" id="helpToggle" aria-label="How this works" title="How this works">
@@ -109,7 +109,7 @@
 </div>
 <!--
   Classic scripts, loaded in a deliberate order. All first-party code communicates
-  through one namespace, window.SakuraStudy (sub-namespaces: .data, .config,
+  through one namespace, window.RaumeStudy (sub-namespaces: .data, .config,
   .shared, .vocab, .flashcards). Each file may only read namespaces populated by a
   file above it. Vendored libraries keep their own globals (window.FSRS,
   window.supabase). The ?v=__CACHEBUST__ token is stamped with the commit SHA at
@@ -119,17 +119,17 @@
   js/theme-init.js is loaded first, in <head>, so the light/dark theme is on
   <html data-theme> before the first paint. Everything else loads here:
 
-  1. data/vocabulary.js   -> SakuraStudy.data       (vocabulary dataset, data only)
-  2. js/config.js         -> SakuraStudy.config     (Supabase connection config)
-  3. js/shared.js         -> SakuraStudy.shared     (cross-feature helpers)
-  4. js/vocab/kana-romaji.js  -> SakuraStudy.kanaRomaji (kana->romaji for the hover/tap reading layer)
+  1. data/vocabulary.js   -> RaumeStudy.data       (vocabulary dataset, data only)
+  2. js/config.js         -> RaumeStudy.config     (Supabase connection config)
+  3. js/shared.js         -> RaumeStudy.shared     (cross-feature helpers)
+  4. js/vocab/kana-romaji.js  -> RaumeStudy.kanaRomaji (kana->romaji for the hover/tap reading layer)
      js/vocab/icons.js / table-custom.js / icon-picker.js -> per-table icon & name personalisation
-  5. js/vocab/render.js       -> SakuraStudy.vocab  (tables + four-item nav rendering, sorting)
-  6. js/vocab/interactions.js -> SakuraStudy.vocab  (routing, search, view modes, menus, print, polite)
-     js/vocab/customize.js    -> SakuraStudy.customize (the #customize page: rename / re-icon any table)
+  5. js/vocab/render.js       -> RaumeStudy.vocab  (tables + four-item nav rendering, sorting)
+  6. js/vocab/interactions.js -> RaumeStudy.vocab  (routing, search, view modes, menus, print, polite)
+     js/vocab/customize.js    -> RaumeStudy.customize (the #customize page: rename / re-icon any table)
   7. vendor/ts-fsrs.js    -> window.FSRS           (vendored FSRS-6 scheduler)
   8. vendor/supabase.js   -> window.supabase       (vendored Supabase client)
-  9. js/flashcards/  -> SakuraStudy.flashcards.*  (feature split by responsibility; each file
+  9. js/flashcards/  -> RaumeStudy.flashcards.*  (feature split by responsibility; each file
                        only reads modules above it in this list)
        store.js       .store       state & storage: local cache, guest/signed-in mode
        vocab-index.js .vocabIndex  vocab lookup + answer checking (pure)

@@ -1,19 +1,19 @@
 // Flashcards -- Manage / Settings / Help tabs + the vocabulary-page row toggle
-// (SakuraStudy.flashcards.views).
+// (RaumeStudy.flashcards.views).
 //
 // Manage: browse every vocab entry by category > table, add / pause / restore
 // individually or a whole table at once. Settings: Study Directions, the FSRS
 // knobs, and the daily new-card cap. Help: the reference card. Plus the
 // "add to flashcards" toggle js/vocab/render.js draws on each vocabulary row.
 // Nothing here deletes a card or its history -- pause only archives.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.views = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.views = (function () {
   "use strict";
 
-  var fc = window.SakuraStudy.flashcards;
+  var fc = window.RaumeStudy.flashcards;
   var store = fc.store, vidx = fc.vocabIndex, dataOps = fc.dataOps, dashboard = fc.dashboard;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var esc = window.RaumeStudy.shared.escapeHtml;
 
   var getCache = store.getCache, hasActiveSession = store.hasActiveSession;
   var DIRECTIONS = store.DIRECTIONS, DIRECTION_LABEL = store.DIRECTION_LABEL;
@@ -26,7 +26,7 @@ window.SakuraStudy.flashcards.views = (function () {
 
   // The app shell / tab routing live in the bootstrap module -- reached lazily
   // so this file does not depend on its load order.
-  function rerender() { window.SakuraStudy.flashcards.render(); }
+  function rerender() { window.RaumeStudy.flashcards.render(); }
 
   var SAVED_FLASH_MS = 3000;
   var settingsSavedAt = 0; // timestamp of the last successful Settings save -- lets the "Saved ✓" note survive an unrelated re-render for a few seconds
@@ -186,7 +186,7 @@ window.SakuraStudy.flashcards.views = (function () {
       catNames.forEach(function (cat) {
         var tableIds = Object.keys(byCategory[cat]).sort(function (a, b) { return byCategory[cat][a].title.localeCompare(byCategory[cat][b].title); });
         var totalInCategory = tableIds.reduce(function (n, k) { return n + byCategory[cat][k].ids.length; }, 0);
-        html += '<details open class="fc-manage-group"><summary class="fc-manage-group-title">' + window.SakuraStudy.vocab.categoryHeaderHtml(cat, totalInCategory) + "</summary>";
+        html += '<details open class="fc-manage-group"><summary class="fc-manage-group-title">' + window.RaumeStudy.vocab.categoryHeaderHtml(cat, totalInCategory) + "</summary>";
         // Bulk add for the whole category -- the "no way to add more than one
         // table at once" gap. Only worth showing when more than one table
         // still has words left to add.
@@ -211,9 +211,9 @@ window.SakuraStudy.flashcards.views = (function () {
           var expanded = !!manageExpandedTables[tableId];
           // Show the same custom name and icon the reader set on the vocabulary
           // page / Customize page, so a table reads identically in both places.
-          var vocabNs = window.SakuraStudy.vocab;
+          var vocabNs = window.RaumeStudy.vocab;
           var displayTitle = vocabNs.tableTitle ? vocabNs.tableTitle(tableId, table.title) : table.title;
-          var tc = window.SakuraStudy.tableCustom;
+          var tc = window.RaumeStudy.tableCustom;
           var iconHtml = (tc && tc.iconOf(tableId) && vocabNs.tableIconGlyph)
             ? '<span class="fc-manage-table-icon">' + vocabNs.tableIconGlyph(tableId) + "</span>" : "";
           html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
@@ -477,7 +477,7 @@ window.SakuraStudy.flashcards.views = (function () {
     if (!btn) return;
     event.stopPropagation();
     if (!hasActiveSession()) {
-      if (window.SakuraStudy.vocab.showFlashcardsPage) window.SakuraStudy.vocab.showFlashcardsPage();
+      if (window.RaumeStudy.vocab.showFlashcardsPage) window.RaumeStudy.vocab.showFlashcardsPage();
       return;
     }
     var vocabId = btn.dataset.vocabId;
@@ -494,7 +494,7 @@ window.SakuraStudy.flashcards.views = (function () {
     if (!btn || btn.disabled) return;
     event.stopPropagation();
     if (!hasActiveSession()) {
-      if (window.SakuraStudy.vocab.showFlashcardsPage) window.SakuraStudy.vocab.showFlashcardsPage();
+      if (window.RaumeStudy.vocab.showFlashcardsPage) window.RaumeStudy.vocab.showFlashcardsPage();
       return;
     }
     var vocabIds = visibleVocabIdsForTable(btn.dataset.table);
@@ -507,7 +507,7 @@ window.SakuraStudy.flashcards.views = (function () {
       await fetchAllFromServer();
       invalidateInsights();
       refreshRowToggleButtons();
-      var activeTab = window.SakuraStudy.flashcards.getActiveTab();
+      var activeTab = window.RaumeStudy.flashcards.getActiveTab();
       if (activeTab === "dashboard" || activeTab === "manage") rerender();
       btn.textContent = "Added " + vocabIds.length + " word" + (vocabIds.length === 1 ? "" : "s");
       setTimeout(function () { btn.textContent = originalText; btn.disabled = false; }, 2000);
@@ -521,7 +521,7 @@ window.SakuraStudy.flashcards.views = (function () {
   // Kept on the namespace root too, so dashboard.js (which redraws the
   // "Words to Review" table) can refresh the row toggles without importing
   // this whole module.
-  window.SakuraStudy.flashcards.refreshRowToggleButtons = refreshRowToggleButtons;
+  window.RaumeStudy.flashcards.refreshRowToggleButtons = refreshRowToggleButtons;
 
   return {
     renderManage: renderManage, renderSettings: renderSettings, renderHelp: renderHelp,

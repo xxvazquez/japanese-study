@@ -10,8 +10,8 @@
 // hover target maps to exactly one romaji chunk (ケ->ke, ちょ->cho, ねー->ne
 // with a macron). Hiragana is romanised through the same table by normalising
 // each char to katakana for the lookup while keeping the original for display.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.kanaRomaji = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.kanaRomaji = (function () {
   "use strict";
 
   // Single katakana -> romaji (small ャュョ / ッ / ー handled specially below).
@@ -121,7 +121,7 @@ window.SakuraStudy.kanaRomaji = (function () {
   // lands in the DOM's textContent -- search and sort stay clean). Everything
   // else is passed through, HTML-escaped.
   function decorate(raw) {
-    var esc = window.SakuraStudy.shared.escapeHtml;
+    var esc = window.RaumeStudy.shared.escapeHtml;
     var out = "", run = "";
     function flush() {
       if (!run) return;

@@ -1,15 +1,15 @@
-// Vocabulary page -- interaction half of SakuraStudy.vocab.
+// Vocabulary page -- interaction half of RaumeStudy.vocab.
 //
 // Section routing (Vocabulary / Grammar / Travel / Flashcards), the per-table
 // accordion and overflow menus, print, cross-section search, the view-mode
 // column filter, the four-item top navigation and the casual/polite toggle.
-// Augments the SakuraStudy.vocab object that js/vocab/render.js creates. Loaded
+// Augments the RaumeStudy.vocab object that js/vocab/render.js creates. Loaded
 // after render.js; keeps the exact DOMContentLoaded lifecycle the old
 // js/app.js had.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
 (function () {
-  var vocab = window.SakuraStudy.vocab;
+  var vocab = window.RaumeStudy.vocab;
 
   // Print a clean A4 sheet of one table, a whole section (all its tables), or
   // the whole reference. Every case marks the wanted .table-section(s)
@@ -275,7 +275,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     document.body.dataset.activePage = 'customize';
     showStandalonePage('customize');
     var customizePage = document.getElementById('customizePage');
-    if (window.SakuraStudy.customize && customizePage) window.SakuraStudy.customize.render(customizePage);
+    if (window.RaumeStudy.customize && customizePage) window.RaumeStudy.customize.render(customizePage);
     markActiveNav(null);
     setHash('customize', opts.fromRoute);
     window.scrollTo({ top: 0 });
@@ -778,7 +778,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // data-theme + data-theme-choice> before paint; this wires the toggle
     // (a 3-way cycle: System -> Light -> Dark -> System), keeps "system"
     // following the OS live, and persists the choice.
-    const THEME_KEY = 'sakura-theme';
+    const THEME_KEY = 'sakura-theme'; // historical prefix -- see js/theme-init.js
     const THEME_ORDER = ['system', 'light', 'dark'];
     const THEME_LABEL = { system: 'System', light: 'Light', dark: 'Dark' };
     const themeToggle = document.getElementById('themeToggle');
@@ -828,13 +828,13 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     // icon picker, or the Customize page) swaps in wherever that table shows --
     // its header and the "jump to a table" directory -- without a re-render.
     function shippedTitle(id) {
-      const t = (window.SakuraStudy.data.vocabularyTables || []).filter(function (x) { return String(x.id) === String(id); })[0];
+      const t = (window.RaumeStudy.data.vocabularyTables || []).filter(function (x) { return String(x.id) === String(id); })[0];
       return t ? t.title : null;
     }
     function refreshTable(id) {
-      const tc = window.SakuraStudy.tableCustom, glyph = window.SakuraStudy.vocab.tableIconGlyph(id);
+      const tc = window.RaumeStudy.tableCustom, glyph = window.RaumeStudy.vocab.tableIconGlyph(id);
       const has = !!tc.iconOf(id);
-      const title = window.SakuraStudy.vocab.tableTitle(id, shippedTitle(id));
+      const title = window.RaumeStudy.vocab.tableTitle(id, shippedTitle(id));
       document.querySelectorAll('#vocabulary .table-section[data-table="' + id + '"]').forEach(function (section) {
         const slot = section.querySelector('.section-icon');
         if (slot) { slot.classList.toggle('section-icon-empty', !has); slot.innerHTML = glyph; }
@@ -861,15 +861,15 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     }
     document.addEventListener('click', function (event) {
       const btn = event.target.closest && event.target.closest('.section-icon-btn');
-      if (!btn || !window.SakuraStudy.iconPicker) return;
+      if (!btn || !window.RaumeStudy.iconPicker) return;
       const id = btn.dataset.iconFor;
-      window.SakuraStudy.iconPicker.open(window.SakuraStudy.tableCustom.iconOf(id), function (value) {
-        window.SakuraStudy.tableCustom.setIcon(id, value); // fires onChange -> redraw
+      window.RaumeStudy.iconPicker.open(window.RaumeStudy.tableCustom.iconOf(id), function (value) {
+        window.RaumeStudy.tableCustom.setIcon(id, value); // fires onChange -> redraw
       }, btn);
     });
     // Redraw on any change -- a local pick, or icons arriving from another
     // device on sign-in (Supabase sync).
-    if (window.SakuraStudy.tableCustom) window.SakuraStudy.tableCustom.onChange(refreshAllTables);
+    if (window.RaumeStudy.tableCustom) window.RaumeStudy.tableCustom.onChange(refreshAllTables);
 
     // Landing view -- driven by the URL hash (#grammar, #table-15, …) so a
     // section or table can be linked to and survives a reload.
@@ -928,7 +928,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     });
 
     // Star / favourite rows. A per-row star toggle (drawn by js/vocab/render.js)
-    // writes a flat vocab-id list into SakuraStudy.tableCustom ("__starred"),
+    // writes a flat vocab-id list into RaumeStudy.tableCustom ("__starred"),
     // synced through the account like table names/icons. Once anything is
     // starred, the toolbar "Starred" button collects those rows into one
     // synthetic table -- built with the same buildVocabSection() every table
@@ -938,7 +938,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     const starredToggle = document.getElementById('starredToggle');
     const starredView = document.getElementById('starredView');
     function starredIdSet() {
-      const tc = window.SakuraStudy.tableCustom;
+      const tc = window.RaumeStudy.tableCustom;
       const set = Object.create(null);
       (tc && tc.starredList ? tc.starredList() : []).forEach(function (id) { set[String(id)] = true; });
       return set;
@@ -946,7 +946,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
     function collectStarredRows() {
       const set = starredIdSet();
       const out = [];
-      (window.SakuraStudy.data.vocabularyTables || []).forEach(function (t) {
+      (window.RaumeStudy.data.vocabularyTables || []).forEach(function (t) {
         (t.rows || []).forEach(function (r) { if (set[String(r.id)]) out.push(r); });
       });
       return out;
@@ -960,7 +960,7 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
         starredView.innerHTML = vocab.buildVocabSection({
           id: 'starred', title: 'Starred', rows: rows, controls: { print: true }
         });
-        const fc = window.SakuraStudy.flashcards;
+        const fc = window.RaumeStudy.flashcards;
         if (fc && fc.refreshRowToggleButtons) fc.refreshRowToggleButtons();
       }
       syncStarButtons();
@@ -1008,11 +1008,11 @@ window.SakuraStudy.vocab = window.SakuraStudy.vocab || {};
       const btn = event.target.closest && event.target.closest('.star-btn');
       if (!btn) return;
       event.stopPropagation();
-      const tc = window.SakuraStudy.tableCustom;
+      const tc = window.RaumeStudy.tableCustom;
       if (tc && tc.toggleStar) tc.toggleStar(btn.dataset.vocabId);
     });
-    if (window.SakuraStudy.tableCustom) {
-      window.SakuraStudy.tableCustom.onChange(function () {
+    if (window.RaumeStudy.tableCustom) {
+      window.RaumeStudy.tableCustom.onChange(function () {
         if (document.body.classList.contains('starred-mode')) renderStarredView();
         else syncStarButtons();
       });

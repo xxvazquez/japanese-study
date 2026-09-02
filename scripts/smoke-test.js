@@ -6,7 +6,7 @@
 // wouldn't catch.
 //
 // The Flashcards checks below only cover page navigation, the per-row toggle,
-// and pure answer-checking/vocab-index logic (exposed via window.SakuraStudy.flashcards.__testHooks)
+// and pure answer-checking/vocab-index logic (exposed via window.RaumeStudy.flashcards.__testHooks)
 // -- none of that needs a network. Everything that talks to Supabase (auth,
 // add/remove/restore/delete-forever, review sync, offline-outbox replay) has
 // no live project to test against here and needs manual verification instead.
@@ -34,11 +34,11 @@ async function main() {
     // js/config.js holds whoever's real project credentials once they've
     // completed SUPABASE_SETUP.md -- this test needs the "not configured yet"
     // path to be reachable regardless of what's actually committed right now.
-    // js/config.js only fills SakuraStudy.config in when it isn't already set
+    // js/config.js only fills RaumeStudy.config in when it isn't already set
     // (its `|| ` guard), so seeding an empty one here before any script runs
     // wins without having to intercept the file load.
     beforeParse(window) {
-      window.SakuraStudy = { config: { url: "", anonKey: "" } };
+      window.RaumeStudy = { config: { url: "", anonKey: "" } };
     }
   });
   const { window } = dom;
@@ -67,7 +67,7 @@ async function main() {
   check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
-  const kr = window.SakuraStudy.kanaRomaji;
+  const kr = window.RaumeStudy.kanaRomaji;
   check("the converter is exposed", kr && typeof kr.toRomaji === "function");
   const cases = {
     "ケチャップ": "kechappu",   // katakana, ッ doubles the next consonant
@@ -96,13 +96,13 @@ async function main() {
   check("furigana readings are left plain (not decorated)", !document.querySelector('#vocabulary td.jp ruby .kr'));
 
   console.log("Table icons");
-  const ic = window.SakuraStudy.icons;
+  const ic = window.RaumeStudy.icons;
   check("the icon set is exposed with grouped names", ic && ic.groups.length > 0 && ic.names.length > 120);
   check("every grouped icon name resolves to a real path", ic.groups.every(g => g.names.length > 0 && g.names.every(n => ic.has(n) && ic.render(n).indexOf("<svg") === 0)));
   check("render() emits a stroke-only inline SVG for a known name", /^<svg[^>]*stroke="currentColor"/.test(ic.render("coffee")) && ic.render("coffee").indexOf("fill=\"currentColor\"") === -1);
   check("render() emits an <img> for an uploaded data URL", /^<img /.test(ic.render("data:image/png;base64,AAAA")));
   check("render() degrades to nothing for an unknown value", ic.render("definitely-not-an-icon") === "");
-  check("the icon picker module is available", !!(window.SakuraStudy.iconPicker && window.SakuraStudy.iconPicker.open));
+  check("the icon picker module is available", !!(window.RaumeStudy.iconPicker && window.RaumeStudy.iconPicker.open));
   check("every table header has an icon button", [...document.querySelectorAll("#vocabulary .table-section")].every(s => !!s.querySelector(".section-head > .section-icon-btn[data-icon-for]")));
   check("an untouched table shows the empty (dashed) slot, not a chosen icon", (() => {
     const slot = document.querySelector(".section-icon-btn .section-icon");
@@ -111,17 +111,17 @@ async function main() {
   check("choosing an icon updates the header and directory in place", (() => {
     const btn = document.querySelector('.section-icon-btn[data-icon-for]');
     const id = btn.dataset.iconFor;
-    window.SakuraStudy.tableCustom.setIcon(id, "coffee");
+    window.RaumeStudy.tableCustom.setIcon(id, "coffee");
     const slot = btn.querySelector(".section-icon");
     const dir = document.querySelector('#tindexMenu a[data-target="' + id + '"] .tindex-icon');
     const ok = !slot.classList.contains("section-icon-empty")
       && /viewBox="0 0 24 24"/.test(slot.innerHTML) && !slot.querySelector("[stroke-dasharray]")
       && dir && /viewBox="0 0 24 24"/.test(dir.innerHTML);
-    window.SakuraStudy.tableCustom.setIcon(id, ""); // reset
+    window.RaumeStudy.tableCustom.setIcon(id, ""); // reset
     return ok;
   })());
   check("sign-in merges local customisations with the account (account wins per table, local-only kept + pushed up)", (() => {
-    const tc = window.SakuraStudy.tableCustom;
+    const tc = window.RaumeStudy.tableCustom;
     const secs = [...document.querySelectorAll(".section-icon-btn[data-icon-for]")];
     const a = secs[0].dataset.iconFor, b = secs[1].dataset.iconFor;
     tc.setIcon(a, "coffee");        // local + on the account -> account should win
@@ -390,7 +390,7 @@ async function main() {
 
   console.log("Star / favourite rows");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
-  const tc = window.SakuraStudy.tableCustom;
+  const tc = window.RaumeStudy.tableCustom;
   const starToggle = document.getElementById("starredToggle");
   check("every vocab row carries a star button with its vocab id", [...document.querySelectorAll("#vocabulary .vocab tbody tr")].every(r => {
     const b = r.querySelector(".star-btn");
@@ -539,7 +539,7 @@ async function main() {
   check("...and the table directory", document.querySelector('#tindexMenu a[data-target="1"] .tindex-tname').textContent === "My Drinks");
   check("...and the reset control becomes enabled", document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').disabled === false);
   document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').click();
-  check("reset restores the shipped name everywhere", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "Drinks" && window.SakuraStudy.tableCustom.nameOf("1") === "");
+  check("reset restores the shipped name everywhere", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "Drinks" && window.RaumeStudy.tableCustom.nameOf("1") === "");
 
   console.log("Customize page: reordering tables and categories");
   const foodGroup = () => [...document.querySelectorAll("#customizePage .cz-group")].find(g => g.querySelector(".cz-group-name").textContent === "Food & Ingredients");
@@ -561,7 +561,7 @@ async function main() {
     const links = [...grp.querySelectorAll("a[data-target]")].map(a => a.dataset.target);
     return links[0] === foodIdsBefore[1] && links[1] === foodIdsBefore[0];
   })());
-  const vocabCats = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.SakuraStudy.vocab.sectionOf(c) === "vocabulary");
+  const vocabCats = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.RaumeStudy.vocab.sectionOf(c) === "vocabulary");
   const firstVocabGroup = [...document.querySelectorAll("#customizePage .cz-group")].find(g => g.querySelector(".cz-group-name").textContent === vocabCats[0]);
   check("a multi-category section's headers carry move controls", !!firstVocabGroup.querySelector(".cz-group-title .cz-move-down"));
   check("Grammar (single category in its section) has no category move controls", (() => {
@@ -569,7 +569,7 @@ async function main() {
     return !g.querySelector(".cz-group-title .cz-move-btn");
   })());
   firstVocabGroup.querySelector(".cz-group-title .cz-move-down").click();
-  const vocabCatsAfter = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.SakuraStudy.vocab.sectionOf(c) === "vocabulary");
+  const vocabCatsAfter = [...document.querySelectorAll("#customizePage .cz-group-name")].map(e => e.textContent).filter(c => window.RaumeStudy.vocab.sectionOf(c) === "vocabulary");
   check("moving a category down reorders the section", vocabCatsAfter[0] === vocabCats[1] && vocabCatsAfter[1] === vocabCats[0]);
   check("...and the vocabulary category headings follow", (() => {
     const heads = [...document.querySelectorAll('#vocabulary .cat-heading[data-section="vocabulary"]')].map(h => h.dataset.category);
@@ -577,7 +577,7 @@ async function main() {
   })());
   check("a Reset order control appears once something is reordered", !!document.querySelector("#customizePage .cz-reset-order"));
   document.querySelector("#customizePage .cz-reset-order").click();
-  check("Reset order clears the custom sequence and hides the control", !window.SakuraStudy.tableCustom.hasCustomOrder() && !document.querySelector("#customizePage .cz-reset-order"));
+  check("Reset order clears the custom sequence and hides the control", !window.RaumeStudy.tableCustom.hasCustomOrder() && !document.querySelector("#customizePage .cz-reset-order"));
   check("...and the section order returns to A-Z", (() => {
     const secs = [...document.querySelectorAll('#vocabulary .table-section[data-category="Food & Ingredients"]')].map(s => s.querySelector(".section-title-text").textContent);
     return secs[0] === "Cooking Ingredients" && secs[1] === "Drinks";
@@ -727,7 +727,7 @@ async function main() {
   check("Back to Dashboard leaves the session for the dashboard", !document.querySelector(".fc-session-done") && !!document.querySelector(".fc-stats-grid"));
 
   console.log("Flashcards: Kana tab");
-  const kd = window.SakuraStudy.flashcards.kanaData;
+  const kd = window.RaumeStudy.flashcards.kanaData;
   check("the kana tables expose the named groups per script with counts", (() => {
     const g = kd.groups();
     return g.length === 10 && g.filter(x => x.script === "hiragana").length === 5
@@ -737,7 +737,7 @@ async function main() {
       && g.find(x => x.id === "hira-handakuten").count === 5
       && g.find(x => x.label === "Yōon (combinations)");
   })());
-  const kh = window.SakuraStudy.flashcards.kana.__testHooks;
+  const kh = window.RaumeStudy.flashcards.kana.__testHooks;
   const shiItem = kd.itemsFor(["hira-gojuon"]).find(it => it.kana === "し");
   check("a kana item carries its romaji derived from the reading layer", !!shiItem && shiItem.romaji === "shi");
   check("checking accepts the Hepburn spelling and a common alternate, rejects a wrong one",
@@ -781,7 +781,7 @@ async function main() {
   document.getElementById("fcKanaStart").click();
   check("Study now opens a kana review card", !!document.querySelector("#fcPanelKana .fc-review-card .fc-prompt-kana"));
   const kanaGlyph = document.querySelector("#fcPanelKana .fc-prompt-kana").textContent;
-  document.getElementById("fcKanaInput").value = window.SakuraStudy.kanaRomaji.toRomaji(kanaGlyph);
+  document.getElementById("fcKanaInput").value = window.RaumeStudy.kanaRomaji.toRomaji(kanaGlyph);
   document.getElementById("fcKanaForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
   check("a correct reading is marked correct with four FSRS-timed ratings", (() => {
     const p = document.getElementById("fcPanelKana");
@@ -820,8 +820,8 @@ async function main() {
   // exactly like the guest vocab cache. (The signed-in path -- kana_cards /
   // kana_review_logs, the offline outbox -- needs a live Supabase project and
   // is covered by the manual checklist in SUPABASE_SETUP.md.)
-  const kanaStore = window.SakuraStudy.flashcards.store;
-  const kanaDataOps = window.SakuraStudy.flashcards.dataOps;
+  const kanaStore = window.RaumeStudy.flashcards.store;
+  const kanaDataOps = window.RaumeStudy.flashcards.dataOps;
   check("the kana cache is exposed from the store, guest key, no queued reviews", (() => {
     const kc = kanaStore.getKanaCache();
     return !!kc && Array.isArray(kc.logsOutbox) && kc.logsOutbox.length === 0
@@ -873,7 +873,7 @@ async function main() {
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
 
   console.log("Flashcards: answer checking and vocab index (pure-logic hooks)");
-  const fc = window.SakuraStudy.flashcards.__testHooks;
+  const fc = window.RaumeStudy.flashcards.__testHooks;
   check("test hooks are exposed", !!fc);
   check("normalizeAnswer trims/collapses/lowercases", fc.normalizeAnswer("  Hot   Water  ", false) === "hot water");
   check("normalizeAnswer folds macrons for romaji", fc.normalizeAnswer("Kōhī", true) === "kohi");

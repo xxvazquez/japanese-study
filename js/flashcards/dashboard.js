@@ -1,5 +1,5 @@
 // Flashcards -- Dashboard tab + the study session it launches
-// (SakuraStudy.flashcards.dashboard).
+// (RaumeStudy.flashcards.dashboard).
 //
 // Renders the Dashboard (next-review summary, stat tiles, card-progress and
 // weekly-activity charts, "Missed today", "Words to Review"), derives the
@@ -7,14 +7,14 @@
 // (queue -> prompt -> check -> rate) that "Study now" and "Missed today" start.
 // Session state, the insight caches and the two are one cluster because they
 // share `session`, invalidate together and re-render through each other.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.dashboard = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.dashboard = (function () {
   "use strict";
 
-  var fc = window.SakuraStudy.flashcards;
+  var fc = window.RaumeStudy.flashcards;
   var store = fc.store, sched = fc.scheduling, vidx = fc.vocabIndex, dataOps = fc.dataOps;
-  var esc = window.SakuraStudy.shared.escapeHtml;
+  var esc = window.RaumeStudy.shared.escapeHtml;
 
   var getCache = store.getCache, localDateStr = store.localDateStr, isGuestMode = store.isGuestMode;
   var uuid = store.uuid, RATING_NAMES = store.RATING_NAMES, DIRECTION_LABEL = store.DIRECTION_LABEL;
@@ -29,7 +29,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
 
   // The app shell / tab routing live in the bootstrap module -- reached lazily
   // so this file does not depend on its load order.
-  function rerender() { window.SakuraStudy.flashcards.render(); }
+  function rerender() { window.RaumeStudy.flashcards.render(); }
 
   var session = null; // review session state
   function getSession() { return session; }
@@ -46,7 +46,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     stopDashboardPoll();
     dashboardTimer = setInterval(function () {
       if (session || document.body.dataset.activePage !== "flashcards" ||
-          window.SakuraStudy.flashcards.getActiveTab() !== "dashboard") {
+          window.RaumeStudy.flashcards.getActiveTab() !== "dashboard") {
         stopDashboardPoll();
         return;
       }
@@ -67,12 +67,12 @@ window.SakuraStudy.flashcards.dashboard = (function () {
       "</div></div>";
     var browse = document.getElementById("fcEmptyBrowse");
     if (browse) browse.addEventListener("click", function () {
-      var v = window.SakuraStudy.vocab;
+      var v = window.RaumeStudy.vocab;
       if (v && v.showSection) v.showSection("vocabulary");
     });
     var manage = document.getElementById("fcEmptyManage");
     if (manage) manage.addEventListener("click", function () {
-      window.SakuraStudy.flashcards.setActiveTab("manage");
+      window.RaumeStudy.flashcards.setActiveTab("manage");
       rerender();
     });
   }
@@ -233,7 +233,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   }
 
   // "Words to Review" is one of the standard vocabulary table sections
-  // (SakuraStudy.vocab.buildVocabSection) filled with the entries missed most
+  // (RaumeStudy.vocab.buildVocabSection) filled with the entries missed most
   // often -- so it sorts and prints exactly like every other table. Scoped CSS
   // on #fcWordsToReview keeps its header quiet so it reads as a dashboard card,
   // not a full vocabulary-page section.
@@ -242,16 +242,16 @@ window.SakuraStudy.flashcards.dashboard = (function () {
     if (!host) return;
     if (!reviewInsights) { host.innerHTML = '<p class="fc-note">Loading…</p>'; return; }
     var rows = reviewInsights.wordsToReview.map(function (m) { return getRawVocabRow(m.vocabId); }).filter(Boolean);
-    if (!rows.length || !window.SakuraStudy.vocab.buildVocabSection) {
+    if (!rows.length || !window.RaumeStudy.vocab.buildVocabSection) {
       host.innerHTML = '<div class="fc-viz-card"><h3 class="fc-viz-title">Words to Review</h3>' +
         '<p class="fc-note">Nothing stands out yet — words you miss more than once collect here so you can drill and print them.</p></div>';
       return;
     }
-    host.innerHTML = window.SakuraStudy.vocab.buildVocabSection({
+    host.innerHTML = window.RaumeStudy.vocab.buildVocabSection({
       id: "wtr", title: "Words to Review", rows: rows, presort: false,
       controls: { print: true }
     });
-    window.SakuraStudy.flashcards.refreshRowToggleButtons();
+    window.RaumeStudy.flashcards.refreshRowToggleButtons();
   }
 
   // Card-state breakdown -- a single stacked bar (New/Learning/Review) as a
@@ -428,7 +428,7 @@ window.SakuraStudy.flashcards.dashboard = (function () {
   function startSessionForVocab(vocabId) {
     var ids = studyableCards().filter(function (c) { return c.vocabId === vocabId; }).map(function (c) { return c.id; });
     if (!ids.length) return;
-    window.SakuraStudy.flashcards.setActiveTab("dashboard");
+    window.RaumeStudy.flashcards.setActiveTab("dashboard");
     session = newSession(shuffle(ids));
     rerender();
   }

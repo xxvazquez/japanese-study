@@ -1,4 +1,4 @@
-// Flashcards -- state & storage (SakuraStudy.flashcards.store).
+// Flashcards -- state & storage (RaumeStudy.flashcards.store).
 //
 // The versioned, validated, disposable local cache plus the guest-vs-signed-in
 // mode preference. In guest mode this cache *is* the record (its own
@@ -6,9 +6,9 @@
 // an offline outbox. Also holds the small shared vocabulary of the feature
 // (direction ids/labels, rating names) and two persistence helpers (uuid,
 // localDateStr). See the load-order comment in index.html.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.store = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.store = (function () {
   "use strict";
 
   var DIRECTIONS = ["jp-en", "jp-ro", "ro-en", "en-ro"];
@@ -19,6 +19,8 @@ window.SakuraStudy.flashcards.store = (function () {
     "en-ro": "English → Romaji"
   };
   var RATING_NAMES = ["Again", "Hard", "Good", "Easy"];
+  // localStorage keys keep the historical "sakura-" prefix (the app's old name)
+  // so existing installs don't lose their on-device data on the rename.
   var CACHE_KEY = "sakura-flashcards-cache-v1";
   var GUEST_CACHE_KEY = "sakura-flashcards-guest-v1";
   var MODE_KEY = "sakura-flashcards-mode";

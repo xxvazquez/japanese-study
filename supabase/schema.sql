@@ -1,4 +1,4 @@
--- sakura study: Flashcards schema
+-- raume study: Flashcards schema
 --
 -- Run this once in your Supabase project's SQL editor (Dashboard -> SQL Editor
 -- -> New query -> paste -> Run). See SUPABASE_SETUP.md for the full setup walkthrough.

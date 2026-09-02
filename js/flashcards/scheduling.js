@@ -1,17 +1,17 @@
 // Flashcards -- FSRS-6 scheduling + review queue/stats
-// (SakuraStudy.flashcards.scheduling).
+// (RaumeStudy.flashcards.scheduling).
 //
 // A thin wrapper over the vendored ts-fsrs (window.FSRS): builds a scheduler
 // from the user's settings, previews/applies ratings, converts between the
 // library's card/log shapes and what the cache/Supabase store, and derives the
 // study queue and the Dashboard's aggregate stats. The trained algorithm and
 // its weights are never touched -- only the knobs ts-fsrs itself exposes.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.scheduling = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.scheduling = (function () {
   "use strict";
 
-  var store = window.SakuraStudy.flashcards.store;
+  var store = window.RaumeStudy.flashcards.store;
   var getCache = store.getCache;
   var RATING_NAMES = store.RATING_NAMES;
 

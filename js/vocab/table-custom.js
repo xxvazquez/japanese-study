@@ -6,11 +6,11 @@
 // reports a signed-in account it also syncs through Supabase (see
 // js/flashcards/data-ops.js + bootstrap.js), so a chosen icon follows you to
 // another device. Never touches the dataset or its validation.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.tableCustom = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.tableCustom = (function () {
   "use strict";
 
-  var KEY = "sakura-table-custom";
+  var KEY = "sakura-table-custom"; // historical prefix kept so the rename doesn't drop saved customisations
   var cache = null;
   var listeners = [];
   var remotePush = null;

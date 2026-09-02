@@ -1,16 +1,16 @@
-// Flashcards -- vocabulary index (SakuraStudy.flashcards.vocabIndex).
+// Flashcards -- vocabulary index (RaumeStudy.flashcards.vocabIndex).
 //
-// Turns SakuraStudy.data.vocabularyTables into a lookup keyed by each row's
+// Turns RaumeStudy.data.vocabularyTables into a lookup keyed by each row's
 // permanent id: display markup, the study directions it supports, and the
 // normalized accepted answers for checking. Pure -- reads the dataset live,
 // never copies content anywhere. This is what scripts/smoke-test.js exercises
 // through the flashcards test hooks.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.vocabIndex = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.vocabIndex = (function () {
   "use strict";
 
-  var DIRECTIONS = window.SakuraStudy.flashcards.store.DIRECTIONS;
+  var DIRECTIONS = window.RaumeStudy.flashcards.store.DIRECTIONS;
 
   var JAPANESE_SCRIPT = /[ぁ-ゖァ-ヺ一-鿏々〆ヵヶ]/;
 
@@ -53,11 +53,11 @@ window.SakuraStudy.flashcards.vocabIndex = (function () {
   var vocabIndex = null;
   function buildVocabIndex() {
     var index = {};
-    (window.SakuraStudy.data.vocabularyTables || []).forEach(function (table) {
+    (window.RaumeStudy.data.vocabularyTables || []).forEach(function (table) {
       table.rows.forEach(function (row) {
         if (!row.id) return;
         var entry = { vocabId: row.id, category: table.category || "", tableTitle: table.title, tableId: table.id };
-        var jpHtmlFn = window.SakuraStudy.vocab.jpSegmentsHtml || function () { return ""; };
+        var jpHtmlFn = window.RaumeStudy.vocab.jpSegmentsHtml || function () { return ""; };
         if (row.type === "verb-pair") {
           entry.jpHtml = row.forms.map(function (f) {
             return '<div class="verb-form"><span class="jpword">' + jpHtmlFn(f.jp) + "</span></div>";
@@ -123,7 +123,7 @@ window.SakuraStudy.flashcards.vocabIndex = (function () {
   function getRawVocabRow(vocabId) {
     if (!rawRowById) {
       rawRowById = {};
-      (window.SakuraStudy.data.vocabularyTables || []).forEach(function (t) {
+      (window.RaumeStudy.data.vocabularyTables || []).forEach(function (t) {
         t.rows.forEach(function (r) { if (r.id) rawRowById[r.id] = r; });
       });
     }

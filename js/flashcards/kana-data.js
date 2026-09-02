@@ -1,5 +1,5 @@
 // Flashcards -- built-in kana tables for the Kana trainer
-// (SakuraStudy.flashcards.kanaData).
+// (RaumeStudy.flashcards.kanaData).
 //
 // The hiragana / katakana a learner drills, by the names the kana are actually
 // taught under: gojūon (the base syllabary), dakuten (voiced), handakuten
@@ -13,12 +13,12 @@
 // A few well-known alternate spellings are also accepted on top of the
 // Hepburn the trainer shows: si/ti/tu/hu and the sya/tya/zya yōon forms
 // (nihon-shiki / wāpuro), plus "wo" for を and "nn" for ん.
-window.SakuraStudy = window.SakuraStudy || {};
-window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
-window.SakuraStudy.flashcards.kanaData = (function () {
+window.RaumeStudy = window.RaumeStudy || {};
+window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
+window.RaumeStudy.flashcards.kanaData = (function () {
   "use strict";
 
-  function kr() { return window.SakuraStudy.kanaRomaji; }
+  function kr() { return window.RaumeStudy.kanaRomaji; }
 
   // Hiragana sources; katakana groups reuse these, converted char-by-char.
   var GOJUON = [
