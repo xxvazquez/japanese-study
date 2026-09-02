@@ -214,3 +214,9 @@ Run `npm run validate` before committing data changes — it'll catch duplicate 
 ## Deploying
 
 Pushing to `main` deploys via the GitHub Actions workflow in `.github/workflows/pages.yml`. It swaps a cache-busting token into the asset URLs on every deploy so you don't get stuck looking at a stale cached version. Set the repo's Pages source to "GitHub Actions" if you haven't already.
+
+## License
+
+The code here is under the [PolyForm Noncommercial License 1.0.0](LICENSE) — free to use, study, self-host, modify, and share for any noncommercial purpose (personal study, research, teaching, hobby projects); commercial use is not granted. The same terms cover the original written content: the curated vocabulary selection in `data/vocabulary.js` and the written explanations. The `raume` name, wordmark, and logo are not covered — see [`NOTICE`](NOTICE).
+
+The vendored libraries and fonts keep their own permissive licenses: `ts-fsrs` and `supabase-js` are MIT and the Lucide-derived icon paths are ISC (`vendor/*.LICENSE.txt`); Inter and Space Grotesk are under the SIL Open Font License (`fonts/*.LICENSE.txt`).

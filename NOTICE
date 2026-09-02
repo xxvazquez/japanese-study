@@ -1,0 +1,37 @@
+raume
+Copyright 2026 Laura Maestú Vázquez
+
+Required Notice: Copyright 2026 Laura Maestú Vázquez (https://github.com/xxvazquez/japanese-study)
+
+
+First-party code and content
+----------------------------
+
+The source code in this repository is licensed under the PolyForm
+Noncommercial License 1.0.0 — see LICENSE. In short: you may use, study,
+self-host, modify, and share it for any noncommercial purpose (personal
+study, research, teaching, hobby projects). Commercial use is not granted.
+
+The same terms cover the original written material in this repository as a
+curated compilation: the selection and arrangement of entries in
+data/vocabulary.js, and the prose in README.md and the in-app Help. The bare
+facts — individual Japanese words and their English glosses — are not claimed.
+
+
+Name and marks
+--------------
+
+"raume", the raume wordmark, and the logo (logo.png / icons/) are not
+licensed under LICENSE. Noncommercial use of the software does not grant any
+right to use the name, wordmark, or logo, or to present a modified copy in a
+way that implies endorsement by or affiliation with the project or its author.
+
+
+Bundled third-party components (unaffected by LICENSE)
+-----------------------------------------------------
+
+  vendor/ts-fsrs.js          MIT   — vendor/ts-fsrs.LICENSE.txt
+  vendor/supabase.js         MIT   — vendor/supabase.LICENSE.txt
+  js/vocab/icons.js          ISC   — icon paths adapted from Lucide, vendor/lucide.LICENSE.txt
+  fonts/InterVariable.woff2  OFL 1.1 — fonts/Inter.LICENSE.txt
+  fonts/SpaceGrotesk.woff2   OFL 1.1 — fonts/SpaceGrotesk.LICENSE.txt
