@@ -175,10 +175,11 @@ direction is its own FSRS-6 card.
   (`si` for `shi`, `wo` for を). Unlike the vocab cards, this checks vowel
   length: `ō` and `oo` match either way, おう accepts `ou` / `oo` / `ō`, but a
   short vowel never matches a long one (`ii` is wrong for い).
-- **Romaji → kana** — a flip card: the romaji is shown, Reveal (or Enter/Space)
-  shows the glyph, then you rate yourself. Only this direction counts toward
-  the wrap-up accuracy.
-- Both directions are on by default; the picker keeps at least one on.
+- **Romaji → kana** — the romaji is shown; type the kana glyph (you'll want a
+  kana keyboard or IME). Graded on the glyph itself — typing the romaji back
+  doesn't count.
+- Both directions are typed and checked the same way, and both count toward the
+  wrap-up accuracy. Both are on by default; the picker keeps at least one on.
 
 ### Accounts and storage
 

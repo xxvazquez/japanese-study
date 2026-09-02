@@ -795,25 +795,38 @@ async function main() {
   check("ending shows a wrap-up", /reviewed/.test((document.querySelector("#fcPanelKana .fc-session-done") || {}).textContent || ""));
   document.getElementById("fcKanaBack").click();
 
-  // --- romaji -> kana: a flip card, no text input. ---
+  // --- romaji -> kana: also typed, graded on the glyph. Drill handakuten only
+  // (ぱぴぷぺぽ -- five unambiguous readings, so the prompt maps to one kana). ---
   kh.setDir("r2k", true);
   kh.setDir("k2r", false);
+  kh.setGroup("hira-gojuon", false);
+  kh.setGroup("hira-handakuten", true);
+  check("checkR2k wants the kana glyph, not the romaji", (() => {
+    const pa = kd.itemsFor(["hira-handakuten"]).find(it => it.kana === "ぱ");
+    return kh.checkR2k(pa, "ぱ") && kh.checkR2k(pa, " ぱ ") && !kh.checkR2k(pa, "pa");
+  })());
   document.getElementById("fcKanaStart").click();
-  check("romaji → kana is a flip card: a romaji prompt and a Reveal button, no input field",
+  check("romaji → kana shows a romaji prompt and a text input, no Reveal button",
     !!document.querySelector("#fcPanelKana .fc-prompt-romaji")
-    && !!document.getElementById("fcKanaReveal") && !document.getElementById("fcKanaInput"));
-  document.getElementById("fcKanaReveal").click();
-  check("revealing shows the kana glyph and four ratings, with no right/wrong verdict", (() => {
+    && !!document.getElementById("fcKanaInput") && !document.getElementById("fcKanaReveal"));
+  const r2kRomaji = document.querySelector("#fcPanelKana .fc-prompt-romaji").textContent;
+  const r2kItem = kd.itemsFor(["hira-handakuten"]).find(it => it.romaji === r2kRomaji);
+  document.getElementById("fcKanaInput").value = r2kItem.kana;
+  document.getElementById("fcKanaForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  check("typing the right kana is marked correct with four ratings and the glyph shown", (() => {
     const p = document.getElementById("fcPanelKana");
-    return !!p.querySelector(".fc-answer-reveal .fc-expected-kana")
-      && p.querySelectorAll(".fc-rating-btn").length === 4 && !p.querySelector(".fc-result");
+    return !!p.querySelector(".fc-result.fc-correct")
+      && !!p.querySelector(".fc-answer-reveal .fc-expected-kana")
+      && p.querySelectorAll(".fc-rating-btn").length === 4;
   })());
   document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
-  check("rating a flip card advances", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
-  if (storageUsable) check("the flip card is stored under its own |r2k key", /\|r2k"/.test(readLocalStorage("sakura-kana-v1") || ""));
+  check("rating advances to the next card", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
+  if (storageUsable) check("the romaji → kana review is stored under its own |r2k key", /\|r2k"/.test(readLocalStorage("sakura-kana-v1") || ""));
   document.getElementById("fcKanaEnd").click();
   document.getElementById("fcKanaBack").click();
   kh.setDir("k2r", true);
+  kh.setGroup("hira-handakuten", false);
+  kh.setGroup("hira-gojuon", true);
   check("Back to groups returns to the picker, now showing progress", !!document.getElementById("fcKanaStart") && /started/.test(document.getElementById("fcKanaSummary").textContent));
 
   // Guest mode keeps no sync outbox -- its local kana cache is the record,

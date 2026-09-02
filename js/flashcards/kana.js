@@ -2,9 +2,9 @@
 //
 // A hiragana / katakana reading trainer that sits alongside the vocabulary
 // flashcards: pick which kana groups to drill (gojuon, dakuten, combos, per
-// script -- see kana-data.js), then review them one glyph at a time, typing
-// the romaji. Every kana + direction is its own FSRS-6 card, scheduled with
-// the same vendored scheduler the vocabulary cards use.
+// script -- see kana-data.js), then review them one at a time by typing the
+// answer. Every kana + direction is its own FSRS-6 card, scheduled with the
+// same vendored scheduler the vocabulary cards use.
 //
 // Storage mirrors the vocab flashcards: guest mode keeps its record in one
 // local key; signed in, Supabase (kana_cards / kana_review_logs) is
@@ -13,10 +13,9 @@
 // remote/sync plumbing in data-ops.js. This file is the Kana tab's UI and
 // review flow.
 //
-// Directions: kana -> type the romaji (checked), and romaji -> recall the
-// kana (a flip card -- you can't type kana, so Enter/Space reveals the glyph
-// and you rate yourself). Which directions are in the queue is a per-tab
-// toggle on the group picker; both are on by default.
+// Directions: kana -> type the romaji, and romaji -> type the kana. Both are
+// typed and graded the same way; which directions are in the queue is a
+// per-tab toggle on the group picker, and both are on by default.
 window.RaumeStudy = window.RaumeStudy || {};
 window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
 window.RaumeStudy.flashcards.kana = (function () {
@@ -40,7 +39,7 @@ window.RaumeStudy.flashcards.kana = (function () {
   var FSRS_SETTINGS = { fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false };
   var NEW_PER_DAY = 15;
   var LEARN_AHEAD_MS = 20 * 60 * 1000; // match scheduling.js: a short learning step counts as ready
-  var DIRECTIONS = ["k2r", "r2k"]; // kana -> romaji (typed), romaji -> kana (flip)
+  var DIRECTIONS = ["k2r", "r2k"]; // kana -> romaji, romaji -> kana (both typed)
   var DIR_LABEL = { k2r: "Kana → romaji", r2k: "Romaji → kana" };
   function isDir(d) { return DIRECTIONS.indexOf(d) !== -1; }
 
@@ -174,7 +173,7 @@ window.RaumeStudy.flashcards.kana = (function () {
 
   function startSession() {
     var queue = buildQueue(new Date());
-    session = { queue: queue, index: 0, checked: false, correct: null, userAnswer: "", preview: null, reviewedCount: 0, correctCount: 0, typedCount: 0, seen: {}, done: false };
+    session = { queue: queue, index: 0, checked: false, correct: null, userAnswer: "", preview: null, reviewedCount: 0, correctCount: 0, seen: {}, done: false };
     rerender();
   }
   function endSession() {
@@ -202,22 +201,26 @@ window.RaumeStudy.flashcards.kana = (function () {
     var n = normalizeKana(input);
     return item.answers.some(function (a) { return normalizeKana(a) === n; });
   }
+  // Romaji -> kana is graded on the glyph: what you type has to be the kana
+  // itself (the group already fixes the script), give or take surrounding
+  // space. Romaji spellings aren't accepted here -- reading the prompt back
+  // isn't recall.
+  function checkR2k(item, input) {
+    return String(input == null ? "" : input).replace(/\s+/g, "") === item.kana;
+  }
 
-  // Reveal the answer: for kana -> romaji this checks what was typed; for
-  // romaji -> kana there is nothing to type, so it just flips the card and
-  // the rating is self-assessed (session.correct stays null).
+  // Grade what was typed and move to the checked state. Both directions have a
+  // text answer now; only the grader and the prompt differ.
   function submitCheck() {
     if (!session || session.checked) return;
     var unit = session.queue[session.index];
     if (!unit) return;
-    if (unit.dir === "k2r") {
-      var input = document.getElementById("fcKanaInput");
-      if (!input) return;
-      session.userAnswer = input.value;
-      session.correct = checkKana(unit.item, input.value);
-    } else {
-      session.correct = null;
-    }
+    var input = document.getElementById("fcKanaInput");
+    if (!input) return;
+    session.userAnswer = input.value;
+    session.correct = unit.dir === "r2k"
+      ? checkR2k(unit.item, input.value)
+      : checkKana(unit.item, input.value);
     session.checked = true;
     var base = load().cards[cardKey(unit.item, unit.dir)] || newCard(new Date());
     session.preview = previewRatings(getScheduler(FSRS_SETTINGS), base, new Date());
@@ -256,10 +259,7 @@ window.RaumeStudy.flashcards.kana = (function () {
     save();
     if (signedIn()) dataOps.syncKanaOutbox();
     session.reviewedCount++;
-    if (unit.dir === "k2r") {
-      session.typedCount++;
-      if (session.correct === true) session.correctCount++;
-    }
+    if (session.correct === true) session.correctCount++;
     session.seen[key] = true;
     session.index++;
     session.checked = false;
@@ -302,7 +302,7 @@ window.RaumeStudy.flashcards.kana = (function () {
       : p.due + " due · " + p.started + " started · " + p.unseen + " not started";
 
     panel.innerHTML =
-      '<p class="fc-note">Learn to read hiragana and katakana: pick the groups you want, then work through them one at a time — type the romaji, or (romaji → kana) recall the glyph and rate yourself. Cards are FSRS-scheduled, the same as the vocabulary flashcards. Progress is saved on this device.</p>' +
+      '<p class="fc-note">Learn to read hiragana and katakana: pick the groups you want, then work through them one at a time — type the romaji for a kana, or type the kana for a romaji. Cards are FSRS-scheduled, the same as the vocabulary flashcards.</p>' +
       '<div class="fc-kana-groups">' +
       ["hiragana", "katakana"].map(function (script) {
         return '<fieldset class="fc-kana-fieldset"><legend>' + (script === "hiragana" ? "Hiragana" : "Katakana") + "</legend>" +
@@ -344,33 +344,33 @@ window.RaumeStudy.flashcards.kana = (function () {
       '<div class="fc-review-meta"><span>' + esc(DIR_LABEL[unit.dir]) + " · " + (session.index + 1) + " / " + session.queue.length + "</span>" +
       '<button type="button" class="fc-session-exit" id="fcKanaEnd">End session</button></div>';
 
-    if (r2k) {
-      // Romaji -> kana: a flip card. No text input -- show the romaji, reveal
-      // the glyph on Enter/Space (or the button), rate yourself.
-      html += '<div class="fc-prompt-label">Recall the kana</div>' +
-        '<div class="fc-prompt fc-prompt-romaji">' + esc(item.romaji) + "</div>" +
-        (session.checked ? "" : '<button type="button" class="fc-btn fc-btn-primary" id="fcKanaReveal">Reveal</button>');
-      if (session.checked) {
-        html += '<div class="fc-answer-reveal"><span class="fc-answer-reveal-label">Kana</span>' +
-          '<span class="fc-expected fc-expected-kana' + wordCls + '" lang="ja">' + esc(item.kana) + "</span></div>" +
-          ratingRowHtml(false);
-      }
-    } else {
-      html += '<div class="fc-prompt-label">Type the romaji reading</div>' +
-        '<div class="fc-prompt fc-prompt-kana' + wordCls + '" lang="ja">' + esc(item.kana) + "</div>" +
-        '<form class="fc-answer-form" id="fcKanaForm"><input id="fcKanaInput" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="Romaji…" ' +
-        (session.checked ? "disabled" : "autofocus") + ">" +
-        (session.checked ? "" : '<button type="submit" class="fc-btn fc-btn-primary">Check</button>') +
-        "</form>";
-      if (session.checked) {
-        html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
-          '<span class="fc-result-label">' + (session.correct ? "Correct" : "Not quite") + "</span>" +
-          (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
-          "</div>" +
-          '<div class="fc-answer-reveal"><span class="fc-answer-reveal-label">Answer</span>' +
-          '<span class="fc-expected">' + esc(item.romaji) + "</span></div>" +
-          ratingRowHtml(session.correct === false);
-      }
+    // The prompt: the kana glyph for k2r, the romaji for r2k.
+    html += r2k
+      ? '<div class="fc-prompt-label">Type the kana</div>' +
+        '<div class="fc-prompt fc-prompt-romaji">' + esc(item.romaji) + "</div>"
+      : '<div class="fc-prompt-label">Type the romaji reading</div>' +
+        '<div class="fc-prompt fc-prompt-kana' + wordCls + '" lang="ja">' + esc(item.kana) + "</div>";
+
+    // The same typed-answer form for both directions -- r2k just wants kana in
+    // the field (lang="ja" so a system IME picks the right keyboard).
+    html += '<form class="fc-answer-form" id="fcKanaForm"><input id="fcKanaInput" type="text" ' +
+      'autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" ' +
+      (r2k ? 'lang="ja" placeholder="Kana…" ' : 'placeholder="Romaji…" ') +
+      (session.checked ? "disabled" : "autofocus") + ">" +
+      (session.checked ? "" : '<button type="submit" class="fc-btn fc-btn-primary">Check</button>') +
+      "</form>";
+
+    if (session.checked) {
+      html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
+        '<span class="fc-result-label">' + (session.correct ? "Correct" : "Not quite") + "</span>" +
+        (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
+        "</div>" +
+        '<div class="fc-answer-reveal"><span class="fc-answer-reveal-label">' + (r2k ? "Kana" : "Answer") + "</span>" +
+        (r2k
+          ? '<span class="fc-expected fc-expected-kana' + wordCls + '" lang="ja">' + esc(item.kana) + "</span>"
+          : '<span class="fc-expected">' + esc(item.romaji) + "</span>") +
+        "</div>" +
+        ratingRowHtml(session.correct === false);
     }
     html += "</div>";
     panel.innerHTML = html;
@@ -381,24 +381,19 @@ window.RaumeStudy.flashcards.kana = (function () {
     if (input && !session.checked) input.focus();
     var form = document.getElementById("fcKanaForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); submitCheck(); });
-    var reveal = document.getElementById("fcKanaReveal");
-    if (reveal) reveal.addEventListener("click", submitCheck);
     panel.querySelectorAll(".fc-rating-btn").forEach(function (btn) {
       btn.addEventListener("click", function () { rate(btn.dataset.rating); });
     });
   }
 
   function renderDone(panel) {
-    var reviewed = session.reviewedCount, correct = session.correctCount, typed = session.typedCount;
+    var reviewed = session.reviewedCount, correct = session.correctCount;
     var html = '<div class="fc-session-done">';
     if (!reviewed) {
       html += '<p class="fc-session-done-title">Nothing to review right now</p>';
     } else {
-      // The accuracy figure only means anything for the typed direction; the
-      // romaji -> kana flips are self-rated, so they are counted as reviewed
-      // but left out of the percentage.
-      var stats = reviewed + " reviewed";
-      if (typed) stats += " · " + correct + " / " + typed + " correct (" + Math.round((correct / typed) * 100) + "%)";
+      var stats = reviewed + " reviewed · " + correct + " / " + reviewed +
+        " correct (" + Math.round((correct / reviewed) * 100) + "%)";
       html += '<p class="fc-session-done-title">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
         '<p class="fc-session-done-stats">' + stats + "</p>";
     }
@@ -440,7 +435,7 @@ window.RaumeStudy.flashcards.kana = (function () {
     renderKana: renderKana, clearSession: clearSession,
     // pure hooks for scripts/smoke-test.js
     __testHooks: {
-      checkKana: checkKana, buildQueue: buildQueue, selectedItems: selectedItems,
+      checkKana: checkKana, checkR2k: checkR2k, buildQueue: buildQueue, selectedItems: selectedItems,
       setGroup: setGroup, setDir: setDir, enabledDirs: enabledDirs, studyUnits: studyUnits
     }
   };

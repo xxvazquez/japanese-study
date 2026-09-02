@@ -1697,11 +1697,13 @@ body.starred-mode .expand-bar { display: none !important; }
    above; only the prompt glyph and the group picker need their own styling. */
 .fc-prompt-kana { font-size: 44px; line-height: 1.15; margin-bottom: 20px; }
 .fc-prompt-kana-word { font-size: 30px; }
-/* Romaji -> kana: a Latin prompt (smaller than the glyph), and the revealed
-   kana shown at glyph size in the neutral answer panel. */
-.fc-prompt-romaji { font-size: 28px; margin-bottom: 18px; }
-.fc-answer-reveal .fc-expected-kana { font-size: 32px; line-height: 1.15; }
-.fc-answer-reveal .fc-expected-kana.fc-prompt-kana-word { font-size: 24px; }
+/* Romaji -> kana: a romaji cue, kana typed into the answer field (a touch
+   larger than the Latin default so the glyphs read), and the correct kana
+   shown a little larger again once checked. */
+.fc-prompt-romaji { font-size: 21px; margin-bottom: 16px; }
+.fc-answer-form input[lang="ja"] { font-size: 16px; }
+.fc-answer-reveal .fc-expected-kana { font-size: 24px; line-height: 1.2; }
+.fc-answer-reveal .fc-expected-kana.fc-prompt-kana-word { font-size: 19px; }
 .fc-kana-groups { display: flex; flex-wrap: wrap; gap: 14px; margin: 16px 0 4px; }
 .fc-kana-fieldset {
   border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 12px;
