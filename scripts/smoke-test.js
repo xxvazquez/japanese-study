@@ -742,6 +742,22 @@ async function main() {
   check("a kana item carries its romaji derived from the reading layer", !!shiItem && shiItem.romaji === "shi");
   check("checking accepts the Hepburn spelling and a common alternate, rejects a wrong one",
     kh.checkKana(shiItem, "shi") && kh.checkKana(shiItem, " SI ") && !kh.checkKana(shiItem, "chi"));
+  // Vowel length matters in a reading trainer: unlike the vocab cards, "ii"
+  // is not "i". Macron <-> doubled vowel both ways; おう long o accepts
+  // ou / oo / ō; but a short vowel never matches a long one.
+  const gojuon = kd.itemsFor(["hira-gojuon"]);
+  const iItem = gojuon.find(it => it.kana === "い");
+  const oItem = gojuon.find(it => it.kana === "お");
+  check("a short vowel is not a long vowel (い rejects \"ii\", お rejects \"oo\")",
+    kh.checkKana(iItem, "i") && !kh.checkKana(iItem, "ii")
+    && kh.checkKana(oItem, "o") && !kh.checkKana(oItem, "oo"));
+  const gakkou = kd.itemsFor(["hira-sokuon"]).find(it => it.romaji === "gakkou");
+  check("がっこう accepts gakkou / gakkoo / gakkō, rejects gakko",
+    !!gakkou && kh.checkKana(gakkou, "gakkou") && kh.checkKana(gakkou, "gakkoo")
+    && kh.checkKana(gakkou, "gakkō") && !kh.checkKana(gakkou, "gakko"));
+  const sakka = kd.itemsFor(["kata-sokuon"]).find(it => /kk[aā]+$/.test(it.romaji));
+  check("a macron long vowel (サッカー) accepts the doubled-vowel typing, rejects the short one",
+    !!sakka && kh.checkKana(sakka, "sakkaa") && !kh.checkKana(sakka, "sakka"));
   const sokuon = kd.itemsFor(["hira-sokuon"]);
   check("sokuon is drilled as short doubled-consonant words", sokuon.length > 3 && sokuon.every(it => it.word && it.kana.length > 1 && /[a-z]/.test(it.romaji)));
 

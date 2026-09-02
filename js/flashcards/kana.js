@@ -22,7 +22,6 @@ window.SakuraStudy.flashcards.kana = (function () {
   var kanaData = S.kanaData;
   var sched = S.scheduling;
   var store = S.store;
-  var vidx = S.vocabIndex;
   var esc = window.SakuraStudy.shared.escapeHtml;
 
   var getScheduler = sched.getScheduler, previewRatings = sched.previewRatings;
@@ -146,10 +145,23 @@ window.SakuraStudy.flashcards.kana = (function () {
     rerender();
   }
 
-  function normalize(v) { return vidx.normalizeAnswer(v, true); }
+  // A reading trainer's own answer check. The vocabulary cards deliberately
+  // let vowel length slide ("koohii" == "kōhī"), but here typing "ii" for い
+  // has to be wrong -- a short vowel is not a long vowel. So instead of
+  // collapsing long vowels we canonicalise their *length*: a macron expands
+  // to its doubled vowel (ō -> "oo"), and a kana long o written おう (which
+  // the reading layer romanises as "ou") counts the same as "oo" / "ō".
+  // "o" and "oo" stay distinct. The si/ti/sya-style alternates in
+  // kana-data.js are orthography, not vowels, and pass straight through.
+  function normalizeKana(v) {
+    return String(v == null ? "" : v).trim().toLowerCase()
+      .replace(/[āâ]/g, "aa").replace(/[īî]/g, "ii").replace(/[ūû]/g, "uu")
+      .replace(/[ēê]/g, "ee").replace(/[ōô]/g, "oo")
+      .replace(/ou/g, "oo");
+  }
   function checkKana(item, input) {
-    var n = normalize(input);
-    return item.answers.some(function (a) { return normalize(a) === n; });
+    var n = normalizeKana(input);
+    return item.answers.some(function (a) { return normalizeKana(a) === n; });
   }
 
   function submitCheck() {
