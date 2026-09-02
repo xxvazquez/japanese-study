@@ -34,7 +34,7 @@ Two colours do a narrow functional job and nothing decorative: a calm slate wash
 - `js/config.js` — your Supabase project URL + anon key (see `SUPABASE_SETUP.md`)
 - `js/shared.js` — helpers used by more than one feature (currently just HTML escaping)
 - `js/vocab/` — the vocabulary page: `kana-romaji.js` (`SakuraStudy.kanaRomaji` — kana→romaji converter for the hover/tap reading layer), `icons.js` (`SakuraStudy.icons` — a curated monochrome line-icon set, a Lucide subset), `table-custom.js` (`SakuraStudy.tableCustom` — each table's custom name/icon plus the starred-rows list, in `localStorage`, synced through the account when signed in), `icon-picker.js` (`SakuraStudy.iconPicker` — the reusable picker), `customize.js` (`SakuraStudy.customize` — the Customize page: rename, re-icon, and reorder tables), `render.js` (tables + the four-item navigation, sorting, custom order), `interactions.js` (section routing incl. the Customize/Help utility pages, search, view modes, self-test, the Starred view, menus, print, polite toggle, theme, reading-layer taps, icon/name picking). The Help page (`#help`, opened by the masthead “?”) is static content in `index.html`.
-- `js/flashcards/` — the Flashcards feature, split by responsibility: `store.js` (state & local storage), `vocab-index.js` (lookup + answer checking), `scheduling.js` (FSRS-6 + queue/stats), `data-ops.js` (auth, Supabase sync, guest store, streak), `dashboard.js` (Dashboard tab + insights + review session), `views.js` (Manage/Settings/Help + row toggle), `kana-data.js` (`SakuraStudy.flashcards.kanaData` — built-in hiragana/katakana tables + practice groups), `kana.js` (`SakuraStudy.flashcards.kana` — the Kana tab: group + direction picker, FSRS-scheduled kana↔romaji drill, stored in its own `localStorage` key), `bootstrap.js` (app shell + init). See Flashcards, below.
+- `js/flashcards/` — the Flashcards feature, split by responsibility: `store.js` (state & local storage), `vocab-index.js` (lookup + answer checking), `scheduling.js` (FSRS-6 + queue/stats), `data-ops.js` (auth, Supabase sync, guest store, streak), `dashboard.js` (Dashboard tab + insights + review session), `views.js` (Manage/Settings/Help + row toggle), `kana-data.js` (`SakuraStudy.flashcards.kanaData` — built-in hiragana/katakana tables + practice groups), `kana.js` (`SakuraStudy.flashcards.kana` — the Kana tab: group + direction picker, FSRS-scheduled kana↔romaji drill; its cache lives in `store.js` and its sync in `data-ops.js`, the same guest/signed-in split as the vocab cards), `bootstrap.js` (app shell + init). See Flashcards, below.
 - `js/sw-register.js` — registers the service worker (see PWA, below)
 - `data/vocabulary.js` — the actual vocab, as plain data (not HTML), each row carrying a permanent id
 - `vendor/` — vendored `ts-fsrs` and `supabase-js`, static files (see Flashcards, below)
@@ -103,7 +103,8 @@ An additive feature on top of the existing vocabulary — it doesn't change or d
 - A **Kana** tab is a separate hiragana/katakana reading trainer — not built on the vocabulary. Pick which groups to drill, by the names the kana are taught under — **gojūon**, **dakuten**, **handakuten**, **yōon** (small-ya combinations), and **sokuon** (the doubling っ / ッ, practised in short example words), for each script — plus which **directions** to study, and review one item at a time. Every item × direction is its own FSRS-6 card, scheduled with the same vendored scheduler; a word's two directions are spaced apart in the queue.
   - **Kana → romaji** — type the reading (type → Enter → 1–4, like a vocabulary card). Romaji is taken from `js/vocab/kana-romaji.js` so the trainer and the reading layer never disagree, and a few alternate spellings (`si` for `shi`, `wo` for を, …) are accepted. Unlike the vocabulary cards, this checks vowel **length**: a macron matches its doubled vowel either way (`ō` ≡ `oo`) and a kana long o written おう accepts `ou` / `oo` / `ō` (`gakkou` = `gakkoo` = `gakkō`), but a short vowel never matches a long one — `ii` is wrong for い.
   - **Romaji → kana** — a flip card (you can't type kana): the romaji is shown, Enter / Space (or **Reveal**) shows the glyph, then 1–4 rate yourself. The wrap-up's accuracy figure counts only the typed direction.
-  - Both directions are on by default; the picker keeps at least one on. Progress is stored locally in `sakura-kana-v1`, independent of the vocabulary flashcards and — for now — of guest-vs-signed-in (account sync is a later step).
+  - Both directions are on by default; the picker keeps at least one on.
+  - Storage follows the same model as the vocabulary cards, kept separate from them. **Guest:** local only, in `sakura-kana-v1` — that key *is* the record. **Signed in:** Supabase (`kana_cards` / `kana_review_logs`) is authoritative; `sakura-kana-cache-v1` is a read-through cache plus an offline review outbox that syncs on reconnect (guarded by `reps`, conflicts replayed — same as the vocab flow). The group + direction picker rides along in `flashcard_settings.kana_prefs`. On first sign-in, whatever is in the guest cache is seeded up (never overwriting an account that already has kana rows).
 - Removing ("pausing") a vocab entry from flashcards **archives** it — its FSRS state and full review history are kept, and re-adding it later restores the same card rather than starting over. There is no way to permanently delete a card's learning history; a paused card keeps it indefinitely.
 - Re-vendoring the libraries after a version bump: `npm install && npm run vendor:libs`.
 
@@ -117,10 +118,10 @@ flowchart LR
         V["Vocabulary entries<br/>permanent id, e.g. v0001"]
     end
     subgraph guest["Guest mode"]
-        LS[("localStorage<br/>sakura-flashcards-guest-v1")]
+        LS[("localStorage<br/>sakura-flashcards-guest-v1<br/>sakura-kana-v1")]
     end
     subgraph account["Signed-in mode"]
-        SB[("Supabase Postgres<br/>flashcards / review_logs / flashcard_settings")]
+        SB[("Supabase Postgres<br/>flashcards / review_logs / flashcard_settings<br/>kana_cards / kana_review_logs")]
         Cache[("localStorage<br/>read-through cache + offline outbox")]
     end
 
@@ -137,7 +138,9 @@ erDiagram
     AUTH_USERS ||--o{ FLASHCARDS : owns
     AUTH_USERS ||--o{ REVIEW_LOGS : owns
     AUTH_USERS ||--|| FLASHCARD_SETTINGS : has
+    AUTH_USERS ||--o{ KANA_CARDS : owns
     FLASHCARDS ||--o{ REVIEW_LOGS : "review history"
+    KANA_CARDS ||--o{ KANA_REVIEW_LOGS : "review history"
 
     FLASHCARDS {
         uuid id PK
@@ -172,6 +175,24 @@ erDiagram
         boolean enabled_en_ro
         integer current_streak
         integer longest_streak
+        jsonb kana_prefs "Kana tab group + direction picker"
+    }
+    KANA_CARDS {
+        uuid id PK
+        uuid user_id FK
+        text kana_id "-> kana-data.js item id, e.g. hira-gojuon:あ"
+        text direction "k2r (type romaji) / r2k (flip)"
+        smallint state "FSRS, same columns as FLASHCARDS"
+        timestamptz due
+        integer reps
+    }
+    KANA_REVIEW_LOGS {
+        uuid id PK
+        uuid user_id FK
+        uuid card_id FK
+        text client_review_id "idempotent offline-sync retries"
+        smallint rating
+        timestamptz reviewed_at
     }
 ```
 

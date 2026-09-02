@@ -103,9 +103,62 @@ alter table public.flashcard_settings add column if not exists enabled_en_ro boo
 -- devices without a table of its own. Shape: { "<tableId>": { "icon": "..." } }.
 alter table public.flashcard_settings add column if not exists table_custom jsonb not null default '{}'::jsonb;
 
+-- Kana trainer (the Flashcards "Kana" tab) group + direction picker state, so
+-- it follows you across devices like the other settings. Shape:
+-- { "groups": ["hira-gojuon", ...], "dirs": { "k2r": true, "r2k": true } }.
+alter table public.flashcard_settings add column if not exists kana_prefs jsonb not null default '{}'::jsonb;
+
+-- Kana trainer cards + review history -- the exact parallel of flashcards /
+-- review_logs above, for the "Kana" tab's own hiragana/katakana drill.
+-- kana_id is the trainer's stable item id ("hira-gojuon:あ", ...); direction
+-- is 'k2r' (type the romaji) or 'r2k' (recall the glyph). Same no-hard-delete
+-- rule -- a card is never deleted, only left out of review.
+create table if not exists public.kana_cards (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  kana_id text not null,
+  direction text not null check (direction in ('k2r', 'r2k')),
+  active boolean not null default true,
+  state smallint not null default 0,
+  due timestamptz not null default now(),
+  stability double precision not null default 0,
+  difficulty double precision not null default 0,
+  scheduled_days integer not null default 0,
+  reps integer not null default 0,
+  lapses integer not null default 0,
+  learning_steps integer not null default 0,
+  last_review timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (user_id, kana_id, direction)
+);
+
+create index if not exists kana_cards_user_due_idx on public.kana_cards (user_id, due) where active;
+
+create table if not exists public.kana_review_logs (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  card_id uuid not null references public.kana_cards (id) on delete cascade,
+  client_review_id text not null,
+  rating smallint not null,
+  state smallint not null,
+  due timestamptz,
+  stability double precision,
+  difficulty double precision,
+  scheduled_days integer,
+  learning_steps integer,
+  reviewed_at timestamptz not null default now(),
+  created_at timestamptz not null default now(),
+  unique (user_id, client_review_id)
+);
+
+create index if not exists kana_review_logs_card_idx on public.kana_review_logs (card_id, reviewed_at);
+
 alter table public.flashcards enable row level security;
 alter table public.review_logs enable row level security;
 alter table public.flashcard_settings enable row level security;
+alter table public.kana_cards enable row level security;
+alter table public.kana_review_logs enable row level security;
 
 -- drop-then-create (rather than a bare `create policy`) so this file can be
 -- re-run after a change like the one above without erroring on policies
@@ -120,4 +173,12 @@ create policy "review_logs: owner full access" on public.review_logs
 
 drop policy if exists "flashcard_settings: owner full access" on public.flashcard_settings;
 create policy "flashcard_settings: owner full access" on public.flashcard_settings
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "kana_cards: owner full access" on public.kana_cards;
+create policy "kana_cards: owner full access" on public.kana_cards
+  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+drop policy if exists "kana_review_logs: owner full access" on public.kana_review_logs;
+create policy "kana_review_logs: owner full access" on public.kana_review_logs
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -11,7 +11,7 @@ The Flashcards section stores your learning data (which vocab entries you've add
 
 1. In your project, open **SQL Editor** → **New query**.
 2. Paste the contents of [`supabase/schema.sql`](supabase/schema.sql) and click **Run**.
-3. This creates `flashcards`, `review_logs`, and `flashcard_settings`, all with Row Level Security enabled so each signed-in user only ever sees their own rows.
+3. This creates `flashcards`, `review_logs`, `flashcard_settings`, and the Kana trainer's `kana_cards` / `kana_review_logs`, all with Row Level Security enabled so each signed-in user only ever sees their own rows.
 
 `schema.sql` is written so the **whole file is safe to paste and re-run any time it changes** (new columns are added with `add column if not exists`, nothing is dropped) — so if you set up Supabase before a feature that needs a schema change (e.g. the vocabulary-page table icons, which sync through `flashcard_settings.table_custom`), just re-run the file.
 
@@ -39,3 +39,10 @@ The Flashcards section stores your learning data (which vocab entries you've add
 ## What happens if you skip this
 
 The rest of the site (vocabulary browsing, search, sort, print) works exactly as before with no setup. The Flashcards section itself will show a message asking you to finish this setup instead of a sign-in form.
+
+## Verifying a schema change against a live project
+
+The smoke tests can't reach a real Supabase project, so anything sync-related is checked by hand. After re-running `schema.sql` for a new feature, sign in and confirm:
+
+- **Kana trainer sync:** open the **Kana** tab, do a few reviews (both directions), then reload — progress is still there. In your project's **Table Editor**, `kana_cards` has a row per reviewed item×direction with advancing `reps`, and `kana_review_logs` has one row per review. Toggle a group or direction and check `flashcard_settings.kana_prefs` updates. On a second device / browser, sign in and confirm the same progress and picker state load. Go offline, review, come back online — the queued reviews sync (the "Syncing… reviews" chip clears).
+- **First sign-in seeding:** with kana progress built up as a guest, then signing in on an account that has no kana rows yet, copies that progress up once (it never overwrites an account that already has kana rows).

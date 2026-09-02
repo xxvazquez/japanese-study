@@ -6,10 +6,12 @@
 // the romaji. Every kana + direction is its own FSRS-6 card, scheduled with
 // the same vendored scheduler the vocabulary cards use.
 //
-// Storage, for now, is local only: a single localStorage key, independent of
-// the vocab flashcards cache and of guest-vs-signed-in mode. Syncing kana
-// progress through Supabase (its own table) is a later step; until then this
-// key is shared by whoever uses the browser.
+// Storage mirrors the vocab flashcards: guest mode keeps its record in one
+// local key; signed in, Supabase (kana_cards / kana_review_logs) is
+// authoritative and the local cache is a read-through copy plus an offline
+// review outbox. The cache itself lives in store.js (getKanaCache); the
+// remote/sync plumbing in data-ops.js. This file is the Kana tab's UI and
+// review flow.
 //
 // Directions: kana -> type the romaji (checked), and romaji -> recall the
 // kana (a flip card -- you can't type kana, so Enter/Space reveals the glyph
@@ -24,11 +26,13 @@ window.SakuraStudy.flashcards.kana = (function () {
   var kanaData = S.kanaData;
   var sched = S.scheduling;
   var store = S.store;
+  var dataOps = S.dataOps;
   var esc = window.SakuraStudy.shared.escapeHtml;
 
   var getScheduler = sched.getScheduler, previewRatings = sched.previewRatings;
   var applyRating = sched.applyRating, shuffle = sched.shuffle;
-  var RATING_NAMES = store.RATING_NAMES, localDateStr = store.localDateStr;
+  var RATING_NAMES = store.RATING_NAMES, localDateStr = store.localDateStr, uuid = store.uuid;
+  var isGuestMode = store.isGuestMode;
 
   // FSRS knobs -- the library defaults, same as a fresh vocab-flashcards
   // account. Not user-tunable here (yet); kept as a plain object so the
@@ -41,41 +45,19 @@ window.SakuraStudy.flashcards.kana = (function () {
   function isDir(d) { return DIRECTIONS.indexOf(d) !== -1; }
 
   // -----------------------------------------------------------------------
-  // Local store -- own key, own tiny shape. try/catch + a same-pageview
-  // in-memory fallback, exactly like js/flashcards/store.js does for its
-  // cache (private-mode browsers throw on any localStorage access).
+  // Store access -- the cache lives in store.js (guest vs signed-in keys,
+  // validation, the same-pageview in-memory fallback). load() hands back the
+  // live object; mutate it in place then save().
   // -----------------------------------------------------------------------
-  var KEY = "sakura-kana-v1";
-  var mem = null;
-  function defaultDirs() { return { k2r: true, r2k: true }; }
-  function sanitizeDirs(raw) {
-    var d = defaultDirs();
-    if (raw && typeof raw === "object") {
-      DIRECTIONS.forEach(function (k) { if (raw[k] === false) d[k] = false; });
-    }
-    if (!DIRECTIONS.some(function (k) { return d[k]; })) return defaultDirs(); // never all-off
-    return d;
-  }
-  function fresh() { return { v: 1, groups: kanaData.DEFAULT_GROUPS.slice(), dirs: defaultDirs(), cards: {}, day: null }; }
-  function sanitize(raw) {
-    if (!raw || typeof raw !== "object" || !raw.cards || typeof raw.cards !== "object") return null;
-    var groups = Array.isArray(raw.groups) ? raw.groups.filter(kanaData.isGroupId) : kanaData.DEFAULT_GROUPS.slice();
-    var day = raw.day && typeof raw.day.date === "string" ? { date: raw.day.date, count: raw.day.count | 0 } : null;
-    return { v: 1, groups: groups, dirs: sanitizeDirs(raw.dirs), cards: raw.cards, day: day };
-  }
-  function load() {
-    if (mem) return mem;
-    try {
-      var raw = window.localStorage && localStorage.getItem(KEY);
-      mem = (raw && sanitize(JSON.parse(raw))) || fresh();
-    } catch (e) {
-      mem = fresh();
-    }
-    return mem;
-  }
-  function save(s) {
-    mem = s;
-    try { localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+  function load() { return store.getKanaCache(); }
+  function save() { store.saveKanaCache(); }
+  function signedIn() { return !!(dataOps && dataOps.currentUser && dataOps.currentUser()); }
+  // Push the group/direction picker state up so it follows the account
+  // (best-effort, exactly like the vocabulary table icons).
+  function pushPrefs() {
+    if (!signedIn()) return;
+    var s = load();
+    dataOps.saveKanaPrefsRemote({ groups: s.groups.slice(), dirs: { k2r: s.dirs.k2r !== false, r2k: s.dirs.r2k !== false } }).catch(function () {});
   }
 
   function cardKey(item, dir) { return item.id + "|" + dir; }
@@ -104,7 +86,9 @@ window.SakuraStudy.flashcards.kana = (function () {
     var i = s.groups.indexOf(id);
     if (on && i === -1) s.groups.push(id);
     else if (!on && i !== -1) s.groups.splice(i, 1);
-    save(s);
+    else return;
+    save();
+    pushPrefs();
   }
   function selectedItems() { return kanaData.itemsFor(selectedGroupIds()); }
 
@@ -119,7 +103,8 @@ window.SakuraStudy.flashcards.kana = (function () {
     next[dir] = !!on;
     if (!DIRECTIONS.some(function (k) { return next[k]; })) return; // keep at least one on
     s.dirs = next;
-    save(s);
+    save();
+    pushPrefs();
   }
   // Every selected kana, once per enabled direction -- the unit the queue and
   // the progress line actually count. `dir` rides along so each card is keyed
@@ -251,12 +236,25 @@ window.SakuraStudy.flashcards.kana = (function () {
     var now = new Date();
     var s = load();
     var key = cardKey(unit.item, unit.dir);
-    var isNew = !s.cards[key];
-    var base = s.cards[key] || newCard(now);
+    var prev = s.cards[key];
+    var base = prev || newCard(now);
     var res = applyRating(getScheduler(FSRS_SETTINGS), base, now, ratingName);
-    s.cards[key] = res.card;
-    if (isNew) bumpNew(s, now);
-    save(s);
+    var card = res.card;
+    if (prev && prev.id) card.id = prev.id; // keep the server row id across reviews
+    s.cards[key] = card;
+    if (!prev) bumpNew(s, now);
+    // Signed in: queue the review for Supabase (guest mode keeps no outbox --
+    // its local cache is the record). Same offline-safe pattern as the vocab
+    // cards: apply locally now, sync when we can.
+    if (signedIn()) {
+      s.logsOutbox = s.logsOutbox || [];
+      s.logsOutbox.push({
+        clientReviewId: uuid(), kanaId: unit.item.id, direction: unit.dir,
+        baseReps: (prev && prev.reps) || 0, resultCard: card, logFields: res.log
+      });
+    }
+    save();
+    if (signedIn()) dataOps.syncKanaOutbox();
     session.reviewedCount++;
     if (unit.dir === "k2r") {
       session.typedCount++;

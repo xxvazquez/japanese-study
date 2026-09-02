@@ -816,6 +816,20 @@ async function main() {
   kh.setDir("k2r", true);
   check("Back to groups returns to the picker, now showing progress", !!document.getElementById("fcKanaStart") && /started/.test(document.getElementById("fcKanaSummary").textContent));
 
+  // Guest mode keeps no sync outbox -- its local kana cache is the record,
+  // exactly like the guest vocab cache. (The signed-in path -- kana_cards /
+  // kana_review_logs, the offline outbox -- needs a live Supabase project and
+  // is covered by the manual checklist in SUPABASE_SETUP.md.)
+  const kanaStore = window.SakuraStudy.flashcards.store;
+  const kanaDataOps = window.SakuraStudy.flashcards.dataOps;
+  check("the kana cache is exposed from the store, guest key, no queued reviews", (() => {
+    const kc = kanaStore.getKanaCache();
+    return !!kc && Array.isArray(kc.logsOutbox) && kc.logsOutbox.length === 0
+      && kanaDataOps.kanaPendingCount() === 0;
+  })());
+  if (storageUsable) check("guest reviews land in sakura-kana-v1, never a signed-in cache key",
+    !!readLocalStorage("sakura-kana-v1") && readLocalStorage("sakura-kana-cache-v1") === null);
+
   console.log("Flashcards: Settings tab");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
   const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];

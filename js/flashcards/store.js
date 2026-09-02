@@ -166,12 +166,72 @@ window.SakuraStudy.flashcards.store = (function () {
     saveCache();
   }
 
+  // -----------------------------------------------------------------------
+  // Kana trainer cache -- the "Kana" tab's own store, the exact same
+  // guest-vs-signed-in split as the vocab cache above but a much smaller
+  // shape (no FSRS settings, no streak). Guest mode keeps its record under
+  // the original single key; signed in this is a read-through copy of the
+  // kana_cards table plus its own offline review outbox. The card values are
+  // keyed "<kanaId>|<direction>" and carry the FSRS fields plus, when signed
+  // in, the server row's `id` (for the review-log foreign key).
+  // -----------------------------------------------------------------------
+  var KANA_GUEST_KEY = "sakura-kana-v1"; // unchanged -- existing on-device data stays put
+  var KANA_CACHE_KEY = "sakura-kana-cache-v1";
+  var KANA_DEFAULT_GROUPS = ["hira-gojuon"]; // mirrors kanaData.DEFAULT_GROUPS
+  function emptyKanaCache(userId) {
+    return { v: 1, userId: userId || null, groups: KANA_DEFAULT_GROUPS.slice(), dirs: { k2r: true, r2k: true }, cards: {}, day: null, logsOutbox: [] };
+  }
+  function validateKanaCache(raw) {
+    if (!raw || typeof raw !== "object" || !raw.cards || typeof raw.cards !== "object") return null;
+    var d = { k2r: raw.dirs && raw.dirs.k2r === false ? false : true, r2k: raw.dirs && raw.dirs.r2k === false ? false : true };
+    if (!d.k2r && !d.r2k) { d.k2r = true; d.r2k = true; } // never all-off
+    return {
+      v: 1, userId: raw.userId || null,
+      groups: Array.isArray(raw.groups) ? raw.groups.filter(function (g) { return typeof g === "string"; }) : KANA_DEFAULT_GROUPS.slice(),
+      dirs: d, cards: raw.cards,
+      day: raw.day && typeof raw.day.date === "string" ? { date: raw.day.date, count: raw.day.count | 0 } : null,
+      logsOutbox: Array.isArray(raw.logsOutbox) ? raw.logsOutbox.filter(function (e) { return e && e.clientReviewId && e.kanaId && e.direction; }) : []
+    };
+  }
+  function kanaCacheKey() { return isGuestMode() ? KANA_GUEST_KEY : KANA_CACHE_KEY; }
+  var kanaCache = null;
+  var kanaCacheLoadedKey = null;
+  var inMemoryKanaCaches = {};
+  function loadKanaCache() {
+    var key = kanaCacheKey();
+    try {
+      var raw = window.localStorage && localStorage.getItem(key);
+      var validated = validateKanaCache(raw ? JSON.parse(raw) : null);
+      kanaCache = validated || inMemoryKanaCaches[key] || emptyKanaCache();
+    } catch (e) {
+      kanaCache = inMemoryKanaCaches[key] || emptyKanaCache();
+    }
+    kanaCacheLoadedKey = key;
+    return kanaCache;
+  }
+  function saveKanaCache() {
+    var key = kanaCacheKey();
+    inMemoryKanaCaches[key] = kanaCache;
+    try { localStorage.setItem(key, JSON.stringify(kanaCache)); } catch (e) {}
+  }
+  function getKanaCache() {
+    if (!kanaCache || kanaCacheLoadedKey !== kanaCacheKey()) return loadKanaCache();
+    return kanaCache;
+  }
+  function resetKanaCacheForUser(userId) {
+    kanaCache = emptyKanaCache(userId);
+    kanaCacheLoadedKey = kanaCacheKey();
+    saveKanaCache();
+  }
+
   return {
     DIRECTIONS: DIRECTIONS, DIRECTION_LABEL: DIRECTION_LABEL, RATING_NAMES: RATING_NAMES,
     CACHE_SCHEMA_VERSION: CACHE_SCHEMA_VERSION,
     getStoredMode: getStoredMode, setStoredMode: setStoredMode,
     setSession: setSession, isGuestMode: isGuestMode, hasActiveSession: hasActiveSession,
     uuid: uuid, localDateStr: localDateStr,
-    loadCache: loadCache, saveCache: saveCache, getCache: getCache, resetCacheForUser: resetCacheForUser
+    loadCache: loadCache, saveCache: saveCache, getCache: getCache, resetCacheForUser: resetCacheForUser,
+    loadKanaCache: loadKanaCache, saveKanaCache: saveKanaCache, getKanaCache: getKanaCache,
+    resetKanaCacheForUser: resetKanaCacheForUser
   };
 })();

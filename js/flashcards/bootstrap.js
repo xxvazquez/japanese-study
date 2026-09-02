@@ -26,6 +26,8 @@ window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
   var esc = window.SakuraStudy.shared.escapeHtml;
 
   var isGuestMode = store.isGuestMode, setStoredMode = store.setStoredMode, loadCache = store.loadCache;
+  var loadKanaCache = store.loadKanaCache;
+  var fetchKanaFromServer = dataOps.fetchKanaFromServer, syncKanaOutbox = dataOps.syncKanaOutbox;
   var computeStats = sched.computeStats;
   var authState = dataOps.authState;
   var configured = dataOps.configured, currentUser = dataOps.currentUser;
@@ -121,10 +123,18 @@ window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
   }
 
   var initialSyncDone = false;
+  var kanaSyncedFor = null;
   function renderShell(el) {
     if (!isGuestMode() && !initialSyncDone) {
       initialSyncDone = true;
       fetchAllFromServer().then(function () { invalidateInsights(); syncOutbox(); render(); }).catch(function (e) { console.error("Flashcards: could not load from Supabase", e); render(); });
+    }
+    // Kana trainer: pull its cards + picker prefs once per signed-in user
+    // (re-runs after a sign-out/in), then flush any offline reviews.
+    var uid = !isGuestMode() && currentUser() ? currentUser().id : null;
+    if (uid && kanaSyncedFor !== uid) {
+      kanaSyncedFor = uid;
+      fetchKanaFromServer().then(function () { syncKanaOutbox(); render(); }).catch(function (e) { console.error("Flashcards: could not load kana progress from Supabase", e); });
     }
     var stats = computeStats(new Date());
     var identityHtml = isGuestMode()
@@ -206,6 +216,7 @@ window.SakuraStudy.flashcards = window.SakuraStudy.flashcards || {};
 
   document.addEventListener("DOMContentLoaded", function () {
     loadCache();
+    loadKanaCache();
     initAuth();
     render();
     refreshRowToggleButtons();

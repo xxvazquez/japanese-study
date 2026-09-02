@@ -15,6 +15,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
   var sched = window.SakuraStudy.flashcards.scheduling;
   var vidx = window.SakuraStudy.flashcards.vocabIndex;
   var getCache = store.getCache, saveCache = store.saveCache, resetCacheForUser = store.resetCacheForUser;
+  var resetKanaCacheForUser = store.resetKanaCacheForUser;
   var isGuestMode = store.isGuestMode, uuid = store.uuid, localDateStr = store.localDateStr;
   var RATING_NAMES = store.RATING_NAMES;
   var getVocabIndex = vidx.getVocabIndex, directionsForEntry = vidx.directionsForEntry;
@@ -47,7 +48,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
       authState.session = res.data.session;
       store.setSession(authState.session);
       authState.ready = true;
-      if (authState.session) resetCacheForUser(authState.session.user.id);
+      if (authState.session) { resetCacheForUser(authState.session.user.id); resetKanaCacheForUser(authState.session.user.id); }
       notifyAuthChange();
     });
     client.auth.onAuthStateChange(function (event, session) {
@@ -55,7 +56,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
       authState.session = session;
       store.setSession(session);
       var newUserId = session ? session.user.id : null;
-      if (newUserId !== prevUserId) resetCacheForUser(newUserId);
+      if (newUserId !== prevUserId) { resetCacheForUser(newUserId); resetKanaCacheForUser(newUserId); }
       notifyAuthChange();
     });
   }
@@ -298,7 +299,7 @@ window.SakuraStudy.flashcards.dataOps = (function () {
   function onSyncStateChange(fn) { syncStateListeners.push(fn); }
   function getSyncState() {
     var online = typeof navigator === "undefined" || navigator.onLine !== false;
-    var pending = isGuestMode() ? 0 : (getCache().logsOutbox || []).length;
+    var pending = isGuestMode() ? 0 : ((getCache().logsOutbox || []).length + kanaPendingCount());
     return { online: online, pending: pending };
   }
   function notifySyncStateChange() {
@@ -346,8 +347,152 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     entry.resultCard = replayed.card;
     return "done";
   }
-  window.addEventListener("online", function () { notifySyncStateChange(); syncOutbox(); });
+  window.addEventListener("online", function () { notifySyncStateChange(); syncOutbox(); syncKanaOutbox(); });
   window.addEventListener("offline", function () { notifySyncStateChange(); });
+
+  // -----------------------------------------------------------------------
+  // Kana trainer sync -- the Kana tab's parallel of everything above, one
+  // step simpler: a card is born on its first review (no "add" step), the
+  // trainer uses the library's default FSRS knobs (no per-user settings),
+  // and there's no streak. Guest mode does nothing here; signed in,
+  // kana_cards is authoritative and the local kana cache is a read-through
+  // copy plus an offline review outbox, exactly like the vocab cache.
+  // -----------------------------------------------------------------------
+  var KANA_FSRS = { fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false };
+
+  function kanaRowToLocal(row) {
+    return {
+      id: row.id, active: row.active, state: row.state, due: row.due,
+      stability: row.stability, difficulty: row.difficulty, scheduled_days: row.scheduled_days,
+      reps: row.reps, lapses: row.lapses, learning_steps: row.learning_steps, last_review: row.last_review
+    };
+  }
+  async function fetchKanaFromServer() {
+    if (isGuestMode() || !currentUser()) return;
+    var client = getClient(), user = currentUser();
+    var cardsRes = await client.from("kana_cards").select("*").eq("user_id", user.id);
+    if (cardsRes.error) throw cardsRes.error;
+    var setRes = await client.from("flashcard_settings").select("kana_prefs").eq("user_id", user.id).maybeSingle();
+    if (setRes.error) throw setRes.error;
+
+    // First sign-in with nothing on the server yet -- seed it from whatever
+    // this device's guest cache holds, so on-device progress isn't stranded.
+    // Never overwrites an account that already has kana rows (from another
+    // device): the seed upsert ignores conflicts.
+    if (!cardsRes.data.length) {
+      var seeded = await seedKanaFromGuest(user);
+      if (seeded) cardsRes = { data: seeded };
+    }
+
+    var kc = store.getKanaCache();
+    kc.cards = {};
+    cardsRes.data.forEach(function (row) { kc.cards[row.kana_id + "|" + row.direction] = kanaRowToLocal(row); });
+    var prefs = (setRes.data && setRes.data.kana_prefs) || {};
+    if (Array.isArray(prefs.groups)) kc.groups = prefs.groups.filter(function (g) { return typeof g === "string"; });
+    if (prefs.dirs && typeof prefs.dirs === "object") {
+      var d = { k2r: prefs.dirs.k2r !== false, r2k: prefs.dirs.r2k !== false };
+      if (d.k2r || d.r2k) kc.dirs = d;
+    }
+    kc.userId = user.id;
+    store.saveKanaCache();
+  }
+  async function seedKanaFromGuest(user) {
+    var client = getClient(), guestRaw;
+    try { guestRaw = JSON.parse(localStorage.getItem("sakura-kana-v1") || "null"); } catch (e) { guestRaw = null; }
+    if (!guestRaw || !guestRaw.cards) return null;
+    var rows = Object.keys(guestRaw.cards).map(function (key) {
+      var c = guestRaw.cards[key], sep = key.lastIndexOf("|");
+      var dir = sep > 0 ? key.slice(sep + 1) : "";
+      if ((dir !== "k2r" && dir !== "r2k") || !c || typeof c.state !== "number" || typeof c.reps !== "number") return null;
+      return {
+        user_id: user.id, kana_id: key.slice(0, sep), direction: dir, active: true,
+        state: c.state, due: c.due, stability: c.stability, difficulty: c.difficulty,
+        scheduled_days: c.scheduled_days, reps: c.reps, lapses: c.lapses,
+        learning_steps: c.learning_steps, last_review: c.last_review || null
+      };
+    }).filter(Boolean);
+    if (!rows.length) return null;
+    var res = await client.from("kana_cards").upsert(rows, { onConflict: "user_id,kana_id,direction", ignoreDuplicates: true });
+    if (res.error) throw res.error;
+    var all = await client.from("kana_cards").select("*").eq("user_id", user.id);
+    if (all.error) throw all.error;
+    return all.data;
+  }
+  async function saveKanaPrefsRemote(prefs) {
+    if (isGuestMode() || !getClient() || !currentUser()) return;
+    var client = getClient(), user = currentUser();
+    // upsert (not update) so it also works before fetchAllFromServer has
+    // created the settings row; on conflict only kana_prefs is touched.
+    var res = await client.from("flashcard_settings").upsert({ user_id: user.id, kana_prefs: prefs || {} }, { onConflict: "user_id" });
+    if (res.error) throw res.error;
+  }
+
+  async function syncKanaOne(entry) {
+    var client = getClient(), user = currentUser();
+    var up = await client.from("kana_cards").upsert(
+      { user_id: user.id, kana_id: entry.kanaId, direction: entry.direction },
+      { onConflict: "user_id,kana_id,direction", ignoreDuplicates: true });
+    if (up.error) throw up.error;
+    var rowRes = await client.from("kana_cards").select("id,reps")
+      .eq("user_id", user.id).eq("kana_id", entry.kanaId).eq("direction", entry.direction).single();
+    if (rowRes.error) throw rowRes.error;
+    var row = rowRes.data;
+
+    var log = entry.logFields;
+    var logRes = await client.from("kana_review_logs").insert({
+      user_id: user.id, card_id: row.id, client_review_id: entry.clientReviewId,
+      rating: log.rating, state: log.state, due: log.due, stability: log.stability,
+      difficulty: log.difficulty, scheduled_days: log.scheduled_days, learning_steps: log.learning_steps,
+      reviewed_at: log.review
+    });
+    if (logRes.error && logRes.error.code !== "23505") throw logRes.error; // 23505 = already synced, fine
+
+    var payload = fsrsRowFields(entry.resultCard);
+    payload.updated_at = new Date().toISOString();
+    var ok = await client.from("kana_cards").update(payload).eq("id", row.id).eq("reps", entry.baseReps).select();
+    if (ok.error) throw ok.error;
+    if (ok.data && ok.data.length) return { done: true, cardId: row.id, card: entry.resultCard };
+    // Conflict: another device moved this card first. Replay the rating on
+    // the server's current state -- the log above already recorded what the
+    // user saw; this only reconciles the card's live pointer.
+    var serverRes = await client.from("kana_cards").select("*").eq("id", row.id).single();
+    if (serverRes.error) throw serverRes.error;
+    var server = serverRes.data;
+    var replay = applyRating(getScheduler(KANA_FSRS), fsrsRowFields(server), new Date(log.review), RATING_NAMES[log.rating - 1]);
+    var payload2 = fsrsRowFields(replay.card);
+    payload2.updated_at = new Date().toISOString();
+    var ok2 = await client.from("kana_cards").update(payload2).eq("id", row.id).eq("reps", server.reps).select();
+    if (ok2.error) throw ok2.error;
+    if (ok2.data && ok2.data.length) return { done: true, cardId: row.id, card: replay.card };
+    return { done: false };
+  }
+  var kanaSyncing = false;
+  async function syncKanaOutbox() {
+    if (kanaSyncing || isGuestMode() || !configured() || !currentUser()) return;
+    kanaSyncing = true;
+    try {
+      var kc = store.getKanaCache();
+      while (kc.logsOutbox.length) {
+        var entry = kc.logsOutbox[0], outcome;
+        try { outcome = await syncKanaOne(entry); }
+        catch (e) { break; } // network/other error -- stop, retry on next trigger
+        if (!outcome.done) break;
+        var key = entry.kanaId + "|" + entry.direction;
+        // Reconcile the local card with what actually landed (the replay path
+        // can change it) and keep the server row id for the next review.
+        if (kc.cards[key]) kc.cards[key] = Object.assign({}, kc.cards[key], outcome.card, { id: outcome.cardId });
+        kc.logsOutbox.shift();
+        store.saveKanaCache();
+        notifySyncStateChange();
+      }
+    } finally {
+      kanaSyncing = false;
+      notifySyncStateChange();
+    }
+  }
+  function kanaPendingCount() {
+    return isGuestMode() ? 0 : (store.getKanaCache().logsOutbox || []).length;
+  }
 
   return {
     configured: configured, getClient: getClient, currentUser: currentUser,
@@ -360,6 +505,8 @@ window.SakuraStudy.flashcards.dataOps = (function () {
     saveDirectionSettings: saveDirectionSettings, refreshData: refreshData,
     saveTableCustomRemote: saveTableCustomRemote,
     recordStudyActivity: recordStudyActivity, syncOutbox: syncOutbox,
-    onSyncStateChange: onSyncStateChange, getSyncState: getSyncState
+    onSyncStateChange: onSyncStateChange, getSyncState: getSyncState,
+    fetchKanaFromServer: fetchKanaFromServer, saveKanaPrefsRemote: saveKanaPrefsRemote,
+    syncKanaOutbox: syncKanaOutbox, kanaPendingCount: kanaPendingCount
   };
 })();
