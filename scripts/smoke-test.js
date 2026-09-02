@@ -771,6 +771,13 @@ async function main() {
   check("re-selecting a group re-enables Study", !document.getElementById("fcKanaStart").disabled);
   if (storageUsable) check("the group choice is saved to its own key", /hira-gojuon/.test(readLocalStorage("sakura-kana-v1") || ""));
 
+  check("the picker offers both study directions, on by default",
+    document.querySelectorAll("#fcPanelKana .fc-kana-dir-cb").length === 2
+    && [...document.querySelectorAll("#fcPanelKana .fc-kana-dir-cb")].every(cb => cb.checked));
+
+  // --- kana -> romaji: the typed direction (drill r2k off so the queue is
+  // all k2r and the first card is deterministic). ---
+  kh.setDir("r2k", false);
   document.getElementById("fcKanaStart").click();
   check("Study now opens a kana review card", !!document.querySelector("#fcPanelKana .fc-review-card .fc-prompt-kana"));
   const kanaGlyph = document.querySelector("#fcPanelKana .fc-prompt-kana").textContent;
@@ -787,6 +794,26 @@ async function main() {
   document.getElementById("fcKanaEnd").click();
   check("ending shows a wrap-up", /reviewed/.test((document.querySelector("#fcPanelKana .fc-session-done") || {}).textContent || ""));
   document.getElementById("fcKanaBack").click();
+
+  // --- romaji -> kana: a flip card, no text input. ---
+  kh.setDir("r2k", true);
+  kh.setDir("k2r", false);
+  document.getElementById("fcKanaStart").click();
+  check("romaji → kana is a flip card: a romaji prompt and a Reveal button, no input field",
+    !!document.querySelector("#fcPanelKana .fc-prompt-romaji")
+    && !!document.getElementById("fcKanaReveal") && !document.getElementById("fcKanaInput"));
+  document.getElementById("fcKanaReveal").click();
+  check("revealing shows the kana glyph and four ratings, with no right/wrong verdict", (() => {
+    const p = document.getElementById("fcPanelKana");
+    return !!p.querySelector(".fc-answer-reveal .fc-expected-kana")
+      && p.querySelectorAll(".fc-rating-btn").length === 4 && !p.querySelector(".fc-result");
+  })());
+  document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
+  check("rating a flip card advances", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
+  if (storageUsable) check("the flip card is stored under its own |r2k key", /\|r2k"/.test(readLocalStorage("sakura-kana-v1") || ""));
+  document.getElementById("fcKanaEnd").click();
+  document.getElementById("fcKanaBack").click();
+  kh.setDir("k2r", true);
   check("Back to groups returns to the picker, now showing progress", !!document.getElementById("fcKanaStart") && /started/.test(document.getElementById("fcKanaSummary").textContent));
 
   console.log("Flashcards: Settings tab");

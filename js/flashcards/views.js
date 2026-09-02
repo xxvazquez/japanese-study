@@ -104,7 +104,7 @@ window.SakuraStudy.flashcards.views = (function () {
       '<p class="fc-note">Settings → Study Directions turns any of the four review directions on or off. Turning one off never deletes its cards or progress — it just leaves that direction out of review until you turn it back on.</p>' +
       '</div>' +
       '<div class="fc-settings-section"><h3>Kana trainer</h3>' +
-      '<p class="fc-note">The <span class="fc-legend-term">Kana</span> tab is a separate hiragana / katakana reading trainer, not built on the vocabulary. Choose the groups you want — gojūon, dakuten, handakuten, yōon (small-ya combinations), and sokuon (the doubling <span lang="ja">っ</span>, in short example words), per script — then review one item at a time, typing its romaji. It uses the same review card, keyboard shortcuts, and FSRS scheduling as the vocabulary sessions. Progress is saved on this device.</p>' +
+      '<p class="fc-note">The <span class="fc-legend-term">Kana</span> tab is a separate hiragana / katakana reading trainer, not built on the vocabulary. Choose the groups you want — gojūon, dakuten, handakuten, yōon (small-ya combinations), and sokuon (the doubling <span lang="ja">っ</span>, in short example words), per script — plus the directions: <em>kana → romaji</em> (type the reading) and <em>romaji → kana</em> (a flip card — reveal the glyph, then rate yourself). It uses the same review card, keyboard shortcuts, and FSRS scheduling as the vocabulary sessions. Progress is saved on this device.</p>' +
       '</div>';
   }
 
