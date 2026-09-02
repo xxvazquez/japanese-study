@@ -2,7 +2,7 @@
 
 A fast reference site for food, kitchen, and N5 vocabulary. Built for quick lookup while cooking or studying, and for printing clean study sheets.
 
-Live at [xxvazquez.github.io/japanese-study](https://xxvazquez.github.io/japanese-study/).
+Live at [xxvazquez.github.io/raume](https://xxvazquez.github.io/raume/).
 
 ## Brand
 
