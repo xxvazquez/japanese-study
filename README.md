@@ -73,8 +73,9 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   set one. The picker has ~165 curated monochrome line icons (a Lucide subset)
   in five groups, plus **Upload image…** for your own (downscaled to 64px,
   stored as a data URL).
-- **Names and order.** The masthead gear opens a **Customize** page: rename any
-  table (blank = keep the shipped name), and use ▲▼ to move a table within its
+- **Names and order.** The masthead settings button (the sliders icon) opens a
+  **Customize** page: rename any table (blank = keep the shipped name), and use
+  ▲▼ to move a table within its
   category or a category within its section. Custom names, icons, and order
   then show everywhere the table appears, including Flashcards › Manage.
 - Customisations save to `localStorage` immediately. Signed in, they also sync
