@@ -19,11 +19,11 @@ window.RaumeStudy.flashcards.store = (function () {
     "en-ro": "English → Romaji"
   };
   var RATING_NAMES = ["Again", "Hard", "Good", "Easy"];
-  // localStorage keys keep the historical "sakura-" prefix (the app's old name)
-  // so existing installs don't lose their on-device data on the rename.
-  var CACHE_KEY = "sakura-flashcards-cache-v1";
-  var GUEST_CACHE_KEY = "sakura-flashcards-guest-v1";
-  var MODE_KEY = "sakura-flashcards-mode";
+  // localStorage keys. Old "sakura-*" names (the app's former name) are moved
+  // across once by js/storage-migration.js before this module loads.
+  var CACHE_KEY = "raume-flashcards-cache-v1";
+  var GUEST_CACHE_KEY = "raume-flashcards-guest-v1";
+  var MODE_KEY = "raume-flashcards-mode";
   var CACHE_SCHEMA_VERSION = 1;
 
   // Two ways to use Flashcards: signed in (Supabase is authoritative) or
@@ -177,8 +177,8 @@ window.RaumeStudy.flashcards.store = (function () {
   // keyed "<kanaId>|<direction>" and carry the FSRS fields plus, when signed
   // in, the server row's `id` (for the review-log foreign key).
   // -----------------------------------------------------------------------
-  var KANA_GUEST_KEY = "sakura-kana-v1"; // unchanged -- existing on-device data stays put
-  var KANA_CACHE_KEY = "sakura-kana-cache-v1";
+  var KANA_GUEST_KEY = "raume-kana-v1";
+  var KANA_CACHE_KEY = "raume-kana-cache-v1";
   var KANA_DEFAULT_GROUPS = ["hira-gojuon"]; // mirrors kanaData.DEFAULT_GROUPS
   // FSRS knobs for the Kana trainer -- the library defaults (same as a fresh
   // vocab-flashcards account), but tuned independently in the Settings tab and

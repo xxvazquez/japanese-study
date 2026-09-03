@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>raume</title>
+<script src="js/storage-migration.js?v=__CACHEBUST__"></script>
 <script src="js/theme-init.js?v=__CACHEBUST__"></script>
 <link rel="stylesheet" href="css/site.css?v=__CACHEBUST__">
 <link rel="icon" href="logo.png">
@@ -116,8 +117,10 @@
   deploy time (.github/workflows/pages.yml) and matched exactly by the service
   worker's precache (sw.js).
 
-  js/theme-init.js is loaded first, in <head>, so the light/dark theme is on
-  <html data-theme> before the first paint. Everything else loads here:
+  Two <head> scripts run first, before the first paint: js/storage-migration.js
+  (one-time rename of on-device localStorage keys from the old "sakura-" prefix),
+  then js/theme-init.js (puts the light/dark theme on <html data-theme>).
+  Everything else loads here:
 
   1. data/vocabulary.js   -> RaumeStudy.data       (vocabulary dataset, data only)
   2. js/config.js         -> RaumeStudy.config     (Supabase connection config)

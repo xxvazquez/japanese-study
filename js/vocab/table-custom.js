@@ -10,7 +10,7 @@ window.RaumeStudy = window.RaumeStudy || {};
 window.RaumeStudy.tableCustom = (function () {
   "use strict";
 
-  var KEY = "sakura-table-custom"; // historical prefix kept so the rename doesn't drop saved customisations
+  var KEY = "raume-table-custom"; // old "sakura-table-custom" is moved across once by js/storage-migration.js
   var cache = null;
   var listeners = [];
   var remotePush = null;

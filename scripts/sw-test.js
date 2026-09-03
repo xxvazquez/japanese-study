@@ -134,6 +134,7 @@ function assetRequest(pathWithQuery) { return { url: resolveUrl(pathWithQuery), 
 
 // The versioned first-party shell, exactly as index.html requests it.
 const REFERENCE_SHELL = [
+  "js/storage-migration.js",
   "js/theme-init.js",
   "css/site.css",
   "data/vocabulary.js",

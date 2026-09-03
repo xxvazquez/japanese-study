@@ -31,6 +31,7 @@ const UNVERSIONED = [
 // index.html). Cached under the exact versioned URL. Keep this list in sync
 // with index.html whenever a first-party script or stylesheet is added.
 const VERSIONED = [
+  'js/storage-migration.js',
   'js/theme-init.js',
   'css/site.css',
   'data/vocabulary.js',

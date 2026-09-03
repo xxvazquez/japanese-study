@@ -406,7 +406,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
   }
   async function seedKanaFromGuest(user) {
     var client = getClient(), guestRaw;
-    try { guestRaw = JSON.parse(localStorage.getItem("sakura-kana-v1") || "null"); } catch (e) { guestRaw = null; }
+    try { guestRaw = JSON.parse(localStorage.getItem("raume-kana-v1") || "null"); } catch (e) { guestRaw = null; }
     if (!guestRaw || !guestRaw.cards) return null;
     var rows = Object.keys(guestRaw.cards).map(function (key) {
       var c = guestRaw.cards[key], sep = key.lastIndexOf("|");

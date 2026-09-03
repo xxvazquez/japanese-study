@@ -8,9 +8,9 @@
   "use strict";
   var choice;
   try {
-    // Storage key keeps the historical "sakura-" prefix so the rename doesn't
-    // reset anyone's saved theme.
-    choice = window.localStorage && localStorage.getItem("sakura-theme");
+    // js/storage-migration.js (the <head> script before this one) has already
+    // moved this off the old "sakura-theme" name if it was there.
+    choice = window.localStorage && localStorage.getItem("raume-theme");
   } catch (e) { choice = null; }
   if (choice !== "light" && choice !== "dark") choice = "system";
   var resolved = choice === "system"

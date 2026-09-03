@@ -778,7 +778,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     // data-theme + data-theme-choice> before paint; this wires the toggle
     // (a 3-way cycle: System -> Light -> Dark -> System), keeps "system"
     // following the OS live, and persists the choice.
-    const THEME_KEY = 'sakura-theme'; // historical prefix -- see js/theme-init.js
+    const THEME_KEY = 'raume-theme'; // see js/theme-init.js / js/storage-migration.js
     const THEME_ORDER = ['system', 'light', 'dark'];
     const THEME_LABEL = { system: 'System', light: 'Light', dark: 'Dark' };
     const themeToggle = document.getElementById('themeToggle');
@@ -878,7 +878,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     // Casual / polite: one page-wide switch. Verb tables carry both forms in the
     // markup; body.show-polite swaps which one is visible via CSS. Preference
     // persists client-side.
-    const POLITE_KEY = 'sakura-show-polite';
+    const POLITE_KEY = 'raume-show-polite';
     const politeToggle = document.getElementById('politeToggle');
     function applyPoliteMode(on) {
       document.body.classList.toggle('show-polite', on);

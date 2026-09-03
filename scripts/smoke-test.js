@@ -39,6 +39,14 @@ async function main() {
     // wins without having to intercept the file load.
     beforeParse(window) {
       window.RaumeStudy = { config: { url: "", anonKey: "" } };
+      // Seed a couple of old-prefix keys so the head migration
+      // (js/storage-migration.js) has something to move -- checked after load.
+      // Both are signed-in cache keys, never read in the guest-mode flow this
+      // test exercises, so seeding them perturbs nothing else.
+      try {
+        window.localStorage.setItem("sakura-flashcards-cache-v1", "{}");
+        window.localStorage.setItem("sakura-kana-cache-v1", "{}");
+      } catch (e) { /* no usable localStorage in this harness */ }
     }
   });
   const { window } = dom;
@@ -658,7 +666,14 @@ async function main() {
   function readLocalStorage(key) {
     try { return window.localStorage.getItem(key); } catch (e) { return undefined; } // undefined = inaccessible here, not "empty"
   }
-  const storageUsable = readLocalStorage("sakura-flashcards-mode") !== undefined;
+  const storageUsable = readLocalStorage("raume-flashcards-mode") !== undefined;
+
+  if (storageUsable) {
+    check("the head migration moves old sakura- keys onto the raume- prefix", (() => {
+      return readLocalStorage("raume-flashcards-cache-v1") === "{}" && readLocalStorage("raume-kana-cache-v1") === "{}"
+        && readLocalStorage("sakura-flashcards-cache-v1") === null && readLocalStorage("sakura-kana-cache-v1") === null;
+    })());
+  }
 
   document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]').click();
   const guestBtn = document.getElementById("fcUseGuest");
@@ -683,7 +698,7 @@ async function main() {
   Object.defineProperty(window.navigator, "onLine", { configurable: true, value: true });
   window.dispatchEvent(new window.Event("online"));
   check("coming back online hides it again", document.getElementById("fcSyncChip").hidden === true);
-  if (storageUsable) check("guest mode is remembered in localStorage", readLocalStorage("sakura-flashcards-mode") === "guest");
+  if (storageUsable) check("guest mode is remembered in localStorage", readLocalStorage("raume-flashcards-mode") === "guest");
   check("with nothing added yet, the Dashboard shows an empty state (not a grid of zeroes)",
     !document.querySelector(".fc-stats-grid") && /No flashcards yet/.test(document.querySelector("#fcPanelDashboard").textContent));
   document.querySelector('.fc-tab[data-tab="manage"]').click();
@@ -708,7 +723,7 @@ async function main() {
   document.querySelector('.fc-tab[data-tab="dashboard"]').click();
   const totalTileAfter = document.querySelector(".fc-stat-tile:nth-child(2) .fc-stat-value").textContent;
   check("adding a word in guest mode updates the count with zero network calls", totalTileAfter === "4");
-  if (storageUsable) check("its data actually lives in localStorage (not just in-memory)", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
+  if (storageUsable) check("its data actually lives in localStorage (not just in-memory)", /"active":true/.test(readLocalStorage("raume-flashcards-guest-v1") || ""));
 
   await flush(); // let the async weekly-activity load resolve and re-render
   check("the card-progress breakdown labels all three states", (() => {
@@ -781,7 +796,7 @@ async function main() {
   check("clearing every group disables Study and says so", document.getElementById("fcKanaStart").disabled && /at least one/i.test(document.getElementById("fcKanaSummary").textContent));
   document.querySelector('#fcPanelKana .fc-kana-group-cb[data-group="hira-gojuon"]').click();
   check("re-selecting a group re-enables Study", !document.getElementById("fcKanaStart").disabled);
-  if (storageUsable) check("the group choice is saved to its own key", /hira-gojuon/.test(readLocalStorage("sakura-kana-v1") || ""));
+  if (storageUsable) check("the group choice is saved to its own key", /hira-gojuon/.test(readLocalStorage("raume-kana-v1") || ""));
 
   check("the picker offers both study directions, on by default",
     document.querySelectorAll("#fcPanelKana .fc-kana-dir-cb").length === 2
@@ -802,7 +817,7 @@ async function main() {
   })());
   document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
   check("rating advances to the next card", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
-  if (storageUsable) check("the reviewed kana is now an FSRS card in local storage", /"reps":1/.test(readLocalStorage("sakura-kana-v1") || ""));
+  if (storageUsable) check("the reviewed kana is now an FSRS card in local storage", /"reps":1/.test(readLocalStorage("raume-kana-v1") || ""));
   document.getElementById("fcKanaEnd").click();
   check("ending shows a wrap-up", /reviewed/.test((document.querySelector("#fcPanelKana .fc-session-done") || {}).textContent || ""));
   document.getElementById("fcKanaBack").click();
@@ -833,7 +848,7 @@ async function main() {
   })());
   document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
   check("rating advances to the next card", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));
-  if (storageUsable) check("the romaji → kana review is stored under its own |r2k key", /\|r2k"/.test(readLocalStorage("sakura-kana-v1") || ""));
+  if (storageUsable) check("the romaji → kana review is stored under its own |r2k key", /\|r2k"/.test(readLocalStorage("raume-kana-v1") || ""));
   document.getElementById("fcKanaEnd").click();
   document.getElementById("fcKanaBack").click();
   kh.setDir("k2r", true);
@@ -852,8 +867,8 @@ async function main() {
     return !!kc && Array.isArray(kc.logsOutbox) && kc.logsOutbox.length === 0
       && kanaDataOps.kanaPendingCount() === 0;
   })());
-  if (storageUsable) check("guest reviews land in sakura-kana-v1, never a signed-in cache key",
-    !!readLocalStorage("sakura-kana-v1") && readLocalStorage("sakura-kana-cache-v1") === null);
+  if (storageUsable) check("guest reviews land in raume-kana-v1, never a signed-in cache key",
+    !!readLocalStorage("raume-kana-v1") && readLocalStorage("raume-kana-cache-v1") === null);
 
   console.log("Flashcards: Settings tab");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
@@ -891,7 +906,7 @@ async function main() {
   document.getElementById("fcSaveSettings").click();
   await flush();
   if (storageUsable) check("the kana knobs persist to the kana cache, independent of the vocab knobs and clamped", (() => {
-    const f = (JSON.parse(readLocalStorage("sakura-kana-v1") || "{}").fsrs) || {};
+    const f = (JSON.parse(readLocalStorage("raume-kana-v1") || "{}").fsrs) || {};
     return f.fsrs_request_retention === 0.85 && f.new_per_day === 3 && f.fsrs_maximum_interval === 36500;
   })());
   document.querySelector('.fc-tab[data-tab="settings"]').click();
@@ -911,8 +926,8 @@ async function main() {
   goAccountBtn.click();
   check("switching to sign-in returns to the entry choice", !document.querySelector(".fc-stats-grid") && !!document.getElementById("fcUseGuest"));
   if (storageUsable) {
-    check("...forgets the guest *preference*...", readLocalStorage("sakura-flashcards-mode") !== "guest");
-    check("...but never touches the guest data itself", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
+    check("...forgets the guest *preference*...", readLocalStorage("raume-flashcards-mode") !== "guest");
+    check("...but never touches the guest data itself", /"active":true/.test(readLocalStorage("raume-flashcards-guest-v1") || ""));
   } else {
     // Without persistent storage in this sandbox, "not forgotten" shows up
     // as the in-memory fallback instead: picking guest mode again still has

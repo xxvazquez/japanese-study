@@ -219,7 +219,7 @@ flowchart LR
         V["Vocabulary entries<br/>permanent id, e.g. v0001"]
     end
     subgraph guest["Guest mode"]
-        LS[("localStorage<br/>sakura-flashcards-guest-v1<br/>sakura-kana-v1")]
+        LS[("localStorage<br/>raume-flashcards-guest-v1<br/>raume-kana-v1")]
     end
     subgraph account["Signed-in mode"]
         SB[("Supabase Postgres<br/>flashcards / review_logs / flashcard_settings<br/>kana_cards / kana_review_logs")]
@@ -241,8 +241,10 @@ separate FSRS knobs). Guest mode mirrors the same shape in `localStorage`. On
 first sign-in, guest progress is seeded up once, unless the account already has
 cards.
 
-`localStorage` keys keep their original `sakura-` prefix (the app's former
-name) so the rename didn't wipe anyone's saved data.
+`localStorage` keys are prefixed `raume-` (theme, `raume-table-custom`,
+`raume-flashcards-*`, `raume-kana-*`). Installs from before the sakura → raume
+rename are moved across once by [`js/storage-migration.js`](js/storage-migration.js),
+a tiny `<head>` script that runs before anything reads a key.
 
 ---
 
@@ -252,6 +254,7 @@ name) so the rename didn't wipe anyone's saved data.
 index.html            page shell; the <script> block documents load order
 css/site.css           all styling + A4 print rules
 js/
+  storage-migration.js  moves old sakura- localStorage keys to raume- (<head>)
   theme-init.js         sets the theme in <head>, before first paint
   config.js             Supabase URL + anon key
   shared.js             cross-feature helpers
