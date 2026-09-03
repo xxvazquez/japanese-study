@@ -1694,13 +1694,15 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-session-done .fc-cta-row { justify-content: center; margin-top: 18px; }
 
 /* Kana tab. The review card reuses every .fc-review-* / .fc-rating-* rule
-   above; only the prompt glyph and the group picker need their own styling. */
-.fc-prompt-kana { font-size: 44px; line-height: 1.15; margin-bottom: 20px; }
-.fc-prompt-kana-word { font-size: 30px; }
+   above; only the prompt glyph and the group picker need their own styling.
+   Scoped to .fc-review-card so they outrank the generic .fc-prompt size in
+   the size pass lower in this file. */
+.fc-review-card .fc-prompt-kana { font-size: 32px; line-height: 1.15; margin-bottom: 20px; }
+.fc-review-card .fc-prompt-kana-word { font-size: 24px; }
 /* Romaji -> kana: a romaji cue, kana typed into the answer field (a touch
    larger than the Latin default so the glyphs read), and the correct kana
    shown a little larger again once checked. */
-.fc-prompt-romaji { font-size: 21px; margin-bottom: 16px; }
+.fc-review-card .fc-prompt-romaji { font-size: 21px; margin-bottom: 16px; }
 .fc-answer-form input[lang="ja"] { font-size: 16px; }
 .fc-answer-reveal .fc-expected-kana { font-size: 24px; line-height: 1.2; }
 .fc-answer-reveal .fc-expected-kana.fc-prompt-kana-word { font-size: 19px; }
