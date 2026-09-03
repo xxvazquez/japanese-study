@@ -180,8 +180,27 @@ window.RaumeStudy.flashcards.store = (function () {
   var KANA_GUEST_KEY = "sakura-kana-v1"; // unchanged -- existing on-device data stays put
   var KANA_CACHE_KEY = "sakura-kana-cache-v1";
   var KANA_DEFAULT_GROUPS = ["hira-gojuon"]; // mirrors kanaData.DEFAULT_GROUPS
+  // FSRS knobs for the Kana trainer -- the library defaults (same as a fresh
+  // vocab-flashcards account), but tuned independently in the Settings tab and
+  // synced through the `kana_fsrs` column, so the two trainers never share a
+  // retention target. `new_per_day` is pacing, not an FSRS setting, but it
+  // rides in the same blob.
+  function defaultKanaFsrs() {
+    return { fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false, new_per_day: 15 };
+  }
+  function sanitizeKanaFsrs(raw) {
+    var d = defaultKanaFsrs();
+    if (!raw || typeof raw !== "object") return d;
+    var ret = Number(raw.fsrs_request_retention), maxI = Number(raw.fsrs_maximum_interval), npd = Number(raw.new_per_day);
+    return {
+      fsrs_request_retention: ret >= 0.7 && ret <= 0.99 ? ret : d.fsrs_request_retention,
+      fsrs_maximum_interval: maxI >= 1 && maxI <= 36500 ? Math.round(maxI) : d.fsrs_maximum_interval,
+      fsrs_enable_fuzz: raw.fsrs_enable_fuzz === true,
+      new_per_day: npd >= 0 && npd <= 1000 ? Math.round(npd) : d.new_per_day
+    };
+  }
   function emptyKanaCache(userId) {
-    return { v: 1, userId: userId || null, groups: KANA_DEFAULT_GROUPS.slice(), dirs: { k2r: true, r2k: true }, cards: {}, day: null, logsOutbox: [] };
+    return { v: 1, userId: userId || null, groups: KANA_DEFAULT_GROUPS.slice(), dirs: { k2r: true, r2k: true }, fsrs: defaultKanaFsrs(), cards: {}, day: null, logsOutbox: [] };
   }
   function validateKanaCache(raw) {
     if (!raw || typeof raw !== "object" || !raw.cards || typeof raw.cards !== "object") return null;
@@ -190,7 +209,7 @@ window.RaumeStudy.flashcards.store = (function () {
     return {
       v: 1, userId: raw.userId || null,
       groups: Array.isArray(raw.groups) ? raw.groups.filter(function (g) { return typeof g === "string"; }) : KANA_DEFAULT_GROUPS.slice(),
-      dirs: d, cards: raw.cards,
+      dirs: d, fsrs: sanitizeKanaFsrs(raw.fsrs), cards: raw.cards,
       day: raw.day && typeof raw.day.date === "string" ? { date: raw.day.date, count: raw.day.count | 0 } : null,
       logsOutbox: Array.isArray(raw.logsOutbox) ? raw.logsOutbox.filter(function (e) { return e && e.clientReviewId && e.kanaId && e.direction; }) : []
     };
@@ -234,6 +253,7 @@ window.RaumeStudy.flashcards.store = (function () {
     uuid: uuid, localDateStr: localDateStr,
     loadCache: loadCache, saveCache: saveCache, getCache: getCache, resetCacheForUser: resetCacheForUser,
     loadKanaCache: loadKanaCache, saveKanaCache: saveKanaCache, getKanaCache: getKanaCache,
-    resetKanaCacheForUser: resetKanaCacheForUser
+    resetKanaCacheForUser: resetKanaCacheForUser,
+    defaultKanaFsrs: defaultKanaFsrs, sanitizeKanaFsrs: sanitizeKanaFsrs
   };
 })();

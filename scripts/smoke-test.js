@@ -878,6 +878,34 @@ async function main() {
   document.getElementById("fcSaveSettings").click(); // leave every direction enabled again for later checks
   await flush();
 
+  // The Kana trainer's own FSRS knobs, in the same tab under the same Save.
+  document.querySelector('.fc-tab[data-tab="settings"]').click();
+  check("Settings also exposes the Kana trainer's own FSRS knobs, defaulting to 90%", (() => {
+    return ["fcKanaRetention", "fcKanaMaxInterval", "fcKanaFuzz", "fcKanaNewPerDay"].every(id => !!document.getElementById(id))
+      && document.getElementById("fcKanaRetention").value === "90"
+      && document.getElementById("fcKanaNewPerDay").value === "15";
+  })());
+  document.getElementById("fcKanaRetention").value = "85";
+  document.getElementById("fcKanaNewPerDay").value = "3";
+  document.getElementById("fcKanaMaxInterval").value = "9999999"; // above the ceiling -> clamps to 36500
+  document.getElementById("fcSaveSettings").click();
+  await flush();
+  if (storageUsable) check("the kana knobs persist to the kana cache, independent of the vocab knobs and clamped", (() => {
+    const f = (JSON.parse(readLocalStorage("sakura-kana-v1") || "{}").fsrs) || {};
+    return f.fsrs_request_retention === 0.85 && f.new_per_day === 3 && f.fsrs_maximum_interval === 36500;
+  })());
+  document.querySelector('.fc-tab[data-tab="settings"]').click();
+  check("the clamped kana values are reflected back into the fields", document.getElementById("fcKanaMaxInterval").value === "36500");
+  check("the Kana queue honours the new per-day cap", (() => {
+    kh.setGroup("hira-gojuon", true);
+    const q = kh.buildQueue(new Date());
+    return q.length > 0 && q.length <= 6; // 3 new + any leftover due/learning, vs 90+ uncapped
+  })());
+  document.getElementById("fcKanaRetention").value = "90";
+  document.getElementById("fcKanaNewPerDay").value = "15";
+  document.getElementById("fcSaveSettings").click(); // restore defaults for later checks
+  await flush();
+
   const goAccountBtn = document.getElementById("fcGoAccount");
   check("guest mode offers a way to switch to syncing", !!goAccountBtn);
   goAccountBtn.click();

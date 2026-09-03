@@ -352,13 +352,14 @@ window.RaumeStudy.flashcards.dataOps = (function () {
 
   // -----------------------------------------------------------------------
   // Kana trainer sync -- the Kana tab's parallel of everything above, one
-  // step simpler: a card is born on its first review (no "add" step), the
-  // trainer uses the library's default FSRS knobs (no per-user settings),
-  // and there's no streak. Guest mode does nothing here; signed in,
-  // kana_cards is authoritative and the local kana cache is a read-through
-  // copy plus an offline review outbox, exactly like the vocab cache.
+  // step simpler: a card is born on its first review (no "add" step) and
+  // there's no streak. Guest mode does nothing here; signed in, kana_cards
+  // is authoritative and the local kana cache is a read-through copy plus an
+  // offline review outbox, exactly like the vocab cache. The FSRS knobs are
+  // per-user (Settings tab), stored in the cache's `fsrs` blob and synced
+  // through the `kana_fsrs` column -- independent of the vocab cards' knobs.
   // -----------------------------------------------------------------------
-  var KANA_FSRS = { fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false };
+  function kanaFsrs() { return store.getKanaCache().fsrs || store.defaultKanaFsrs(); }
 
   function kanaRowToLocal(row) {
     return {
@@ -372,7 +373,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     var client = getClient(), user = currentUser();
     var cardsRes = await client.from("kana_cards").select("*").eq("user_id", user.id);
     if (cardsRes.error) throw cardsRes.error;
-    var setRes = await client.from("flashcard_settings").select("kana_prefs").eq("user_id", user.id).maybeSingle();
+    var setRes = await client.from("flashcard_settings").select("kana_prefs, kana_fsrs").eq("user_id", user.id).maybeSingle();
     if (setRes.error) throw setRes.error;
 
     // First sign-in with nothing on the server yet -- seed it from whatever
@@ -392,6 +393,13 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     if (prefs.dirs && typeof prefs.dirs === "object") {
       var d = { k2r: prefs.dirs.k2r !== false, r2k: prefs.dirs.r2k !== false };
       if (d.k2r || d.r2k) kc.dirs = d;
+    }
+    // FSRS knobs: an account that has never touched the Kana settings has an
+    // empty {} here, so keep the defaults; otherwise take (and re-sanitise)
+    // what the account holds -- the account wins, same as kana_prefs.
+    var serverFsrs = setRes.data && setRes.data.kana_fsrs;
+    if (serverFsrs && typeof serverFsrs === "object" && Object.keys(serverFsrs).length) {
+      kc.fsrs = store.sanitizeKanaFsrs(serverFsrs);
     }
     kc.userId = user.id;
     store.saveKanaCache();
@@ -426,6 +434,22 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     var res = await client.from("flashcard_settings").upsert({ user_id: user.id, kana_prefs: prefs || {} }, { onConflict: "user_id" });
     if (res.error) throw res.error;
   }
+  // Kana FSRS knobs: mutate the cache first (so an offline change still takes
+  // effect and isn't lost), then best-effort push the whole blob -- same
+  // local-first pattern as saveFsrsSettings for the vocab cards.
+  async function saveKanaFsrsRemote(fsrs) {
+    if (isGuestMode() || !getClient() || !currentUser()) return;
+    var client = getClient(), user = currentUser();
+    var res = await client.from("flashcard_settings").upsert({ user_id: user.id, kana_fsrs: fsrs || {} }, { onConflict: "user_id" });
+    if (res.error) throw res.error;
+  }
+  function getKanaFsrs() { return store.sanitizeKanaFsrs(store.getKanaCache().fsrs); }
+  async function saveKanaFsrs(patch) {
+    var kc = store.getKanaCache();
+    kc.fsrs = store.sanitizeKanaFsrs(Object.assign({}, kc.fsrs, patch));
+    store.saveKanaCache();
+    if (!isGuestMode()) await saveKanaFsrsRemote(kc.fsrs);
+  }
 
   async function syncKanaOne(entry) {
     var client = getClient(), user = currentUser();
@@ -458,7 +482,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     var serverRes = await client.from("kana_cards").select("*").eq("id", row.id).single();
     if (serverRes.error) throw serverRes.error;
     var server = serverRes.data;
-    var replay = applyRating(getScheduler(KANA_FSRS), fsrsRowFields(server), new Date(log.review), RATING_NAMES[log.rating - 1]);
+    var replay = applyRating(getScheduler(kanaFsrs()), fsrsRowFields(server), new Date(log.review), RATING_NAMES[log.rating - 1]);
     var payload2 = fsrsRowFields(replay.card);
     payload2.updated_at = new Date().toISOString();
     var ok2 = await client.from("kana_cards").update(payload2).eq("id", row.id).eq("reps", server.reps).select();
@@ -507,6 +531,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     recordStudyActivity: recordStudyActivity, syncOutbox: syncOutbox,
     onSyncStateChange: onSyncStateChange, getSyncState: getSyncState,
     fetchKanaFromServer: fetchKanaFromServer, saveKanaPrefsRemote: saveKanaPrefsRemote,
+    getKanaFsrs: getKanaFsrs, saveKanaFsrs: saveKanaFsrs,
     syncKanaOutbox: syncKanaOutbox, kanaPendingCount: kanaPendingCount
   };
 })();

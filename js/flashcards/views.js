@@ -22,6 +22,7 @@ window.RaumeStudy.flashcards.views = (function () {
   var addVocabs = dataOps.addVocabs, archiveVocabs = dataOps.archiveVocabs, addVocabsRemote = dataOps.addVocabsRemote;
   var fetchAllFromServer = dataOps.fetchAllFromServer, refreshData = dataOps.refreshData;
   var saveFsrsSettings = dataOps.saveFsrsSettings, saveQueueSettings = dataOps.saveQueueSettings, saveDirectionSettings = dataOps.saveDirectionSettings;
+  var getKanaFsrs = dataOps.getKanaFsrs, saveKanaFsrs = dataOps.saveKanaFsrs;
   var invalidateInsights = dashboard.invalidateInsights;
 
   // The app shell / tab routing live in the bootstrap module -- reached lazily
@@ -366,6 +367,7 @@ window.RaumeStudy.flashcards.views = (function () {
   // --- Settings ---
   function renderSettings(panel) {
     var s = getCache().settings;
+    var k = getKanaFsrs();
     panel.innerHTML =
       '<div class="fc-settings-section"><h3>Study Directions</h3><p class="fc-note">Which of the 4 directions "Study now" pulls cards from — turning one off never deletes its cards or progress, it is just left out of review until you turn it back on.</p>' +
       '<div class="fc-direction-checks">' + DIRECTIONS.map(function (d) {
@@ -383,6 +385,16 @@ window.RaumeStudy.flashcards.views = (function () {
       '<div class="fc-settings-section"><h3>Daily Session</h3><p class="fc-note">Not an FSRS setting — just how many brand-new cards a review session introduces per day.</p>' +
       settingsField("New cards per day", '<input type="number" id="fcNewPerDay" min="0" max="200" value="' + s.queue_new_cards_per_day + '">',
         "A cap on how many never-studied cards \"Study now\" introduces in one day, on top of anything already due for review. Doesn't affect scheduling, only pacing.") +
+      "</div>" +
+      '<div class="fc-settings-section"><h3>Kana trainer scheduling</h3><p class="fc-note">The same knobs for the Kana tab’s hiragana / katakana cards, kept separate from the vocabulary cards above so the two can differ.</p>' +
+      settingsField("Desired retention (%)", '<input type="number" id="fcKanaRetention" min="70" max="99" value="' + Math.round(k.fsrs_request_retention * 100) + '">',
+        "The recall probability the kana scheduler aims for. 90% is FSRS's default.") +
+      settingsField("Maximum interval (days)", '<input type="number" id="fcKanaMaxInterval" min="30" max="36500" value="' + k.fsrs_maximum_interval + '">',
+        "The longest gap the kana scheduler will ever use. 36500 effectively means no ceiling.") +
+      settingsField("Fuzz scheduled intervals", '<input type="checkbox" id="fcKanaFuzz" ' + (k.fsrs_enable_fuzz ? "checked" : "") + ">",
+        "A small random wobble so kana added on the same day don't all come due together.") +
+      settingsField("New kana per day", '<input type="number" id="fcKanaNewPerDay" min="0" max="200" value="' + k.new_per_day + '">',
+        "How many never-seen kana × direction cards a Kana session introduces per day.") +
       "</div>" +
       '<div class="fc-cta-row fc-cta-row-spaced fc-settings-save">' +
       '<button type="button" class="fc-btn fc-btn-primary" id="fcSaveSettings">Save settings</button>' +
@@ -429,10 +441,22 @@ window.RaumeStudy.flashcards.views = (function () {
           fsrs_enable_fuzz: document.getElementById("fcFuzz").checked
         });
         await saveQueueSettings({ queue_new_cards_per_day: newPerDay });
+        // The Kana trainer's own knobs (saveKanaFsrs re-sanitises, so read it
+        // back for the clamped values).
+        await saveKanaFsrs({
+          fsrs_request_retention: Number(document.getElementById("fcKanaRetention").value) / 100,
+          fsrs_maximum_interval: Number(document.getElementById("fcKanaMaxInterval").value),
+          fsrs_enable_fuzz: document.getElementById("fcKanaFuzz").checked,
+          new_per_day: Number(document.getElementById("fcKanaNewPerDay").value)
+        });
+        var kSaved = getKanaFsrs();
         // Reflect any clamping (retention typed as 150 -> 99) back into the fields.
         document.getElementById("fcRetention").value = Math.round(retention * 100);
         document.getElementById("fcMaxInterval").value = maxInterval;
         document.getElementById("fcNewPerDay").value = newPerDay;
+        document.getElementById("fcKanaRetention").value = Math.round(kSaved.fsrs_request_retention * 100);
+        document.getElementById("fcKanaMaxInterval").value = kSaved.fsrs_maximum_interval;
+        document.getElementById("fcKanaNewPerDay").value = kSaved.new_per_day;
         settingsSavedAt = Date.now();
         var note = document.getElementById("fcSettingsSaved");
         if (note) note.hidden = false;

@@ -108,6 +108,13 @@ alter table public.flashcard_settings add column if not exists table_custom json
 -- { "groups": ["hira-gojuon", ...], "dirs": { "k2r": true, "r2k": true } }.
 alter table public.flashcard_settings add column if not exists kana_prefs jsonb not null default '{}'::jsonb;
 
+-- Kana trainer FSRS knobs -- the same three the vocab cards expose plus a
+-- daily new-card cap, kept in their own column so the two trainers can run
+-- different retention targets. Empty {} means "use the defaults". Shape:
+-- { "fsrs_request_retention": 0.9, "fsrs_maximum_interval": 36500,
+--   "fsrs_enable_fuzz": false, "new_per_day": 15 }.
+alter table public.flashcard_settings add column if not exists kana_fsrs jsonb not null default '{}'::jsonb;
+
 -- Kana trainer cards + review history -- the exact parallel of flashcards /
 -- review_logs above, for the "Kana" tab's own hiragana/katakana drill.
 -- kana_id is the trainer's stable item id ("hira-gojuon:あ", ...); direction

@@ -33,11 +33,12 @@ window.RaumeStudy.flashcards.kana = (function () {
   var RATING_NAMES = store.RATING_NAMES, localDateStr = store.localDateStr, uuid = store.uuid;
   var isGuestMode = store.isGuestMode;
 
-  // FSRS knobs -- the library defaults, same as a fresh vocab-flashcards
-  // account. Not user-tunable here (yet); kept as a plain object so the
-  // shared scheduler wrapper can read it.
-  var FSRS_SETTINGS = { fsrs_request_retention: 0.9, fsrs_maximum_interval: 36500, fsrs_enable_fuzz: false };
-  var NEW_PER_DAY = 15;
+  // FSRS knobs live in the kana cache's `fsrs` blob -- tuned in the Settings
+  // tab, synced via the kana_fsrs column, independent of the vocab cards'
+  // knobs. fsrs() hands the shared scheduler wrapper the object it wants;
+  // newPerDay() is the daily new-card cap.
+  function fsrs() { return load().fsrs || store.defaultKanaFsrs(); }
+  function newPerDay() { return fsrs().new_per_day; }
   var LEARN_AHEAD_MS = 20 * 60 * 1000; // match scheduling.js: a short learning step counts as ready
   var DIRECTIONS = ["k2r", "r2k"]; // kana -> romaji, romaji -> kana (both typed)
   var DIR_LABEL = { k2r: "Kana → romaji", r2k: "Romaji → kana" };
@@ -148,7 +149,7 @@ window.RaumeStudy.flashcards.kana = (function () {
       if (!c) unseen.push(u);
       else if (dueState(c, now)) due.push(u);
     });
-    var allowance = Math.max(0, NEW_PER_DAY - todayNew(s, now));
+    var allowance = Math.max(0, newPerDay() - todayNew(s, now));
     return spaceByItem(shuffle(due.concat(shuffle(unseen).slice(0, allowance))));
   }
   // For the overview summary line.
@@ -223,7 +224,7 @@ window.RaumeStudy.flashcards.kana = (function () {
       : checkKana(unit.item, input.value);
     session.checked = true;
     var base = load().cards[cardKey(unit.item, unit.dir)] || newCard(new Date());
-    session.preview = previewRatings(getScheduler(FSRS_SETTINGS), base, new Date());
+    session.preview = previewRatings(getScheduler(fsrs()), base, new Date());
     rerender();
   }
 
@@ -241,7 +242,7 @@ window.RaumeStudy.flashcards.kana = (function () {
     var key = cardKey(unit.item, unit.dir);
     var prev = s.cards[key];
     var base = prev || newCard(now);
-    var res = applyRating(getScheduler(FSRS_SETTINGS), base, now, ratingName);
+    var res = applyRating(getScheduler(fsrs()), base, now, ratingName);
     var card = res.card;
     if (prev && prev.id) card.id = prev.id; // keep the server row id across reviews
     s.cards[key] = card;

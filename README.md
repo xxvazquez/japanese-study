@@ -160,8 +160,9 @@ where you review, browse, and track a daily streak.
   Archived. One button per table: **Add table**, then **Pause table** once it's
   fully added. Expand a table to add or pause individual words.
 - **Settings** — Study Directions, the FSRS knobs (retention, max interval,
-  fuzz), and new-cards-per-day, under one **Save settings** button. Values save
-  locally first, then sync.
+  fuzz) and new-cards-per-day for the vocabulary cards, then the same four for
+  the Kana trainer in their own section, all under one **Save settings** button.
+  The two trainers' knobs are independent. Values save locally first, then sync.
 - **Help** — pausing, the Manage status icons (○ ● ◷), and the review keyboard
   shortcuts (Space/Enter to check, 1–4 to rate).
 - **Kana** — a separate hiragana/katakana trainer (below).
@@ -181,6 +182,9 @@ direction is its own FSRS-6 card.
   doesn't count.
 - Both directions are typed and checked the same way, and both count toward the
   wrap-up accuracy. Both are on by default; the picker keeps at least one on.
+- Scheduling uses its own FSRS knobs (retention, max interval, fuzz, new-per-day)
+  set in the Settings tab — separate from the vocabulary cards, so kana can run a
+  tighter or looser schedule than words.
 
 ### Accounts and storage
 
@@ -232,9 +236,10 @@ The signed-in schema is [`supabase/schema.sql`](supabase/schema.sql) — five
 tables (`flashcards`, `review_logs`, `flashcard_settings`, `kana_cards`,
 `kana_review_logs`), all under Row Level Security so each account only sees its
 own rows. `flashcard_settings` also holds the FSRS knobs, the streak counters,
-and `kana_prefs` (the Kana tab's group + direction picker). Guest mode mirrors
-the same shape in `localStorage`. On first sign-in, guest progress is seeded up
-once, unless the account already has cards.
+`kana_prefs` (the Kana tab's group + direction picker) and `kana_fsrs` (its
+separate FSRS knobs). Guest mode mirrors the same shape in `localStorage`. On
+first sign-in, guest progress is seeded up once, unless the account already has
+cards.
 
 `localStorage` keys keep their original `sakura-` prefix (the app's former
 name) so the rename didn't wipe anyone's saved data.
