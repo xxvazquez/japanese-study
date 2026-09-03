@@ -329,9 +329,11 @@ under the table overflow menu. It's defined as CSS custom properties in
 | `#E3E8EC` / `#D3DBE2` | `--line` / `--line-strong` | hairline row rules / header and table-head rules |
 | `#526D87` / `#405A73` | `--accent` / `--accent-strong` | the single accent — active nav/tabs/controls, focus, search-match wash |
 
-Two more colours do a purely functional job: a slate wash
-(`--irregular-bg` / `--irregular-ink`) marks irregular-verb rows, and a muted
-brick red (`--wrong`) marks a wrong or missed flashcard answer.
+A few more colours do a purely functional job: a slate wash
+(`--irregular-bg` / `--irregular-ink`) marks irregular-verb rows, and study
+feedback carries the only two saturated tones on the site — a muted brick red
+(`--wrong`) for a wrong or missed answer, a muted eucalyptus green (`--right`)
+for a correct one, each kept as quiet as the other.
 
 ---
 

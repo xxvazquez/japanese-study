@@ -83,11 +83,16 @@
   --irregular-bg: #e9edf1;
   --irregular-ink: #4f5b69;
 
-  /* Study feedback only: a muted brick red for a wrong / missed answer --
-     never pink, never decorative. Correct answers use --accent. */
+  /* Study feedback only, never decorative: a muted brick red for a wrong /
+     missed answer, a muted eucalyptus green for a right one -- the only red
+     and the only green on the site, each kept as quiet as the other. Never
+     pink, never a bright validation green. */
   --wrong: #a8524b;
   --wrong-soft: #f4ebea;
   --wrong-strong: #8a413b;
+  --right: #4f7a67;
+  --right-soft: #e7efeb;
+  --right-strong: #3c6151;
 
   /* Search-match highlight -- a warm, muted terracotta so a hit reads
      instantly against the cool greys, without the alarm of a true red. */
@@ -178,6 +183,9 @@
   --wrong: #dd9086;
   --wrong-soft: #3a2a27;
   --wrong-strong: #ecaaa0;
+  --right: #83b3a0;
+  --right-soft: #263530;
+  --right-strong: #a4ccbc;
 
   --hl: #7d4a3c;
   --hl-ink: #f3dad1;
@@ -1642,18 +1650,18 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-answer-form input:focus-visible { border-color: var(--section); }
 /* Answer feedback is a restrained status line, never a filled panel: a thin
-   left rule + a small label. Rose is reserved for a wrong answer / mistake;
-   a correct answer gets the teal accent instead. */
+   left rule + a small label. A wrong answer gets the muted red; a right one
+   gets the muted green -- both quiet, neither shouting. */
 .fc-result {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
   margin-bottom: 10px; padding-left: 10px;
   border-left: 3px solid transparent;
   font-size: var(--fs-small);
 }
-.fc-result.fc-correct { border-left-color: var(--accent); }
+.fc-result.fc-correct { border-left-color: var(--right); }
 .fc-result.fc-incorrect { border-left-color: var(--rose); }
 .fc-result-label { font-weight: 600; }
-.fc-result.fc-correct .fc-result-label { color: var(--accent-dark); }
+.fc-result.fc-correct .fc-result-label { color: var(--right-strong); }
 .fc-result.fc-incorrect .fc-result-label { color: var(--rose-dark); }
 .fc-result .fc-your-answer { color: var(--muted); }
 
