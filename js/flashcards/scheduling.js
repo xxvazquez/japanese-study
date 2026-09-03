@@ -38,10 +38,6 @@ window.RaumeStudy.flashcards.scheduling = (function () {
     if (months < 12) return Math.round(months) + "mo";
     return (days / 365.25).toFixed(1) + "y";
   }
-  function formatWhen(due) {
-    return new Date(due).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
-  }
-
   function cardToFsrsInput(card) {
     return {
       due: card.due, stability: card.stability, difficulty: card.difficulty,
@@ -199,7 +195,7 @@ window.RaumeStudy.flashcards.scheduling = (function () {
 
   return {
     getScheduler: getScheduler, previewRatings: previewRatings, applyRating: applyRating,
-    retrievabilityOf: retrievabilityOf, formatInterval: formatInterval, formatWhen: formatWhen,
+    retrievabilityOf: retrievabilityOf, formatInterval: formatInterval,
     fsrsRowFields: fsrsRowFields,
     activeCards: activeCards, studyableCards: studyableCards, shuffle: shuffle,
     readyToStudy: readyToStudy, buildQueue: buildQueue, computeStats: computeStats

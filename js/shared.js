@@ -5,9 +5,8 @@ window.RaumeStudy = window.RaumeStudy || {};
 window.RaumeStudy.shared = (function () {
   "use strict";
 
-  // Escape text for interpolation into an HTML string. Identical behaviour to
-  // the private `esc()` that previously lived in both js/app.js and
-  // js/flashcards.js.
+  // Escape text for safe interpolation into an HTML string (the vocab and
+  // flashcards renderers both build markup as strings).
   function escapeHtml(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")

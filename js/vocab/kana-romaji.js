@@ -141,7 +141,6 @@ window.RaumeStudy.kanaRomaji = (function () {
   }
 
   return {
-    toRomaji: toRomaji, tokenize: tokenize, decorate: decorate,
-    isKana: isKana, isHiragana: isHiragana, isKatakana: isKatakana
+    toRomaji: toRomaji, decorate: decorate, isKana: isKana
   };
 })();

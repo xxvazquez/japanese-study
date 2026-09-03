@@ -118,7 +118,6 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     }
   }
 
-  async function addVocabRemote(vocabId) { return addVocabsRemote([vocabId]); }
   async function addVocabsRemote(vocabIds) {
     var client = getClient(), user = currentUser();
     var index = getVocabIndex();
@@ -140,7 +139,6 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     if (res.error) throw res.error;
     return res.data;
   }
-  async function archiveVocabRemote(vocabId) { return archiveVocabsRemote([vocabId]); }
   async function archiveVocabsRemote(vocabIds) {
     if (!vocabIds.length) return;
     var client = getClient(), user = currentUser();
@@ -157,9 +155,6 @@ window.RaumeStudy.flashcards.dataOps = (function () {
   async function saveTableCustomRemote(obj) {
     if (!getClient() || !currentUser()) return;
     return saveFsrsSettingsRemote({ table_custom: obj || {} });
-  }
-  async function saveQueueSettingsRemote(patch) {
-    return saveFsrsSettingsRemote(patch);
   }
 
   // -----------------------------------------------------------------------
