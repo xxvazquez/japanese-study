@@ -710,6 +710,18 @@ async function main() {
   check("adding a word in guest mode updates the count with zero network calls", totalTileAfter === "4");
   if (storageUsable) check("its data actually lives in localStorage (not just in-memory)", /"active":true/.test(readLocalStorage("sakura-flashcards-guest-v1") || ""));
 
+  await flush(); // let the async weekly-activity load resolve and re-render
+  check("the card-progress breakdown labels all three states", (() => {
+    const legend = document.querySelector("#fcPanelDashboard .fc-breakdown-legend");
+    return legend && /New/.test(legend.textContent) && /Learning/.test(legend.textContent) && /Review/.test(legend.textContent);
+  })());
+  check("the reviews-this-week chart marks today's column and only that one", (() => {
+    const cols = document.querySelectorAll("#fcPanelDashboard .fc-week-col");
+    if (cols.length !== 7) return false;
+    return cols[6].classList.contains("fc-week-col-today")
+      && [...cols].slice(0, 6).every(c => !c.classList.contains("fc-week-col-today"));
+  })());
+
   console.log("Flashcards: review session bookends");
   document.getElementById("fcStudyNow").click();
   check("Study now opens a review card", !!document.querySelector(".fc-review-card"));

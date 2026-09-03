@@ -255,7 +255,7 @@ window.RaumeStudy.flashcards.dashboard = (function () {
   }
 
   // Card-state breakdown -- a single stacked bar (New/Learning/Review) as a
-  // light-to-dark ramp of the one accent hue (see .fc-seg-* in site.css):
+  // light-to-dark slate ramp (see --fc-state-* / .fc-seg-* in site.css):
   // an ordinal progression, so a sequential ramp reads better than three
   // similar tones. SVG attributes (not style="") so the computed widths
   // don't run into the page's CSP.
@@ -397,13 +397,16 @@ window.RaumeStudy.flashcards.dashboard = (function () {
   // way as every other piece of text on the page.
   function weeklyActivityChart(days) {
     var max = Math.max(1, Math.max.apply(null, days.map(function (d) { return d.count; })));
-    var cols = days.map(function (d) {
+    var cols = days.map(function (d, i) {
       // A day with no reviews is a flat 2-unit baseline (reads as "nothing
       // here", not a stunted bar), and its count label is dropped so the row
       // isn't a wall of zeroes.
       var barH = d.count ? Math.max(8, Math.round((d.count / max) * 100)) : 2;
       var barCls = d.count ? "fc-week-bar" : "fc-week-bar fc-week-bar-empty";
-      return '<div class="fc-week-col">' +
+      // The last column is today (see last7DaysFromCounts) -- CSS gives it the
+      // full section tone so the current day reads first.
+      var colCls = i === days.length - 1 ? "fc-week-col fc-week-col-today" : "fc-week-col";
+      return '<div class="' + colCls + '">' +
         '<span class="fc-week-count">' + (d.count || "") + "</span>" +
         '<svg viewBox="0 0 10 100" preserveAspectRatio="none" class="fc-week-barsvg" aria-hidden="true">' +
         '<rect class="' + barCls + '" x="0" y="' + (100 - barH) + '" width="10" height="' + barH + '"></rect></svg>' +

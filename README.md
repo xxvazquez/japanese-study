@@ -332,9 +332,19 @@ under the table overflow menu. It's defined as CSS custom properties in
 
 A few more colours do a purely functional job: a slate wash
 (`--irregular-bg` / `--irregular-ink`) marks irregular-verb rows, and study
-feedback carries the only two saturated tones on the site — a muted brick red
-(`--wrong`) for a wrong or missed answer, a muted eucalyptus green (`--right`)
-for a correct one, each kept as quiet as the other.
+feedback carries the only two saturated tones on the reference side — a muted
+brick red (`--wrong`) for a wrong or missed answer, a muted eucalyptus green
+(`--right`) for a correct one, each kept as quiet as the other.
+
+The **Flashcards dashboard** is the one place the quiet-everywhere rule is
+loosened: a data surface needs to be scannable. Still no gradients or shadows
+and the same cool character, but the card-progress bar uses a three-step slate
+ramp (`--fc-state-new` / `-learning` / `-review`, an ordinal New → Learning →
+Review; steps validated for lightness separation and AA in both themes), the
+stat tiles and reviews-this-week bars pick up the Flashcards section tone with
+today's bar at full strength, the day-streak tile takes `--right`, and the
+"Missed today" list gets a thin `--wrong` left rule. All of it is scoped to
+`.page-flashcards`; the reference side stays monochrome.
 
 ---
 

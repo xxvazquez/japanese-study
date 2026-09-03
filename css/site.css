@@ -94,6 +94,15 @@
   --right-soft: #e7efeb;
   --right-strong: #3c6151;
 
+  /* Flashcards dashboard only -- a small categorical lift for a data surface
+     the quiet-everywhere rule made hard to scan. Card-state ramp: one slate
+     hue, three steps validated for lightness separation and AA, since
+     New -> Learning -> Review is an ordinal progression. Scoped to
+     .page-flashcards; the reference side stays monochrome. */
+  --fc-state-new: #8fabcd;
+  --fc-state-learning: #5f84ab;
+  --fc-state-review: #3a5578;
+
   /* Search-match highlight -- a warm, muted terracotta so a hit reads
      instantly against the cool greys, without the alarm of a true red. */
   --hl: #ecc9bd;
@@ -186,6 +195,10 @@
   --right: #83b3a0;
   --right-soft: #263530;
   --right-strong: #a4ccbc;
+
+  --fc-state-new: #4a6591;
+  --fc-state-learning: #7592bd;
+  --fc-state-review: #a6c1e0;
 
   --hl: #7d4a3c;
   --hl-ink: #f3dad1;
@@ -1433,8 +1446,8 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-tabpanel[hidden] { display: none; }
 
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
-   thin top accent (a color hint, not a loud fill) so the row reads as more
-   than a flat spreadsheet of numbers. */
+   left rule in the Flashcards section tone (a colour hint, not a loud fill)
+   so the row reads as one grouped set rather than four identical grey boxes. */
 /* 2x2 on narrow screens (four tiles, so it stays even -- no orphan on its
    own row), one row of four once there's width for it. */
 .fc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
@@ -1446,14 +1459,14 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-stat-tile::before {
   content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px;
-  background: var(--line-strong);
+  background: var(--section);
 }
 .fc-stat-value { display: block; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 .fc-stat-label { display: block; margin-top: 3px; color: var(--muted); font-size: var(--fs-small); }
-/* The streak tile is a neutral stat like the others -- rose/red is reserved for
-   mistakes and warnings, and a day streak is neither. A quiet teal accent bar
-   marks it as a positive running count without shouting. */
-.fc-stat-tile.fc-stat-streak::before { background: var(--accent); }
+/* The streak tile is the one "achievement" stat in the row -- rose/red is
+   reserved for mistakes, so it takes the muted green used for a right answer:
+   a positive running count, marked without shouting. */
+.fc-stat-tile.fc-stat-streak::before { background: var(--right); }
 .fc-longest-streak { margin-top: -10px; margin-bottom: 16px; }
 
 /* Dashboard visualizations -- kept flat/bordered like everything else on the
@@ -1477,12 +1490,13 @@ body.starred-mode .expand-bar { display: none !important; }
 
 .fc-breakdown-bar-wrap { border-radius: 8px; overflow: hidden; background: var(--surface); }
 .fc-breakdown-bar { display: block; width: 100%; height: 16px; }
-/* One hue, three clearly separated steps -- an ordinal New -> Learning ->
-   Review progression, so a light-to-dark ramp of the accent reads better
-   (and stays distinguishable) than three similar mid-tones. */
-.fc-seg-new { fill: color-mix(in srgb, var(--accent) 20%, var(--surface)); background: color-mix(in srgb, var(--accent) 20%, var(--surface)); }
-.fc-seg-learning { fill: color-mix(in srgb, var(--accent) 60%, var(--paper)); background: color-mix(in srgb, var(--accent) 60%, var(--paper)); }
-.fc-seg-review { fill: var(--accent); background: var(--accent); }
+/* One slate hue, three steps validated for lightness separation (see
+   --fc-state-* in :root) -- an ordinal New -> Learning -> Review progression,
+   so a light-to-dark ramp reads as "same thing, further along"; the legend
+   labels each step so the ramp never carries identity alone. */
+.fc-seg-new { fill: var(--fc-state-new); background: var(--fc-state-new); }
+.fc-seg-learning { fill: var(--fc-state-learning); background: var(--fc-state-learning); }
+.fc-seg-review { fill: var(--fc-state-review); background: var(--fc-state-review); }
 .fc-breakdown-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
 .fc-legend-item { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: var(--fs-small); }
 .fc-legend-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; }
@@ -1495,8 +1509,12 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
 .fc-week-count { display: block; min-height: 1.4em; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
 .fc-week-barsvg { display: block; width: 100%; flex: 1 1 auto; min-height: 0; }
-.fc-week-bar { fill: var(--accent); }
+/* Past days in a muted tint of the Flashcards section tone; today at full
+   strength so the current day reads first. A no-review day stays a flat
+   baseline in --line regardless. */
+.fc-week-bar { fill: color-mix(in srgb, var(--section) 52%, var(--surface)); }
 .fc-week-bar-empty { fill: var(--line); }
+.fc-week-col-today .fc-week-bar:not(.fc-week-bar-empty) { fill: var(--section); }
 .fc-week-label { display: block; margin-top: 6px; font-size: var(--fs-micro); color: var(--faint); }
 
 .fc-cta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -1897,9 +1915,11 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-next-review-clear .fc-next-review-title { color: var(--ink); }
 .fc-next-review-sub { color: var(--muted); font-size: var(--fs-small); }
 
-/* "Missed today" -- a calm shortlist of words to revisit. Each row is one
-   unit: the Japanese pair (strongest), one "romaji · english" supporting
-   line, and a small "N× today" badge. The whole row is the tap target. */
+/* "Missed today" -- a shortlist of words to revisit. Each row is one unit:
+   the Japanese pair (strongest), one "romaji · english" supporting line, and
+   a small "N× today" badge. The whole row is the tap target, and a thin brick
+   left rule (matching the badge) marks the list as "needs attention" so it
+   doesn't read like every other neutral card. */
 .fc-missed-list { margin: 0; padding: 0; list-style: none; }
 /* The three parts sit next to each other and hug their content (no flexible
    middle column that would open a void before the badge); a long row just
@@ -1914,6 +1934,7 @@ body.starred-mode .expand-bar { display: none !important; }
   border-top: 1px solid var(--line);
   padding: 9px 8px;
   border-radius: 6px;
+  box-shadow: inset 2px 0 0 color-mix(in srgb, var(--wrong) 50%, var(--paper));
   text-align: left; cursor: pointer; color: var(--ink);
 }
 .fc-missed-list li:first-child .fc-missed-row { border-top: 0; }
