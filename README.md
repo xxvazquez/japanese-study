@@ -283,8 +283,10 @@ fonts/                 self-hosted Inter + Space Grotesk (SIL OFL)
 supabase/schema.sql    Postgres tables + Row Level Security
 sw.js                  service worker (offline app shell)
 manifest.webmanifest   PWA manifest
-icons/, logo.png       app icons and the site mark
-scripts/               vocab validator, id generator, smoke + service-worker tests
+favicon.png            48px favicon (index.html links this, not logo.png)
+icons/                 PWA app icons — see scripts/generate-icons.py
+logo.png               master mark; source art for the favicon + icons, not served
+scripts/               vocab validator, id + icon generators, smoke + SW tests
 ```
 
 ---
@@ -310,8 +312,7 @@ scripts/               vocab validator, id generator, smoke + service-worker tes
 ## Design
 
 The wordmark **raume** sits at the left of the header, opposite a small
-`JAPANESE REFERENCE`, with `logo.png` (a circular mark — sun, hills, a leaf,
-waves). It's set in
+`JAPANESE REFERENCE`. It's set in
 [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), the one place
 a second typeface is used; everything else is [Inter](https://rsms.me/inter/).
 Both are self-hosted (SIL OFL), no external font runtime. Hierarchy comes from
@@ -368,9 +369,14 @@ Installable and offline-capable once visited.
 - The service-worker cache is named `raume-<sha>` — one per deploy, and the
   previous one is dropped on activate. Only the precache list in `sw.js` has to
   stay in sync with what `index.html` requests.
-- App icons are generated from `logo.png` (cropped to its content, padded to a
-  square, then resized). The Pillow snippet is in the git history; sizes are
-  192/512 plain, 192/512 maskable, and a white-flattened 180×180 for iOS.
+- App icons and the favicon are generated from `logo.png` (the master mark, a
+  circular sun-over-water motif) by `scripts/generate-icons.py` — cropped to
+  its bounding box, padded to a square, and centred with equal margins on an
+  opaque `#f4f6f8` tile: 192/512 plain, 192/512 maskable (smaller, inside the
+  80% safe zone), a 180 for iOS, and a 48px `favicon.png`. `logo.png` itself is
+  not served — `index.html` links the small `favicon.png`, not the ~530 KB
+  master art. Rerun the script after editing `logo.png`; needs Pillow + NumPy
+  (dev-time only).
 
 ---
 
@@ -380,6 +386,7 @@ Installable and offline-capable once visited.
 npm run validate            # check the vocab data is well-formed (no dependencies)
 npm install && npm test     # render the page in jsdom and exercise it; runs the SW test too
 npm run generate:vocab-ids  # assign ids to any new vocab rows
+npm run generate:icons      # rebuild the favicon + PWA icons from logo.png (Pillow + NumPy)
 npm run vendor:libs         # re-copy the vendored libs after a version bump
 ```
 

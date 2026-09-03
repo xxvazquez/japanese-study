@@ -168,6 +168,7 @@ async function main() {
   check("index.html is precached (unversioned key)", cache.entries.has(resolveUrl("index.html")));
   check("root navigation target is precached", cache.entries.has(resolveUrl("./")));
   check("every maskable/app icon is precached", ["icons/icon-192.png", "icons/icon-512.png", "icons/icon-maskable-192.png", "icons/icon-maskable-512.png", "icons/apple-touch-icon.png"].every((i) => cache.entries.has(resolveUrl(i))));
+  check("the dedicated favicon is precached (not the master art)", cache.entries.has(resolveUrl("favicon.png")) && !cache.entries.has(resolveUrl("logo.png")));
   check("manifest is precached", cache.entries.has(resolveUrl("manifest.webmanifest")));
   check("the self-hosted Inter font is precached (bare URL)", cache.entries.has(resolveUrl("fonts/InterVariable.woff2")));
   check("the self-hosted Space Grotesk wordmark font is precached (bare URL)", cache.entries.has(resolveUrl("fonts/SpaceGrotesk.woff2")));

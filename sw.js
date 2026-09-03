@@ -17,7 +17,7 @@ const UNVERSIONED = [
   './',
   'index.html',
   'manifest.webmanifest',
-  'logo.png',
+  'favicon.png',
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/icon-maskable-192.png',
