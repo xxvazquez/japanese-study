@@ -548,6 +548,9 @@ body {
   font: 400 13.5px/1 var(--font-ui);
 }
 .search-box input::placeholder { color: var(--faint); }
+/* .clear-search is the only clear affordance -- suppress the browser's native
+   one so a type="search" field doesn't show two side by side. */
+.search-box input[type="search"]::-webkit-search-cancel-button { display: none; }
 .clear-search {
   display: none;
   border: 0;
@@ -1840,7 +1843,15 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-settings-field:first-of-type { border-top: 0; }
 .fc-settings-field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .fc-settings-field label { color: var(--ink); font: 600 var(--fs-small)/1.3 var(--font-ui); }
-.fc-settings-field input[type="number"] { width: 80px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font-size: var(--fs-small); }
+/* Same fill / ink as every other flashcards input (it had none, so it showed
+   as a white box in dark mode); color-scheme keeps the kept native spinner
+   legible against that fill on both themes. */
+.fc-settings-field input[type="number"] {
+  width: 80px; height: 30px; border: 1px solid var(--line); border-radius: 6px;
+  padding: 0 8px; font-size: var(--fs-small);
+  color: var(--ink); background: var(--surface);
+}
+:root[data-theme="dark"] .fc-settings-field input[type="number"] { color-scheme: dark; }
 .fc-settings-help { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; max-width: 56ch; }
 .fc-direction-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; }
 .fc-direction-check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: var(--fs-small); cursor: pointer; }
