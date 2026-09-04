@@ -36,7 +36,14 @@ window.RaumeStudy.flashcards.dataOps = (function () {
     return supabaseClient;
   }
 
-  var authState = { session: null, ready: false };
+  // `passwordRecovery` is set when the user lands here via a "reset your
+  // password" email link. supabase-js detects the recovery token in the URL
+  // itself (then clears it from location.hash) and, rather than a plain
+  // SIGNED_IN, fires this as its own onAuthStateChange event -- the one hook
+  // that tells the UI to show "set a new password" instead of the ordinary
+  // signed-in shell, even though a (real, if short-lived-in-intent) session
+  // now exists. Cleared once a new password is set, or the user backs out.
+  var authState = { session: null, ready: false, passwordRecovery: false };
   var authListeners = [];
   function onAuthChange(fn) { authListeners.push(fn); }
   function notifyAuthChange() { authListeners.forEach(function (fn) { fn(authState); }); }
@@ -55,6 +62,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
       var prevUserId = authState.session ? authState.session.user.id : null;
       authState.session = session;
       store.setSession(session);
+      if (event === "PASSWORD_RECOVERY") authState.passwordRecovery = true;
       var newUserId = session ? session.user.id : null;
       if (newUserId !== prevUserId) { resetCacheForUser(newUserId); resetKanaCacheForUser(newUserId); }
       notifyAuthChange();
@@ -63,7 +71,23 @@ window.RaumeStudy.flashcards.dataOps = (function () {
   function currentUser() { return authState.session ? authState.session.user : null; }
   function signUp(email, password) { return getClient().auth.signUp({ email: email, password: password }); }
   function signIn(email, password) { return getClient().auth.signInWithPassword({ email: email, password: password }); }
-  function signOut() { return getClient().auth.signOut(); }
+  function signOut() { authState.passwordRecovery = false; return getClient().auth.signOut(); }
+  // The redirect target is wherever the user is standing right now (this is a
+  // hash-routed static site, not a server with its own reset-password path) --
+  // Supabase appends its own recovery token to it as a URL fragment, which
+  // supabase-js reads and clears on the other end (see initAuth above). Must
+  // also be added to the project's Authentication -> URL Configuration ->
+  // Redirect URLs allowlist, or Supabase silently ignores it (SUPABASE_SETUP.md).
+  function resetPassword(email) {
+    return getClient().auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  }
+  // Only valid while authState.passwordRecovery is true -- that recovery
+  // session is what authorises the update without re-entering the old
+  // password. Clearing the flag is the caller's job once this resolves.
+  function updatePassword(newPassword) {
+    return getClient().auth.updateUser({ password: newPassword });
+  }
+  function clearPasswordRecovery() { authState.passwordRecovery = false; }
 
   // -----------------------------------------------------------------------
   // Remote store (Supabase = source of truth)
@@ -516,6 +540,7 @@ window.RaumeStudy.flashcards.dataOps = (function () {
   return {
     configured: configured, getClient: getClient, currentUser: currentUser,
     signUp: signUp, signIn: signIn, signOut: signOut, initAuth: initAuth,
+    resetPassword: resetPassword, updatePassword: updatePassword, clearPasswordRecovery: clearPasswordRecovery,
     onAuthChange: onAuthChange, authState: authState,
     fetchAllFromServer: fetchAllFromServer,
     addVocab: addVocab, addVocabs: addVocabs, addVocabsRemote: addVocabsRemote,

@@ -32,6 +32,8 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
   var authState = dataOps.authState;
   var configured = dataOps.configured, currentUser = dataOps.currentUser;
   var signUp = dataOps.signUp, signIn = dataOps.signIn, signOut = dataOps.signOut;
+  var resetPassword = dataOps.resetPassword, updatePassword = dataOps.updatePassword;
+  var clearPasswordRecovery = dataOps.clearPasswordRecovery;
   var initAuth = dataOps.initAuth, onAuthChange = dataOps.onAuthChange;
   var fetchAllFromServer = dataOps.fetchAllFromServer, syncOutbox = dataOps.syncOutbox;
   var onSyncStateChange = dataOps.onSyncStateChange, getSyncState = dataOps.getSyncState;
@@ -49,6 +51,11 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
   function render() {
     var el = root();
     if (!el) return;
+    // A password-reset email link lands here with a recovery session already
+    // established (see initAuth in data-ops.js) -- show "set a new password"
+    // before anything else, even ahead of guest mode, so an old link clicked
+    // from a guest-mode browser still completes the reset it's for.
+    if (authState.passwordRecovery) { renderPasswordRecovery(el); return; }
     // Guest mode never needs to wait on a network auth check -- it's a
     // stored on-device preference, not a session. Only fall through to
     // "is there an account session?" when guest mode hasn't been chosen.
@@ -58,13 +65,27 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
     renderEntryChoice(el);
   }
 
-  var authMode = "signin";
+  var authMode = "signin"; // signin | signup | reset
   var authError = "";
+  var authNotice = ""; // a non-error confirmation, e.g. "check your email" -- quiet, not red
   function authFormHtml() {
+    if (authMode === "reset") {
+      // Email only -- resetPasswordForEmail doesn't need (and Supabase never
+      // reveals through it) whether the address has an account at all.
+      return '<form class="fc-auth" id="fcAuthForm">' +
+        (authError ? '<div class="fc-auth-error">' + esc(authError) + "</div>" : "") +
+        (authNotice ? '<p class="fc-note">' + esc(authNotice) + "</p>" : "") +
+        '<div class="fc-auth-field"><label for="fcEmail">Email</label><input id="fcEmail" type="email" required autocomplete="email"></div>' +
+        '<button type="submit" class="fc-btn">Send reset link</button>' +
+        '<div class="fc-auth-switch"><button type="button" id="fcAuthBack">Back to sign in</button></div>' +
+        "</form>";
+    }
     return '<form class="fc-auth" id="fcAuthForm">' +
       (authError ? '<div class="fc-auth-error">' + esc(authError) + "</div>" : "") +
+      (authNotice ? '<p class="fc-note">' + esc(authNotice) + "</p>" : "") +
       '<div class="fc-auth-field"><label for="fcEmail">Email</label><input id="fcEmail" type="email" required autocomplete="email"></div>' +
       '<div class="fc-auth-field"><label for="fcPassword">Password</label><input id="fcPassword" type="password" required autocomplete="' + (authMode === "signup" ? "new-password" : "current-password") + '" minlength="6"></div>' +
+      (authMode === "signin" ? '<button type="button" class="fc-auth-forgot" id="fcForgotPassword">Forgot password?</button>' : "") +
       '<button type="submit" class="fc-btn">' + (authMode === "signup" ? "Sign up" : "Sign in") + "</button>" +
       '<div class="fc-auth-switch">' + (authMode === "signup" ? "Already have an account? " : "Need an account? ") +
       '<button type="button" id="fcAuthSwitch">' + (authMode === "signup" ? "Sign in" : "Sign up") + "</button></div>" +
@@ -73,10 +94,18 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
   function bindAuthForm() {
     document.getElementById("fcAuthForm").addEventListener("submit", async function (event) {
       event.preventDefault();
-      authError = "";
+      authError = ""; authNotice = "";
       var email = document.getElementById("fcEmail").value.trim();
-      var password = document.getElementById("fcPassword").value;
       try {
+        if (authMode === "reset") {
+          var resetRes = await resetPassword(email);
+          if (resetRes.error) throw resetRes.error;
+          authNotice = "If an account exists for that email, a link to reset your password is on its way.";
+          authMode = "signin";
+          render();
+          return;
+        }
+        var password = document.getElementById("fcPassword").value;
         var res = authMode === "signup" ? await signUp(email, password) : await signIn(email, password);
         if (res.error) throw res.error;
         if (authMode === "signup" && res.data && !res.data.session) {
@@ -91,10 +120,60 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
         render();
       }
     });
-    document.getElementById("fcAuthSwitch").addEventListener("click", function () {
+    var switchBtn = document.getElementById("fcAuthSwitch");
+    if (switchBtn) switchBtn.addEventListener("click", function () {
       authMode = authMode === "signup" ? "signin" : "signup";
-      authError = "";
+      authError = ""; authNotice = "";
       render();
+    });
+    var forgotBtn = document.getElementById("fcForgotPassword");
+    if (forgotBtn) forgotBtn.addEventListener("click", function () {
+      authMode = "reset";
+      authError = ""; authNotice = "";
+      render();
+    });
+    var backBtn = document.getElementById("fcAuthBack");
+    if (backBtn) backBtn.addEventListener("click", function () {
+      authMode = "signin";
+      authError = ""; authNotice = "";
+      render();
+    });
+  }
+
+  // Landed here from a "reset your password" email link -- initAuth() (in
+  // data-ops.js) already turned the token in the URL into a real session, so
+  // this is just "pick a new password", not a second sign-in. Cancel signs
+  // the recovery session back out rather than leaving it live unintended.
+  var recoveryError = "";
+  function renderPasswordRecovery(el) {
+    el.innerHTML = "<h2>Flashcards</h2>" +
+      '<div class="fc-entry-card fc-recovery-card">' +
+      "<h3>Set a new password</h3>" +
+      '<p class="fc-note">You followed a password-reset link. Choose a new password to finish signing in.</p>' +
+      '<form class="fc-auth" id="fcRecoveryForm">' +
+      (recoveryError ? '<div class="fc-auth-error">' + esc(recoveryError) + "</div>" : "") +
+      '<div class="fc-auth-field"><label for="fcNewPassword">New password</label><input id="fcNewPassword" type="password" required autocomplete="new-password" minlength="6"></div>' +
+      '<button type="submit" class="fc-btn fc-btn-primary">Set new password</button>' +
+      "</form>" +
+      '<div class="fc-auth-switch"><button type="button" id="fcRecoveryCancel">Cancel</button></div>' +
+      "</div>";
+    document.getElementById("fcRecoveryForm").addEventListener("submit", async function (event) {
+      event.preventDefault();
+      recoveryError = "";
+      var newPassword = document.getElementById("fcNewPassword").value;
+      try {
+        var res = await updatePassword(newPassword);
+        if (res.error) throw res.error;
+        clearPasswordRecovery();
+        render(); // now an ordinary signed-in session -> falls into renderShell
+      } catch (e) {
+        recoveryError = e.message || String(e);
+        render();
+      }
+    });
+    document.getElementById("fcRecoveryCancel").addEventListener("click", function () {
+      recoveryError = "";
+      signOut(); // also clears passwordRecovery; onAuthChange re-renders
     });
   }
 

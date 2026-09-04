@@ -1917,6 +1917,9 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-entry-card .fc-note { margin: 0 0 16px; font-size: var(--fs-nav-sub); color: var(--muted); }
 .fc-entry-card .fc-btn { width: 100%; min-height: 34px; padding: 7px 18px; font-size: var(--fs-small); }
 .fc-entry-card .fc-auth { max-width: none; margin: 0; }
+/* The password-recovery landing (a lone card, not part of the two-up grid) --
+   same width as the sign-in form it stands in for. */
+.fc-recovery-card { max-width: 420px; }
 
 /* Sign-in gate */
 .fc-auth { max-width: 380px; margin: 40px auto 0; }
@@ -1927,6 +1930,14 @@ body.starred-mode .expand-bar { display: none !important; }
   font-size: var(--fs-body); color: var(--ink); background: var(--field-fill);
 }
 .fc-auth-field input:focus-visible { border-color: var(--section); }
+/* A quiet text link, not a button -- it's a way out of the form, not a
+   second call to action next to Sign in. */
+.fc-auth-forgot {
+  display: block; appearance: none; border: 0; background: transparent;
+  margin: -6px 0 14px; padding: 0;
+  color: var(--accent-dark); font: 500 var(--fs-small)/1 var(--font-ui); cursor: pointer;
+}
+.fc-auth-forgot:hover { text-decoration: underline; }
 .fc-auth-error { color: var(--danger); font-size: var(--fs-small); margin-bottom: 10px; }
 .fc-auth-switch { margin-top: 12px; font-size: var(--fs-small); color: var(--muted); }
 .fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 500; padding: 0; cursor: pointer; }

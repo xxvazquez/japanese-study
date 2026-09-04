@@ -244,6 +244,13 @@ soft teal tint as the only nudge toward the zero-setup path.
   read-through cache and an offline outbox: reviews made offline are computed
   locally and synced when you reconnect. A status chip under your identity
   shows `Offline…` / `Syncing N reviews…` / nothing.
+- **Forgot password?**, on the sign-in form, emails a reset link (Supabase's
+  `resetPasswordForEmail`) instead of a second competing button — a quiet
+  text link, since it's a way out of the form, not another call to action.
+  Following the link lands back on the site already holding a recovery
+  session; the app recognises that on its own (no route to remember) and
+  shows a single "Set a new password" screen in its place, with **Cancel**
+  signing that session back out rather than leaving it live unintended.
 
 The anon key in `js/config.js` is safe to commit — Row Level Security protects
 the data, not the secrecy of that key. The service-role key must never go in

@@ -20,7 +20,24 @@ The Flashcards section stores your learning data (which vocab entries you've add
 1. Go to **Authentication** → **Providers** and confirm **Email** is enabled (it is by default).
 2. Under **Authentication** → **Settings**, you can turn off "Confirm email" if you'd rather sign in immediately without clicking an email link — reasonable for a personal single-user site, but optional.
 
-## 4. Connect the app to your project
+## 4. Enable "Forgot password?"
+
+The app's own "Forgot password?" link calls Supabase's `resetPasswordForEmail`,
+which emails a link back to wherever the app is running (`redirectTo`, set to
+the page's own URL at the moment someone requests the reset). For that
+redirect to actually be honoured (rather than silently falling back to the
+project's default Site URL):
+
+1. Go to **Authentication** → **URL Configuration** → **Redirect URLs**.
+2. Add the deployed site's URL — `https://YOUR-GH-USERNAME.github.io/raume/`
+   for GitHub Pages. Add `http://localhost:4173/` too if you want to test the
+   request half of the flow (sending the email) from a local `npm run` dev
+   server — the actual link-click landing needs a real inbox either way.
+3. The default **Reset Password** email template already points at
+   `redirectTo`; no template edit needed unless you want to customise the
+   email's wording.
+
+## 5. Connect the app to your project
 
 1. In your project, go to **Settings** → **API**.
 2. Copy the **Project URL** and the **`anon` `public`** key (not the `service_role` key — that one must never be used in this repo or any client-side code).
@@ -46,3 +63,4 @@ The smoke tests can't reach a real Supabase project, so anything sync-related is
 
 - **Kana trainer sync:** open the **Kana** tab, do a few reviews (both directions), then reload — progress is still there. In your project's **Table Editor**, `kana_cards` has a row per reviewed item×direction with advancing `reps`, and `kana_review_logs` has one row per review. Toggle a group or direction and check `flashcard_settings.kana_prefs` updates; change a Kana scheduling knob in **Settings** and check `flashcard_settings.kana_fsrs` updates (and that the vocabulary knobs in the same row are untouched). On a second device / browser, sign in and confirm the same progress, picker state and scheduling knobs load. Go offline, review, come back online — the queued reviews sync (the "Syncing… reviews" chip clears).
 - **First sign-in seeding:** with kana progress built up as a guest, then signing in on an account that has no kana rows yet, copies that progress up once (it never overwrites an account that already has kana rows).
+- **Password recovery:** on the sign-in form, click **Forgot password?**, enter your email, and confirm the "check your email" note appears. Open the email, click the reset link — it lands back on the site showing **Set a new password**, not the ordinary sign-in screen. Set one and confirm you land signed in (Flashcards shows "Signed in as…"). **Cancel** on that screen should sign the recovery session back out instead of leaving it live.

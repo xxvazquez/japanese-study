@@ -720,6 +720,16 @@ async function main() {
   check("clicking it marks the Flashcards link active", flashcardsLink.classList.contains("active"));
   check("no vocabulary-section nav link stays active on Flashcards", !document.querySelector('#siteNav .site-nav-link[data-section].active'));
   check("without Supabase configured, it explains setup is needed", document.getElementById("flashcardsPage").textContent.includes("SUPABASE_SETUP.md"));
+  // Password recovery needs a live Supabase project + a real inbox to
+  // exercise end to end (checked by hand); this just guards the exports the
+  // UI calls into from silently disappearing. Not called here -- configured()
+  // is false in this harness, so getClient() returns null and .auth access
+  // on it would throw.
+  check("resetPassword / updatePassword / clearPasswordRecovery are exported", (() => {
+    var d = window.RaumeStudy.flashcards.dataOps;
+    return typeof d.resetPassword === "function" && typeof d.updatePassword === "function"
+      && typeof d.clearPasswordRecovery === "function" && "passwordRecovery" in d.authState;
+  })());
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   check("Vocabulary still returns to the reference (unaffected by the Flashcards page)", document.getElementById("vocabPage").hidden === false);
 
