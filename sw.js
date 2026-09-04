@@ -81,7 +81,11 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;
 
   const url = new URL(req.url);
-  if (url.origin !== self.location.origin) return; // let cross-origin (Google Fonts) go straight to the network
+  // Every first-party asset (including both fonts) is same-origin and
+  // precached above; the only cross-origin traffic left is the Supabase API
+  // calls the account-sync path makes, which have to go straight to the
+  // network regardless.
+  if (url.origin !== self.location.origin) return;
 
   const isNavigation = req.mode === 'navigate';
   const isVersioned = url.searchParams.has('v');
