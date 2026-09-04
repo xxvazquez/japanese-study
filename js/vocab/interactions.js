@@ -82,20 +82,19 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
   function visibleSectionTables() {
     return [...document.querySelectorAll('#vocabulary .table-section:not(.page-hidden):not(.search-hidden)')];
   }
-  // Accordion default: the section's first table open, the rest closed --
-  // immediate content without the "why is *this* set of tables open?" of a
-  // first-per-category rule. Everything else is one click (or Expand all).
-  function collapseToAccordion(list) {
-    list.forEach(function (s, i) {
-      if (i === 0) expandSection(s);
-      else collapseSection(s);
-    });
+  // Land collapsed: every table closed until you open one -- no table's
+  // content is presumed more relevant than another's. One click (or Expand
+  // all) opens any of them; opening one still collapses its category
+  // siblings (collapseSiblingSections), so it stays a one-open accordion
+  // from there.
+  function collapseAll(list) {
+    list.forEach(collapseSection);
   }
   function setExpandAll(on) {
     document.body.classList.toggle('expand-all-mode', on);
     const list = visibleSectionTables();
     if (on) list.forEach(expandSection);
-    else collapseToAccordion(list);
+    else collapseAll(list);
     syncExpandAllBtn();
     if (vocab.syncTableIndexActive) vocab.syncTableIndexActive();
     updatePoliteVisibility();
@@ -191,19 +190,18 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
       });
     }
     // Restore this section's remembered layout; a section never touched falls
-    // to the accordion default (its first table open, the rest collapsed).
+    // to the default -- every table collapsed, nothing presumed more
+    // relevant than anything else.
     const layout = sectionLayout[name];
     document.body.classList.toggle('expand-all-mode', !!(layout && layout.expandAll));
     syncExpandAllBtn();
-    let firstShown = false;
     document.querySelectorAll('#vocabulary .table-section').forEach(function (s) {
       const inSection = s.dataset.section === name;
       s.classList.toggle('page-hidden', !inSection);
       s.classList.remove('search-hidden');
       if (!inSection) return;
       if (layout && layout.touched) return; // keep whatever the user left
-      if (!firstShown) { firstShown = true; expandSection(s); }
-      else collapseSection(s);
+      collapseSection(s);
     });
     document.querySelectorAll('#vocabulary .cat-heading').forEach(function (h) {
       h.classList.remove('search-hidden');
@@ -767,7 +765,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     }, { passive: true });
 
     // Expand all / collapse all -- read a whole category (or section) straight
-    // through, then snap back to the one-open accordion.
+    // through, then snap back to every table closed.
     const expandAllBtn = document.getElementById('expandAllBtn');
     if (expandAllBtn) {
       expandAllBtn.addEventListener('click', function () {

@@ -275,10 +275,9 @@ async function main() {
     return tindexMenu.hidden === false && document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "true";
   })());
   check("clicking outside closes it", (() => { document.body.click(); return tindexMenu.hidden === true; })());
-  check("only the section's first table is open on landing", (() => {
+  check("every table lands collapsed, nothing presumed more relevant", (() => {
     const tables = [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')];
-    return tables.length > 1 && !tables[0].classList.contains("collapsed")
-      && tables.slice(1).every(s => s.classList.contains("collapsed"));
+    return tables.length > 1 && tables.every(s => s.classList.contains("collapsed"));
   })());
 
   console.log("Four-item top navigation");
@@ -305,7 +304,7 @@ async function main() {
     document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
     return document.getElementById("politeToggle").hidden === true;
   })());
-  check("still hidden on Grammar while only Adjectives is open (Verbs collapsed)", (() => {
+  check("still hidden on Grammar landing collapsed (Verbs not open)", (() => {
     document.querySelector('#siteNav .site-nav-link[data-section="grammar"]').click();
     return document.getElementById("politeToggle").hidden === true;
   })());
@@ -434,17 +433,16 @@ async function main() {
   console.log("Expand all / collapse all");
   document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
   const expandAllBtn = document.getElementById("expandAllBtn");
-  const accordionIntact = () => {
+  const allCollapsed = () => {
     const tables = [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')];
-    return tables.length > 1 && !tables[0].classList.contains("collapsed")
-      && tables.slice(1).every(s => s.classList.contains("collapsed"));
+    return tables.length > 1 && tables.every(s => s.classList.contains("collapsed"));
   };
   check("the expand-all control starts as 'Expand all'", !!expandAllBtn && expandAllBtn.textContent === "Expand all" && expandAllBtn.getAttribute("aria-pressed") === "false");
   expandAllBtn.click();
   check("clicking it expands every visible Vocabulary table", [...document.querySelectorAll('#vocabulary .table-section[data-section="vocabulary"]:not(.page-hidden)')].every(s => !s.classList.contains("collapsed")));
   check("...the button flips to 'Collapse all' and body carries expand-all-mode", expandAllBtn.textContent === "Collapse all" && expandAllBtn.getAttribute("aria-pressed") === "true" && document.body.classList.contains("expand-all-mode"));
   expandAllBtn.click();
-  check("clicking again snaps back to just the section's first table open", accordionIntact() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
+  check("clicking again collapses every table", allCollapsed() && !document.body.classList.contains("expand-all-mode") && expandAllBtn.textContent === "Expand all");
   check("a section keeps its own layout across navigation", (() => {
     // Vocabulary: expand all, leave to Grammar, come back -- still expanded.
     expandAllBtn.click();
@@ -457,10 +455,10 @@ async function main() {
     expandAllBtn.click(); // reset Vocabulary to the default for later checks
     return wasExpandAll && grammarIndependent && vocabRestored;
   })());
-  check("a section you've never touched still opens to its first table", (() => {
+  check("a section you've never touched still lands with every table collapsed", (() => {
     document.querySelector('#siteNav .site-nav-link[data-section="travel"]').click();
     const t = [...document.querySelectorAll('.table-section[data-section="travel"]:not(.page-hidden)')];
-    const ok = t.length > 1 && !t[0].classList.contains("collapsed") && t.slice(1).every(s => s.classList.contains("collapsed"));
+    const ok = t.length > 1 && t.every(s => s.classList.contains("collapsed"));
     document.querySelector('#siteNav .site-nav-link[data-section="vocabulary"]').click();
     return ok;
   })());

@@ -113,10 +113,11 @@ than one per sheet.
   there's no flash.
 - **Help.** The masthead **?** opens a short rundown of the reference side.
   (Flashcards has its own Help tab.)
-- **Layout memory.** An untouched section shows just its first table. Once you
-  expand or collapse anything, the section keeps that layout when you leave and
-  come back. Opening a table collapses the others in its category. **Expand
-  all** opens everything at once.
+- **Layout memory.** An untouched section lands with every table collapsed —
+  nothing presumed more relevant than anything else. Once you expand or
+  collapse anything, the section keeps that layout when you leave and come
+  back. Opening a table collapses the others in its category. **Expand all**
+  opens everything at once; **Collapse all** closes it back down.
 - **Mobile.** The sheet goes full-width; the four-item nav still fits on one
   line.
 
