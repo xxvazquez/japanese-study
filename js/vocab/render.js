@@ -370,7 +370,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
         (wide ? ' tindex-panel--wide' : '') +
         '" data-section="' + sec + '" role="menu">' + body + '</div>';
     }).join('');
-    return '<button type="button" class="tindex-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="tindexMenu" title="Browse every table">' +
+    return '<button type="button" class="tindex-trigger" aria-haspopup="true" aria-expanded="false" aria-controls="tindexMenu" title="Jump to a table">' +
       '<span class="tindex-trigger-label">Jump to a table</span>' + CHEVRON_ICON + '</button>' +
       '<div class="tindex-menu" id="tindexMenu" hidden>' + panels + '</div>' +
       '<div class="tindex-scrim"></div>';

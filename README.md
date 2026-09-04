@@ -19,12 +19,12 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
 
 ### Finding things
 
-- **Table directory.** Each section opens with a directory control
-  (`#tableIndex`). Collapsed, it just names the table you're on. Expanded, it
-  lays out the whole section — every category and table, with entry counts —
-  in two columns on desktop or a bottom sheet on mobile. The current table is
-  marked in the section colour. Keyboard-navigable, hidden during a search,
-  never printed.
+- **Jump to a table.** Each section opens with this control (`#tableIndex`),
+  labelled *Jump to a table*. Collapsed, it just names the table you're on.
+  Expanded, it lays out the whole section — every category and table, with entry
+  counts — in two columns on desktop or a bottom sheet on mobile. The current
+  table is marked in the section colour. Keyboard-navigable, hidden during a
+  search, never printed.
 - **Search** ranks results by match quality (exact → starts-with → ends-with →
   contains), highlights the matched text, and pulls from every section, not
   just the one you're viewing. It only searches columns that are visible.
@@ -57,7 +57,7 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
 - **Show polite.** Switches the verb tables between plain/dictionary form and
   polite 〜ます. It only appears while the Verbs table is expanded — however that
   table was opened, including landing on it straight from a `#table-N` bookmark or
-  the table directory.
+  the *Jump to a table* list.
 - **Sorting.** Every column is sortable (↓ A–Z / low→high, ↑ the reverse).
   Tables start sorted A–Z by English.
 

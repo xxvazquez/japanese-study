@@ -170,6 +170,12 @@ async function main() {
   const tindexMenu = document.getElementById("tindexMenu");
   check("the table-index dropdown menu starts closed", tindexMenu.hidden === true);
   check("its trigger reports collapsed", document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "false");
+  check("the control is named 'Jump to a table' wherever that name is fixed", (() => {
+    // The visible label is dynamic (it names the table you're on); the tooltip
+    // and the landmark aria-label are the fixed identifiers and must agree.
+    return document.querySelector(".tindex-trigger").title === "Jump to a table"
+      && document.getElementById("tableIndex").getAttribute("aria-label") === "Jump to a table";
+  })());
   const vocPanel = document.querySelector('#tableIndex .tindex-panel[data-section="vocabulary"]');
   check("the Vocabulary panel is the visible one", !!vocPanel && !vocPanel.classList.contains("page-hidden"));
   check("it links every Vocabulary table by name", (() => {
@@ -555,7 +561,7 @@ async function main() {
   czInput.value = "My Drinks";
   czInput.dispatchEvent(new window.Event("change", { bubbles: true }));
   check("committing a custom name updates the vocabulary header in place", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "My Drinks");
-  check("...and the table directory", document.querySelector('#tindexMenu a[data-target="1"] .tindex-tname').textContent === "My Drinks");
+  check("...and the Jump to a table list", document.querySelector('#tindexMenu a[data-target="1"] .tindex-tname').textContent === "My Drinks");
   check("...and the reset control becomes enabled", document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').disabled === false);
   document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-reset').click();
   check("reset restores the shipped name everywhere", document.querySelector('#vocabulary .table-section[data-table="1"] .section-title-text').textContent === "Drinks" && window.RaumeStudy.tableCustom.nameOf("1") === "");
@@ -575,7 +581,7 @@ async function main() {
     const secs = [...document.querySelectorAll('#vocabulary .table-section[data-category="Food & Ingredients"]')].map(s => s.dataset.table);
     return secs[0] === foodIdsBefore[1] && secs[1] === foodIdsBefore[0];
   })());
-  check("the table directory follows too", (() => {
+  check("the Jump to a table list follows too", (() => {
     const grp = [...document.querySelectorAll("#tindexMenu .tindex-cat-group")].find(g => g.querySelector(".tindex-cat-name") && g.querySelector(".tindex-cat-name").textContent === "Food & Ingredients");
     const links = [...grp.querySelectorAll("a[data-target]")].map(a => a.dataset.target);
     return links[0] === foodIdsBefore[1] && links[1] === foodIdsBefore[0];
