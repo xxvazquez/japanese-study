@@ -695,6 +695,10 @@ async function main() {
   document.querySelector('#siteNav .site-nav-link[data-page="flashcards"]').click();
   const guestBtn = document.getElementById("fcUseGuest");
   check("a \"Continue without an account\" option is offered alongside signing in", !!guestBtn);
+  // Neither entry button is a filled primary -- the tinted "This device only"
+  // card is the only nudge, so two dark buttons don't compete. (The sign-in
+  // form's own button only renders with Supabase configured; checked in-browser.)
+  check("the guest button is a quiet button, not a filled primary", guestBtn.classList.contains("fc-btn") && !guestBtn.classList.contains("fc-btn-primary"));
   guestBtn.click();
   check("choosing it goes straight to the Dashboard tab, no session needed", !!document.querySelector("#fcPanelDashboard"));
   check("it's labeled as on-device, not signed in", document.getElementById("flashcardsPage").textContent.includes("Using this device only"));

@@ -1744,10 +1744,11 @@ body.starred-mode .expand-bar { display: none !important; }
 
 /* Entry choice: guest mode vs signed-in, side by side as two equally valid
    options -- same card language as .fc-viz-card, not one path presented as
-   the "real" one and the other as a fallback. */
-/* align-items:start so each card sizes to its own content -- the shorter
-   "This device only" card no longer stretches to leave a block of dead space
-   under its button. */
+   the "real" one and the other as a fallback. Neither button is a filled
+   primary: the teal-tinted "This device only" surface is the only nudge, so
+   two dark buttons don't compete for the eye. The cards share a top edge
+   (align-items:start) and each button spans its card's width, so the shorter
+   guest card still reads as a finished block rather than a stub. */
 .fc-entry-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -1765,7 +1766,7 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-entry-card h3 { margin: 0 0 6px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
 .fc-entry-card .fc-note { margin: 0 0 16px; font-size: var(--fs-nav-sub); color: var(--muted); }
-.fc-entry-card .fc-btn-primary { min-height: 34px; padding: 7px 18px; font-size: var(--fs-small); }
+.fc-entry-card .fc-btn { width: 100%; min-height: 34px; padding: 7px 18px; font-size: var(--fs-small); }
 .fc-entry-card .fc-auth { max-width: none; margin: 0; }
 
 /* Sign-in gate */

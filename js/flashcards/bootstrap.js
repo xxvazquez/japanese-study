@@ -65,7 +65,7 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
       (authError ? '<div class="fc-auth-error">' + esc(authError) + "</div>" : "") +
       '<div class="fc-auth-field"><label for="fcEmail">Email</label><input id="fcEmail" type="email" required autocomplete="email"></div>' +
       '<div class="fc-auth-field"><label for="fcPassword">Password</label><input id="fcPassword" type="password" required autocomplete="' + (authMode === "signup" ? "new-password" : "current-password") + '" minlength="6"></div>' +
-      '<button type="submit" class="fc-btn fc-btn-primary">' + (authMode === "signup" ? "Sign up" : "Sign in") + "</button>" +
+      '<button type="submit" class="fc-btn">' + (authMode === "signup" ? "Sign up" : "Sign in") + "</button>" +
       '<div class="fc-auth-switch">' + (authMode === "signup" ? "Already have an account? " : "Need an account? ") +
       '<button type="button" id="fcAuthSwitch">' + (authMode === "signup" ? "Sign in" : "Sign up") + "</button></div>" +
       "</form>";
@@ -107,7 +107,7 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
       '<div class="fc-entry-grid">' +
       '<div class="fc-entry-card"><h3>This device only</h3>' +
       '<p class="fc-note">Stored in this browser — nothing to set up, nothing sent anywhere. Clearing site data or switching browsers loses it.</p>' +
-      '<button type="button" class="fc-btn fc-btn-primary" id="fcUseGuest">Continue without an account</button></div>' +
+      '<button type="button" class="fc-btn" id="fcUseGuest">Continue without an account</button></div>' +
       '<div class="fc-entry-card"><h3>Sync across devices</h3>' +
       (configured()
         ? '<p class="fc-note">Free account, backed by Supabase. Only you can see your data.</p>' + authFormHtml()

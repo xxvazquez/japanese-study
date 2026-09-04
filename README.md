@@ -205,7 +205,9 @@ direction is its own FSRS-6 card.
 
 ### Accounts and storage
 
-Two modes that never mix:
+Two modes that never mix. The Flashcards page opens on a plain choice between
+them — two cards, both with a quiet outline button; the guest card carries a
+soft teal tint as the only nudge toward the zero-setup path.
 
 - **Guest** — everything stays in this browser's `localStorage`. No account, no
   network.
