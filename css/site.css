@@ -1488,16 +1488,24 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-tabpanel[hidden] { display: none; }
 /* Help and Settings are prose, not a data surface -- hold them to a readable
    measure (same as the masthead Help page) instead of ~130-char lines across
-   the full sheet. Dashboard and Manage keep the full width. */
+   the full sheet. Manage keeps the full width (its rows are content-driven,
+   not a proportional grid, so they don't balloon the way the Dashboard's did
+   -- see the cap on #fcPanelDashboard below). */
 #fcPanelHelp, #fcPanelSettings { max-width: 680px; }
+/* The Dashboard's tiles and cards are sized as fractions of the container, so
+   an uncapped sheet let a 2-up row balloon into two ~600px panels holding a
+   couple of words each. Capped, left-aligned like the vocabulary tables'
+   --reading-w (a different cap: this one's sized for a row of stat tiles and
+   two-up cards, not prose). */
+#fcPanelDashboard { max-width: 900px; }
 
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
    left rule in the Flashcards section tone (a colour hint, not a loud fill)
    so the row reads as one grouped set rather than four identical grey boxes. */
 /* 2x2 on narrow screens (four tiles, so it stays even -- no orphan on its
-   own row), one row of four once there's width for it. */
+   own row), one row of four once there's width for it -- on the shared 12-col
+   grid below, so the tile seams line up with the panels above and below. */
 .fc-stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
-@media (min-width: 620px) { .fc-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .fc-stat-tile {
   position: relative;
   background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px;
@@ -1523,17 +1531,16 @@ body.starred-mode .expand-bar { display: none !important; }
    short ones stretching to leave dead white space. */
 .fc-viz-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
   align-items: start;
   margin-bottom: 20px;
 }
 .fc-viz-card { background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px; padding: 16px 18px; }
+/* .fc-viz-wide (Missed today / Words to review) always spans full width,
+   regardless of how many columns are live -- narrow or wide. */
 .fc-viz-card.fc-viz-wide { grid-column: 1 / -1; }
 .fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-subhead); font-weight: 500; }
-@media (max-width: 560px) {
-  .fc-viz-grid { grid-template-columns: 1fr; }
-}
 
 .fc-breakdown-bar-wrap { border-radius: 8px; overflow: hidden; background: var(--surface); }
 .fc-breakdown-bar { display: block; width: 100%; height: 16px; }
@@ -2055,10 +2062,21 @@ body.starred-mode .expand-bar { display: none !important; }
    stacked on narrow. */
 .fc-top-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   align-items: start;
   gap: 12px;
   margin-bottom: 14px;
+}
+/* One shared grid past 620px for the Dashboard's three multi-item rows --
+   this one, .fc-stats-grid and .fc-viz-grid -- so a seam in one lines up with
+   a seam in another instead of three grids each rounding independently (each
+   was previously its own auto-fit / 2-col / 4-col system). Placed after all
+   three base rules so it wins the cascade regardless of source order. */
+@media (min-width: 620px) {
+  .fc-top-row, .fc-stats-grid, .fc-viz-grid { grid-template-columns: repeat(12, minmax(0, 1fr)); }
+  .fc-next-review, .fc-today { grid-column: span 6; }
+  .fc-stat-tile { grid-column: span 3; }
+  .fc-viz-card { grid-column: span 6; }
 }
 
 .fc-today {

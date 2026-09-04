@@ -380,8 +380,12 @@ One label, one style: a category name reads the same Title-Case-in-the-section-
 tone wherever it appears (a vocab heading, the *Jump to a table* list, Flashcards
 › Manage, the Customize page), and card titles are sentence case throughout
 Settings and Help. Help and Settings are prose, so they're held to a readable
-measure (680px) rather than running the full sheet the way the data-dense
-Dashboard and Manage tabs do.
+measure (680px). Manage runs the full sheet (its rows are content-driven, not
+a proportional grid). The Dashboard gets its own, wider cap (900px) — uncapped,
+its tiles and cards are sized as *fractions* of the sheet, so a 2-up row
+ballooned into two ~600px panels holding a couple of words each; capped, the
+top row, the four stat tiles and the viz cards also share one 12-column grid
+past 620px, so a seam in one lines up with a seam in another.
 
 Motion is light throughout — short opacity/transform transitions, chevron
 rotations, one card wash on a checked answer — and a single

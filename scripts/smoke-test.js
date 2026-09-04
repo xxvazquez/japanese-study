@@ -888,6 +888,21 @@ async function main() {
       const val = tile && tile.querySelector(".fc-stat-value").textContent;
       return tile && tile.classList.contains("fc-stat-tile-pending") && val !== "—" && /reviews/i.test(val);
     })());
+    check("the dashboard is capped, not run to the full sheet -- a 2-up row shouldn't balloon", (() => {
+      const rule = allCssRules.find(r => r.selectorText === "#fcPanelDashboard");
+      return !!rule && parseInt(rule.style.maxWidth, 10) > 0;
+    })());
+    check("the top row, the stat tiles and the viz cards share one 12-col grid past 620px, so their seams line up", (() => {
+      const media = allCssRules.find(r => r.media && /min-width:\s*620px/.test(r.media.mediaText));
+      if (!media) return false;
+      const rules = [...media.cssRules];
+      const cols = (cls) => {
+        const r = rules.find(r => r.selectorText && r.selectorText.split(",").map(s => s.trim()).includes(cls));
+        return r && r.style.gridTemplateColumns;
+      };
+      const grid12 = /repeat\(\s*12\s*,/;
+      return grid12.test(cols(".fc-top-row") || "") && grid12.test(cols(".fc-stats-grid") || "") && grid12.test(cols(".fc-viz-grid") || "");
+    })());
   }
 
   console.log("Flashcards: review session bookends");
