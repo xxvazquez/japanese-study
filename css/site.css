@@ -224,6 +224,18 @@ body { --section-ink: color-mix(in srgb, var(--ink) 84%, var(--section)); }
 
 * { box-sizing: border-box; }
 
+/* Motion here is light -- short opacity/transform transitions, chevron
+   rotations, one card wash on a check -- but honour a reduced-motion request
+   all the same: near-instant everything, no smooth scroll. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html { background: var(--page-bg); }
 body {
   margin: 0;
@@ -494,9 +506,10 @@ body {
   color: var(--section);
   border-bottom: 1px solid color-mix(in srgb, var(--section) 34%, var(--line));
 }
-.cat-heading:first-child { margin-top: 4px; }
+.cat-heading:first-child { margin-top: 14px; }
+/* Count sits right after the name (a 12px gap), not flung to the far edge --
+   there it landed directly under "Expand all" and read as its value. */
 .cat-heading-count {
-  margin-left: auto;
   align-self: center;
   font-weight: 400;
   font-size: 11.5px;
@@ -534,9 +547,12 @@ body {
   border: 1px solid var(--line-strong);
   border-radius: 6px;
 }
+/* Same focus ring as every other control (the global :focus-visible rule) --
+   was a box-shadow here, the one control that differed. */
 .search-box:focus-within {
   border-color: var(--section);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--section) 18%, transparent);
+  outline: 2px solid var(--section);
+  outline-offset: 2px;
 }
 .search-box input {
   flex: 1 1 auto;
@@ -1566,7 +1582,9 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-manage-group-title::-webkit-details-marker { display: none; }
 .fc-manage-group-title .cat-name { font-size: 15px; font-weight: 500; color: var(--section); letter-spacing: .005em; }
-.fc-manage-group-title .cat-count { margin-left: auto; align-self: center; color: var(--faint); font-size: 11.5px; font-weight: 400; }
+/* name · count · caret read as one cluster on the left, not name on one edge
+   and count+caret flung to the other. */
+.fc-manage-group-title .cat-count { align-self: center; color: var(--faint); font-size: 11.5px; font-weight: 400; }
 .fc-manage-group-title:hover .cat-name { color: var(--section-strong); }
 .fc-manage-group-title::after {
   content: ""; display: inline-block; width: 0; height: 0; flex: 0 0 auto; align-self: center; margin-left: 2px;
@@ -1706,9 +1724,6 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-review-card:has(.fc-result.fc-correct) { animation: fc-flash-right .9s ease-out; }
 .fc-review-card:has(.fc-result.fc-incorrect) { animation: fc-flash-wrong .9s ease-out; }
-@media (prefers-reduced-motion: reduce) {
-  .fc-review-card:has(.fc-result) { animation: none; }
-}
 
 /* The correct answer sits in its own clean, neutral area beneath the status
    line -- no colour, just a quiet surface panel. */
@@ -1784,7 +1799,10 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-answer-form input[lang="ja"] { font-size: 16px; }
 .fc-answer-reveal .fc-expected-kana { font-size: 24px; line-height: 1.2; }
 .fc-answer-reveal .fc-expected-kana.fc-prompt-kana-word { font-size: 19px; }
-.fc-kana-groups { display: flex; flex-wrap: wrap; gap: 14px; margin: 16px 0 4px; }
+/* flex-start, not the default stretch: "Directions" has two rows against the
+   scripts' five, and stretching it to match left a tall box mostly empty.
+   Top-aligned, it's just a smaller box -- which is what it is. */
+.fc-kana-groups { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 14px; margin: 16px 0 4px; }
 .fc-kana-fieldset {
   border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 12px;
   display: flex; flex-direction: column; gap: 8px; min-width: 180px;

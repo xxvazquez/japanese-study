@@ -60,6 +60,9 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   the *Jump to a table* list.
 - **Sorting.** Every column is sortable (↓ A–Z / low→high, ↑ the reverse).
   Tables start sorted A–Z by English.
+- **Named for assistive tech.** Each `<table>` is `aria-labelledby` its visible
+  title, so a screen reader announces it by name ("Cooking Ingredients, table")
+  rather than a bare "table".
 
 ### Study aids
 
@@ -356,6 +359,12 @@ interactive elements (nav underline, category rules, active tabs, focus, sort
 accents) — never on rows or large surfaces. `--section` is switched by
 `body[data-active-*]`: `--sec-vocabulary` (blue), `--sec-grammar` (indigo),
 `--sec-travel` (blue-green), `--sec-flashcards` (slate).
+
+Motion is light throughout — short opacity/transform transitions, chevron
+rotations, one card wash on a checked answer — and a single
+`@media (prefers-reduced-motion: reduce)` block near-instants all of it. Every
+control takes the same focus ring: a 2px `--section` outline at a 2px offset,
+the search box included.
 
 The palette is deliberately quiet — a light sheet on a grey-blue ground, one
 slate-blue accent, no warm tones. No pink, no gradients, no shadows beyond one

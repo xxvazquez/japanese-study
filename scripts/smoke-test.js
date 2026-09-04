@@ -69,10 +69,31 @@ async function main() {
   check("section toggle is a real <button> (native keyboard activation)", document.querySelector(".section-toggle").tagName === "BUTTON");
   check("controls are siblings of the toggle, not nested inside it", !document.querySelector(".section-toggle .print-one"));
   check("every table section carries its category", [...sections].every(s => s.dataset.category));
+  check("every vocab table is named for assistive tech (aria-labelledby its title)", [...document.querySelectorAll("#vocabulary table.vocab")].every(t => {
+    const id = t.getAttribute("aria-labelledby");
+    const label = id && document.getElementById(id);
+    return label && label.classList.contains("section-title-text") && label.textContent.trim().length > 0;
+  }));
   // The page's CSP is style-src 'self' with no 'unsafe-inline', so any inline
   // style="" attribute gets silently dropped by the browser (not an error) --
   // easy to introduce by accident and easy to miss without a check like this.
   check("no element relies on an inline style=\"\" attribute (blocked by CSP style-src)", document.querySelectorAll("[style]").length === 0);
+  const allCssRules = (() => {
+    const flat = [];
+    const walk = list => { for (const r of list) { flat.push(r); if (r.cssRules) walk(r.cssRules); } };
+    for (const ss of document.styleSheets) { try { walk(ss.cssRules); } catch (e) { /* cross-origin */ } }
+    return flat;
+  })();
+  check("a prefers-reduced-motion block neutralises animation + transitions", (() => {
+    const media = allCssRules.find(r => r.media && /prefers-reduced-motion:\s*reduce/.test(r.media.mediaText));
+    if (!media) return false;
+    const txt = [...media.cssRules].map(r => r.cssText).join(" ");
+    return /transition-duration:\s*0?\.01ms/.test(txt) && /animation-duration:\s*0?\.01ms/.test(txt);
+  })());
+  check("the search box uses the same outline focus ring as every other control", (() => {
+    const rule = allCssRules.find(r => r.selectorText === ".search-box:focus-within");
+    return !!rule && rule.style.outline.includes("2px") && rule.style.boxShadow === "";
+  })());
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.RaumeStudy.kanaRomaji;

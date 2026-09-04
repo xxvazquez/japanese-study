@@ -202,10 +202,12 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
       '<button type="button" class="section-icon-btn" data-icon-for="' + o.id + '" title="Choose an icon" aria-label="Choose an icon for ' + esc(title) + '">' + tableIconSlot(o.id) + '</button>' +
       '<h2 class="section-title"><button type="button" class="section-toggle" aria-expanded="' + (o.collapsed ? 'false' : 'true') + '" aria-controls="vocab-' + o.id + '">' +
       '<span class="section-toggle-icon">' + CHEVRON_ICON + '</span>' +
-      '<span class="section-title-text">' + esc(title) + '</span>' +
+      '<span class="section-title-text" id="secttl-' + o.id + '">' + esc(title) + '</span>' +
       '</button></h2>' +
       '<div class="controls">' + ctrlParts.join('') + '</div></div>' +
-      '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '"><thead><tr>' +
+      // aria-labelledby the visible title so a screen reader announces the table
+      // by name ("Cooking Ingredients, table") instead of a bare "table".
+      '<table class="vocab' + (o.tableClass ? ' ' + o.tableClass : '') + '" id="vocab-' + o.id + '" aria-labelledby="secttl-' + o.id + '"><thead><tr>' +
       '<th>Japanese</th>' +
       sortHeader('Romaji', 1, false) + sortHeader('English', 2, defaultSort) + '</tr></thead><tbody>\n    ' +
       o.rowsHtml + '\n  </tbody></table></section>';
