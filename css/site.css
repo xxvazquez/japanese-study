@@ -1358,6 +1358,10 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   .vocab tr { break-inside: avoid; page-break-inside: avoid; }
   .vocab td, .vocab th { padding: 6px 10px !important; }
   .vocab td:first-child, .vocab th:first-child { padding-left: 13px !important; }
+  /* The uniform padding above wipes out the screen rule's extra top room for
+     the Japanese cell's furigana (css/site.css:1116), so the reading crowds
+     the row's top border. Give just that cell its breathing room back. */
+  .vocab td.jp { padding-top: 9px !important; }
   /* Drop the row actions in print -- and the space the hidden ones reserve on
      screen -- but keep a set star inline next to the word it marks. */
   .sort-button, .row-hide-btn, .fc-toggle-btn, .star-btn:not(.starred) { display: none !important; }

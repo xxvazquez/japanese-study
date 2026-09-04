@@ -587,6 +587,18 @@ async function main() {
   check("no hide-section button", !document.querySelector(".hide-section"));
   check("no table-pick checkboxes", !document.querySelector(".table-pick"));
 
+  check("print gives the Japanese cell's furigana room, not the uniform row padding", (() => {
+    // The uniform print padding (.vocab td, .vocab th) would otherwise crowd
+    // the ruby reading against the row's top border -- .vocab td.jp needs its
+    // own, taller padding-top inside the same @media print block.
+    const printMedia = allCssRules.find(r => r.media && /^print$/.test(r.media.mediaText));
+    if (!printMedia) return false;
+    const printRules = [...printMedia.cssRules];
+    const uniform = printRules.find(r => r.selectorText === ".vocab td, .vocab th");
+    const jp = printRules.find(r => r.selectorText === ".vocab td.jp");
+    return !!uniform && !!jp && parseInt(jp.style.paddingTop, 10) > parseInt(uniform.style.padding, 10);
+  })());
+
   console.log("Print this table (icon button)");
   const printOneBtn = document.querySelector('.table-section[data-table="0"] .print-icon-btn');
   check("print-one is icon-only with an accessible label", printOneBtn.getAttribute("aria-label") === "Print this table" && printOneBtn.textContent.trim() === "");
