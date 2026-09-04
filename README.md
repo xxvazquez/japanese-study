@@ -157,10 +157,14 @@ where you review, browse, and track a daily streak.
 
 - **Dashboard** — before any cards, an empty state pointing at the next step.
   With cards: today's progress, a status line that mirrors the Study now
-  button, four stat tiles (streak, total cards, reviews done, and estimated
-  retention once ≥ 5 cards are reviewed), a New → Learning → Review progress
-  bar, a reviews-this-week chart, a "missed today" shortlist, and a **Words to
-  Review** table for words missed more than once.
+  button (it always carries a second line — the next review time, or the queue
+  make-up on a fresh deck), four stat tiles (streak, total cards, reviews done,
+  and estimated retention once ≥ 5 cards are reviewed), a New → Learning →
+  Review progress bar, a reviews-this-week chart (a plain "no reviews yet this
+  week" line until you've studied), a "missed today" shortlist, and a **Words
+  to Review** table for words missed more than once. Until there's any review
+  history the last two fold into a single "Words to review" line rather than
+  two near-empty cards.
 - **Manage** — every table by category, filterable to All / My flashcards /
   Archived. One button per table: **Add table**, then **Pause table** once it's
   fully added. Expand a table to add or pause individual words.

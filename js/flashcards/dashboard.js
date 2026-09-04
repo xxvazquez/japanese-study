@@ -94,6 +94,11 @@ window.RaumeStudy.flashcards.dashboard = (function () {
       loadReviewInsights().catch(function () { reviewInsights = emptyInsights(); }).then(function () { reviewInsightsLoading = false; rerender(); });
     }
     var newInSession = Math.min(stats.newCount, Math.max(0, settings.queue_new_cards_per_day));
+    // On a quiet account "Missed today" and "Words to Review" are two full-width
+    // cards each holding one sentence -- fold them into a single line until
+    // there's review history to show. (Still null while insights load: keep
+    // both, they say "Loading…", then this settles on the next rerender.)
+    var foldReview = reviewInsights && !reviewInsights.recentMistakes.length && !reviewInsights.wordsToReview.length;
     // "Study now" is enabled exactly when a session would have something in it
     // -- cards ready to review (incl. learning steps due within the look-ahead)
     // plus the day's new-card allowance -- so the button and the summary above
@@ -117,9 +122,11 @@ window.RaumeStudy.flashcards.dashboard = (function () {
       '<div class="fc-viz-grid">' +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Card progress</h3>' + stateBreakdownChart(stats) + "</div>" +
       '<div class="fc-viz-card"><h3 class="fc-viz-title">Reviews this week</h3>' + (weeklyActivity ? weeklyActivityChart(weeklyActivity) : '<p class="fc-note">Loading…</p>') + "</div>" +
-      '<div class="fc-viz-card fc-viz-wide"><h3 class="fc-viz-title">Missed today</h3>' + missedTodayHtml() + "</div>" +
+      (foldReview
+        ? '<div class="fc-viz-card fc-viz-wide"><h3 class="fc-viz-title">Words to review</h3><p class="fc-note">Nothing to review yet — words you miss collect here, and repeat misses become a table to drill and print.</p></div>'
+        : '<div class="fc-viz-card fc-viz-wide"><h3 class="fc-viz-title">Missed today</h3>' + missedTodayHtml() + "</div>") +
       "</div>" +
-      '<div id="fcWordsToReview"></div>';
+      (foldReview ? "" : '<div id="fcWordsToReview"></div>');
     var btn = document.getElementById("fcStudyNow");
     if (btn) btn.addEventListener("click", startSession);
     renderWordsToReview();
@@ -191,9 +198,12 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     if (readyNow > 0) {
       variant = "due";
       title = readyNow + " to study";
-      sub = laterToday > 0
-        ? laterToday + " more due later today"
-        : (nextTs ? "Next review: " + friendlyWhen(now, nextTs) : "");
+      if (laterToday > 0) sub = laterToday + " more due later today";
+      else if (nextTs) sub = "Next review: " + friendlyWhen(now, nextTs);
+      // Fresh deck -- nothing scheduled to return yet. Describe the queue so
+      // the card carries a second line instead of just a bare count.
+      else if (ready.length > 0) sub = ready.length + " due now, " + newInSession + " new";
+      else sub = "All new — nothing reviewed yet";
     } else if (laterToday > 0) {
       variant = "clear";
       title = "All caught up";
@@ -412,7 +422,11 @@ window.RaumeStudy.flashcards.dashboard = (function () {
         '<rect class="' + barCls + '" x="0" y="' + (100 - barH) + '" width="10" height="' + barH + '"></rect></svg>' +
         '<span class="fc-week-label">' + esc(d.label) + "</span></div>";
     }).join("");
-    return '<div class="fc-week-chart" role="img" aria-label="Reviews per day over the last 7 days">' + cols + "</div>";
+    // A week with no reviews at all: say so, so the bare day axis doesn't read
+    // as a broken chart.
+    var noneYet = days.every(function (d) { return !d.count; });
+    return (noneYet ? '<p class="fc-note fc-week-none">No reviews yet this week.</p>' : "") +
+      '<div class="fc-week-chart" role="img" aria-label="Reviews per day over the last 7 days">' + cols + "</div>";
   }
 
   // -----------------------------------------------------------------------

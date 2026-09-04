@@ -741,6 +741,19 @@ async function main() {
       && [...cols].slice(0, 6).every(c => !c.classList.contains("fc-week-col-today"));
   })());
 
+  console.log("Flashcards: Dashboard with cards but no review history");
+  {
+    const dash = document.querySelector("#fcPanelDashboard").textContent;
+    check("a zero-review week says so, not just a bare axis", /No reviews yet this week/.test(dash));
+    check("'Missed today' and 'Words to Review' fold into one line until there's history",
+      !document.getElementById("fcWordsToReview") && !/Missed today/.test(dash)
+      && /Words to review/.test(dash) && /Nothing to review yet/.test(dash));
+    check("the next-review card always carries a second line", (() => {
+      const sub = document.querySelector("#fcPanelDashboard .fc-next-review-sub");
+      return !!sub && sub.textContent.trim().length > 0;
+    })());
+  }
+
   console.log("Flashcards: review session bookends");
   document.getElementById("fcStudyNow").click();
   check("Study now opens a review card", !!document.querySelector(".fc-review-card"));

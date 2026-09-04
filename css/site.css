@@ -1505,6 +1505,7 @@ body.starred-mode .expand-bar { display: none !important; }
    (predictable at any viewport) with only the bar itself as a tiny per-bar
    SVG shape (proportional height, no inline style="" needed for the CSP,
    and nothing inside it to be mis-scaled since it holds no text). */
+.fc-week-none { margin: 0 0 10px; }
 .fc-week-chart { display: flex; align-items: flex-end; gap: 6px; height: 84px; }
 .fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
 .fc-week-count { display: block; min-height: 1.4em; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
@@ -1880,6 +1881,7 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-top-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  align-items: start;
   gap: 12px;
   margin-bottom: 14px;
 }
