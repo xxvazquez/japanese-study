@@ -81,7 +81,10 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     stopDashboardPoll();
     if (session) { renderReview(panel); return; }
     if (stats.total === 0) { renderEmptyDashboard(panel); return; }
-    var retentionText = stats.estimatedRetention == null ? "—" : Math.round(stats.estimatedRetention * 100) + "%";
+    // Before FSRS has enough reviews to forecast, spell it out -- a lone "—"
+    // in a stat tile reads as a broken value.
+    var retentionPending = stats.estimatedRetention == null;
+    var retentionText = retentionPending ? "Not enough reviews yet" : Math.round(stats.estimatedRetention * 100) + "%";
     var settings = getCache().settings;
     var streak = settings.current_streak || 0;
     var now = new Date();
@@ -115,7 +118,7 @@ window.RaumeStudy.flashcards.dashboard = (function () {
       statTile(streak, "Day streak", "streak") +
       statTile(stats.total, "Total cards") +
       statTile(stats.reviewsCompleted, "Reviews completed") +
-      statTile(retentionText, "Estimated retention") +
+      statTile(retentionText, "Estimated retention", null, retentionPending) +
       "</div>" +
       (settings.longest_streak > streak ? '<p class="fc-note fc-longest-streak">Longest streak: ' + settings.longest_streak + " day" + (settings.longest_streak === 1 ? "" : "s") + ".</p>" : "") +
       (stats.estimatedRetention == null ? "" : '<p class="fc-note fc-retention-note">"Estimated retention" is FSRS’s forecasted recall probability across your reviewed cards — not a directly measured pass rate.</p>') +
@@ -133,8 +136,8 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     lastReadyCount = ready.length;
     startDashboardPoll();
   }
-  function statTile(value, label, variant) {
-    var cls = variant ? " fc-stat-" + variant : "";
+  function statTile(value, label, variant, pending) {
+    var cls = (variant ? " fc-stat-" + variant : "") + (pending ? " fc-stat-tile-pending" : "");
     return '<div class="fc-stat-tile' + cls + '"><span class="fc-stat-value">' + esc(value) + '</span><span class="fc-stat-label">' + esc(label) + "</span></div>";
   }
 

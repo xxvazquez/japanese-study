@@ -182,7 +182,8 @@ star and, in Manage rows, the hide icon flow in the same place.) The
   With cards: today's progress, a status line that mirrors the Study now
   button (it always carries a second line — the next review time, or the queue
   make-up on a fresh deck), four stat tiles (streak, total cards, reviews done,
-  and estimated retention once ≥ 5 cards are reviewed), a New → Learning →
+  and estimated retention — "Not enough reviews yet" until ≥ 5 cards are
+  reviewed), a New → Learning →
   Review progress bar, a reviews-this-week chart (a plain "no reviews yet this
   week" line until you've studied), a "missed today" shortlist, and a **Words
   to Review** table for words missed more than once. Until there's any review
@@ -363,8 +364,9 @@ accents) — never on rows or large surfaces. `--section` is switched by
 Motion is light throughout — short opacity/transform transitions, chevron
 rotations, one card wash on a checked answer — and a single
 `@media (prefers-reduced-motion: reduce)` block near-instants all of it. Every
-control takes the same focus ring: a 2px `--section` outline at a 2px offset,
-the search box included.
+control takes the same focus ring (a 2px `--section` outline at a 2px offset,
+the search box included), and the flashcard checkboxes are drawn to match the
+rest — `appearance: none` plus a CSS tick, not the raw OS control.
 
 The palette is deliberately quiet — a light sheet on a grey-blue ground, one
 slate-blue accent, no warm tones. No pink, no gradients, no shadows beyond one
@@ -392,10 +394,10 @@ loosened: a data surface needs to be scannable. Still no gradients or shadows
 and the same cool character, but the card-progress bar uses a three-step slate
 ramp (`--fc-state-new` / `-learning` / `-review`, an ordinal New → Learning →
 Review; steps validated for lightness separation and AA in both themes), the
-stat tiles and reviews-this-week bars pick up the Flashcards section tone with
-today's bar at full strength, the day-streak tile takes `--right`, and the
-"Missed today" list gets a thin `--wrong` left rule. All of it is scoped to
-`.page-flashcards`; the reference side stays monochrome.
+stat tiles (day-streak included) and reviews-this-week bars pick up the
+Flashcards section tone with today's bar at full strength, and the "Missed
+today" list gets a thin `--wrong` left rule — the one warm note on the surface.
+All of it is scoped to `.page-flashcards`; the reference side stays monochrome.
 
 ---
 

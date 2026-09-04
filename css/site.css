@@ -1278,7 +1278,8 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
 
 @media (max-width: 640px) {
   .app-frame { max-width: none; margin: 0; border: 0; border-radius: 0; }
-  .masthead { padding: 11px 16px 9px; }
+  /* A touch more head-room -- the wordmark was sitting right against the top edge. */
+  .masthead { padding: 18px 16px 10px; }
   /* Make room for the help / customize / theme controls on a narrow bar. */
   .masthead-tag { display: none; }
   .masthead-right { gap: 8px; }
@@ -1474,10 +1475,11 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-stat-value { display: block; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
 .fc-stat-label { display: block; margin-top: 3px; color: var(--muted); font-size: var(--fs-small); }
-/* The streak tile is the one "achievement" stat in the row -- rose/red is
-   reserved for mistakes, so it takes the muted green used for a right answer:
-   a positive running count, marked without shouting. */
-.fc-stat-tile.fc-stat-streak::before { background: var(--right); }
+/* "Not enough reviews yet" etc. -- a real sentence, not a headline number. */
+.fc-stat-tile-pending .fc-stat-value { font-size: var(--fs-small); font-weight: 400; color: var(--muted); line-height: 1.35; }
+/* The streak tile reads as an achievement from its label and number -- it
+   doesn't need the only green pip on the page (nothing else echoed it), so it
+   takes the section tone like its three siblings. */
 .fc-longest-streak { margin-top: -10px; margin-bottom: 16px; }
 
 /* Dashboard visualizations -- kept flat/bordered like everything else on the
@@ -1658,7 +1660,7 @@ body.starred-mode .expand-bar { display: none !important; }
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 12px;
 }
 .fc-manage-word .fc-jp { font-size: var(--fs-nav); }
-.fc-manage-word .fc-ro { color: var(--muted); font-style: italic; font-size: var(--fs-nav-sub); }
+.fc-manage-word .fc-ro { color: var(--muted); font-size: var(--fs-nav-sub); }
 .fc-manage-word .fc-en { color: var(--muted); font-size: var(--fs-nav-sub); }
 .fc-manage-word .fc-tag { color: var(--faint); font-size: var(--fs-micro); }
 .fc-manage-row .fc-actions { flex: 0 0 auto; display: flex; gap: 6px; }
@@ -1786,6 +1788,12 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-session-done-streak { margin: 0 0 8px; font-size: var(--fs-small); color: var(--faint); }
 .fc-session-done .fc-cta-row { justify-content: center; margin-top: 18px; }
 
+/* The prompt is the single thing you're being tested on, alone on the card --
+   give it real presence (up from the 19px the size pass lower in this file
+   leaves the generic .fc-prompt at). Placed before the kana -kana / -romaji
+   rules so those, at equal specificity, still win for the Kana drill. */
+.fc-review-card .fc-prompt { font-size: 25px; line-height: 1.3; }
+
 /* Kana tab. The review card reuses every .fc-review-* / .fc-rating-* rule
    above; only the prompt glyph and the group picker need their own styling.
    Scoped to .fc-review-card so they outrank the generic .fc-prompt size in
@@ -1809,7 +1817,6 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-kana-fieldset legend { padding: 0 4px; font: 600 var(--fs-small)/1 var(--font-ui); color: var(--muted); }
 .fc-kana-group { display: flex; align-items: center; gap: 8px; font-size: var(--fs-nav-sub); color: var(--ink); cursor: pointer; }
-.fc-kana-group input { accent-color: var(--section); }
 .fc-kana-group-n { color: var(--faint); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
 .fc-kana-summary { margin: 12px 0 16px; font-size: var(--fs-small); color: var(--muted); }
 
@@ -1887,12 +1894,41 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-settings-help { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; max-width: 56ch; }
 .fc-direction-checks { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 8px 16px; }
 .fc-direction-check { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: var(--fs-small); cursor: pointer; }
-/* Native checkboxes otherwise render in whatever color the browser/platform
-   defaults to (often a blue or, in some environments, an even more
-   off-brand color) -- accent-color is the one CSS property that recolors
-   them without building a custom control from scratch. */
+/* Checkboxes restyled to sit with the rest of the controls -- a bare
+   accent-color left them looking like a raw OS form. appearance:none + a
+   bordered box + a CSS tick (no inline SVG, so it stays within the
+   style-src 'self' CSP); the global :focus-visible outline covers focus. */
+.fc-kana-group input[type="checkbox"],
 .fc-direction-check input[type="checkbox"],
-.fc-settings-field input[type="checkbox"] { accent-color: var(--accent); }
+.fc-settings-field input[type="checkbox"] {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 16px; height: 16px;
+  margin: 0;
+  border: 1px solid var(--line-strong);
+  border-radius: 4px;
+  background: var(--paper);
+  cursor: pointer;
+  position: relative;
+  transition: background .12s ease, border-color .12s ease;
+}
+.fc-kana-group input[type="checkbox"]:checked,
+.fc-direction-check input[type="checkbox"]:checked,
+.fc-settings-field input[type="checkbox"]:checked {
+  background: var(--section);
+  border-color: var(--section);
+}
+.fc-kana-group input[type="checkbox"]:checked::after,
+.fc-direction-check input[type="checkbox"]:checked::after,
+.fc-settings-field input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px; top: 2px;
+  width: 4px; height: 8px;
+  border: solid var(--paper);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
 /* One Save for the whole tab, with an inline acknowledgement. */
 .fc-settings-save { align-items: center; }
 .fc-settings-saved { color: var(--accent-strong); font-size: var(--fs-small); font-weight: 600; }
@@ -2032,7 +2068,7 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-jp-slash { color: var(--faint); padding: 0 2px; }
 /* One supporting line: romaji (muted italic) · English (legible ink). */
 .fc-missed-gloss { flex: 0 1 auto; min-width: 0; font-size: var(--fs-small); line-height: 1.4; }
-.fc-missed-ro { color: var(--muted); font-style: italic; }
+.fc-missed-ro { color: var(--muted); }
 .fc-missed-sep { color: var(--faint); }
 .fc-missed-en { color: var(--ink); }
 /* The one place rose does work here -- the count, and only the count. */

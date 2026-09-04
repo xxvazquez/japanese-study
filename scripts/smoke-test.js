@@ -94,6 +94,17 @@ async function main() {
     const rule = allCssRules.find(r => r.selectorText === ".search-box:focus-within");
     return !!rule && rule.style.outline.includes("2px") && rule.style.boxShadow === "";
   })());
+  check("flashcard checkboxes are restyled (appearance:none), not left as a raw OS control", (() => {
+    const rule = allCssRules.find(r => r.selectorText
+      && /\.fc-kana-group input\[type="checkbox"\]/.test(r.selectorText)
+      && r.style.appearance === "none");
+    const tick = allCssRules.find(r => r.selectorText && /input\[type="checkbox"\]:checked::after/.test(r.selectorText));
+    return !!rule && !!tick;
+  })());
+  check("the review prompt is sized up from the generic .fc-prompt", (() => {
+    const rule = allCssRules.find(r => r.selectorText === ".fc-review-card .fc-prompt");
+    return !!rule && parseInt(rule.style.fontSize, 10) >= 24;
+  })());
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.RaumeStudy.kanaRomaji;
@@ -800,6 +811,12 @@ async function main() {
     check("the next-review card always carries a second line", (() => {
       const sub = document.querySelector("#fcPanelDashboard .fc-next-review-sub");
       return !!sub && sub.textContent.trim().length > 0;
+    })());
+    check("Estimated retention spells out its pending state, not a bare \"—\"", (() => {
+      const tile = [...document.querySelectorAll("#fcPanelDashboard .fc-stat-tile")]
+        .find(t => /Estimated retention/.test(t.querySelector(".fc-stat-label").textContent));
+      const val = tile && tile.querySelector(".fc-stat-value").textContent;
+      return tile && tile.classList.contains("fc-stat-tile-pending") && val !== "—" && /reviews/i.test(val);
     })());
   }
 
