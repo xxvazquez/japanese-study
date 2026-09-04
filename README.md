@@ -169,8 +169,10 @@ star and, in Manage rows, the hide icon flow in the same place.) The
   typed, and the correct answer — so the pass/fail signal isn't carried by the
   colour wash alone and focus never drops to the page body between cards. The
   wrap-up heading takes focus the same way.
-- The four rating buttons are tone-coded — **Again** in the wrong tone, **Good**
-  and **Easy** in the right tone, **Hard** neutral — so the choice is muscle
+- The four rating buttons are tone-coded, all four now distinct — one
+  wrong→right spectrum stepped by intensity rather than four unrelated
+  colours: **Again** in the wrong tone, **Hard** a lighter tint of it; **Good**
+  in the right tone, **Easy** a stronger step of it — so the choice is muscle
   memory, not a read-all-four every card. Each carries its **1–4** key as a
   small chip. After a wrong or blank answer, Good/Easy are dimmed (still one
   click away) so the honest rating reads first.

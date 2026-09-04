@@ -148,6 +148,15 @@ async function main() {
     };
     return !!darkBlock && usesToken(".search-box") && usesToken(".fc-answer-form input") && usesToken(".fc-auth-field input");
   })());
+  check("all four rating buttons are tone-distinct (regression: Good and Easy used to share one color, Hard had none)", (() => {
+    const ratings = ["again", "hard", "good", "easy"];
+    const styleFor = (sel) => { const r = allCssRules.find(x => x.selectorText === sel); return r && r.style; };
+    const nameColors = ratings.map(r => styleFor('.fc-rating-btn[data-rating="' + r + '"] .fc-rating-name')?.color);
+    const borderColors = ratings.map(r => styleFor('.fc-rating-btn[data-rating="' + r + '"]')?.borderColor);
+    const allSet = (arr) => arr.every(Boolean);
+    const allDistinct = (arr) => new Set(arr).size === arr.length;
+    return allSet(nameColors) && allDistinct(nameColors) && allSet(borderColors) && allDistinct(borderColors);
+  })());
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.RaumeStudy.kanaRomaji;
