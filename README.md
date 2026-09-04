@@ -76,7 +76,7 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
 
 ### Customising tables
 
-- **Icons.** Every table header has an icon slot — a dashed square until you
+- **Icons.** Every table header has an icon slot — a faint "+" until you
   set one. The picker has ~165 curated monochrome line icons (a Lucide subset)
   in five groups, plus **Upload image…** for your own (downscaled to 64px,
   stored as a data URL).

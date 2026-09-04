@@ -237,9 +237,11 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
   };
 
   var CHEVRON_ICON = '<svg viewBox="0 0 18 18" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7l4 4 4-4"/></svg>';
-  // Empty icon slot -- a quiet dashed square, "click to choose". Filled slots
-  // render the chosen icon (js/vocab/icons.js) or an uploaded image instead.
-  var EMPTY_ICON = '<svg class="si" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="2.5 3.5" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/></svg>';
+  // Empty icon slot -- a quiet "+", "click to choose". A dashed square here read
+  // as an unchecked checkbox, worst as a column of them on the Customize page.
+  // Filled slots render the chosen icon (js/vocab/icons.js) or an uploaded
+  // image instead.
+  var EMPTY_ICON = '<svg class="si" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5.5v13M5.5 12h13"/></svg>';
   function tableIconValue(id) {
     var tc = window.RaumeStudy.tableCustom;
     return tc ? tc.iconOf(id) : '';

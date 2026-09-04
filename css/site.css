@@ -761,8 +761,9 @@ svg.si { stroke-width: 1.6; }
 }
 .section-icon { display: block; width: 100%; height: 100%; }
 .section-icon-btn:hover { color: var(--section-strong); }
-/* The empty slot is a quiet dashed square -- present but barely there until
-   the header (or the slot) is hovered/focused. */
+/* The empty slot is a quiet "+" -- present but barely there until the header
+   (or the slot) is hovered/focused. (Not a dashed square: that read as an
+   unchecked checkbox, especially stacked down the Customize page.) */
 .section-icon-btn .section-icon-empty { color: var(--line-strong); }
 .section-head:hover .section-icon-btn .section-icon-empty,
 .section-icon-btn:focus-visible .section-icon-empty { color: var(--faint); }

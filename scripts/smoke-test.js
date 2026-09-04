@@ -112,9 +112,14 @@ async function main() {
   check("render() degrades to nothing for an unknown value", ic.render("definitely-not-an-icon") === "");
   check("the icon picker module is available", !!(window.RaumeStudy.iconPicker && window.RaumeStudy.iconPicker.open));
   check("every table header has an icon button", [...document.querySelectorAll("#vocabulary .table-section")].every(s => !!s.querySelector(".section-head > .section-icon-btn[data-icon-for]")));
-  check("an untouched table shows the empty (dashed) slot, not a chosen icon", (() => {
+  check("an untouched table shows the empty '+' slot, not a chosen icon", (() => {
     const slot = document.querySelector(".section-icon-btn .section-icon");
-    return slot.classList.contains("section-icon-empty") && slot.querySelector('svg[stroke-dasharray]');
+    // The empty slot is a plain "+" (two strokes), never a box -- a square
+    // outline here read as an unchecked checkbox.
+    return slot.classList.contains("section-icon-empty")
+      && !!slot.querySelector("svg path")
+      && !slot.querySelector("rect")
+      && !slot.querySelector("[stroke-dasharray]");
   })());
   check("choosing an icon updates the header and directory in place", (() => {
     const btn = document.querySelector('.section-icon-btn[data-icon-for]');
