@@ -745,9 +745,13 @@ async function main() {
   document.getElementById("fcStudyNow").click();
   check("Study now opens a review card", !!document.querySelector(".fc-review-card"));
   check("the review card has an in-session way out", !!document.getElementById("fcEndSession"));
-  document.getElementById("fcAnswerInput").value = "definitely-not-right";
-  document.getElementById("fcAnswerForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
-  check("checking the answer reveals the four rating buttons", document.querySelectorAll(".fc-rating-btn").length === 4);
+  const answerInput = document.getElementById("fcAnswerInput");
+  answerInput.value = "definitely-not-right";
+  answerInput.focus();
+  // Enter from the focused field must check -- it's wired explicitly, not left
+  // to the form's implicit submission (which some browsers won't fire here).
+  document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+  check("pressing Enter in the answer field checks and reveals the four rating buttons", document.querySelectorAll(".fc-rating-btn").length === 4);
   document.querySelector('.fc-rating-btn[data-rating="again"]').click();
   await flush();
   document.getElementById("fcEndSession").click();
@@ -812,8 +816,10 @@ async function main() {
   document.getElementById("fcKanaStart").click();
   check("Study now opens a kana review card", !!document.querySelector("#fcPanelKana .fc-review-card .fc-prompt-kana"));
   const kanaGlyph = document.querySelector("#fcPanelKana .fc-prompt-kana").textContent;
-  document.getElementById("fcKanaInput").value = window.RaumeStudy.kanaRomaji.toRomaji(kanaGlyph);
-  document.getElementById("fcKanaForm").dispatchEvent(new window.Event("submit", { bubbles: true, cancelable: true }));
+  const kanaInput = document.getElementById("fcKanaInput");
+  kanaInput.value = window.RaumeStudy.kanaRomaji.toRomaji(kanaGlyph);
+  kanaInput.focus();
+  document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
   check("a correct reading is marked correct with four FSRS-timed ratings", (() => {
     const p = document.getElementById("fcPanelKana");
     return !!p.querySelector(".fc-result.fc-correct") && p.querySelectorAll(".fc-rating-btn").length === 4

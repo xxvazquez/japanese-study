@@ -143,6 +143,9 @@ where you review, browse, and track a daily streak.
 
 - A session runs card → check → rate. Every rating is saved immediately, so
   **End session** never loses anything.
+- Fully keyboard-driven: type the answer, **Enter** to check (works straight from
+  the answer field), then **1–4** to rate and move on. Space also checks when the
+  field isn't focused.
 - After a wrong or blank answer, Good/Easy are dimmed (still one click away) so
   the honest rating reads first.
 - Romaji checking ignores long vowels — you can't type macrons — so `kōhī`,

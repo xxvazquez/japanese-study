@@ -601,7 +601,11 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     }
     var typing = document.activeElement === document.getElementById("fcAnswerInput");
     if (!session.checked) {
-      if (isSubmitKey && !typing) { event.preventDefault(); submitCheck(); }
+      // Enter always checks -- wired here rather than left to the form's
+      // implicit submission, which some browsers don't fire from a focused
+      // field. Space only checks when the field isn't focused (it's a real
+      // character in answers like "hot water").
+      if (event.key === "Enter" || (event.key === " " && !typing)) { event.preventDefault(); submitCheck(); }
       return;
     }
     var idx = ["1", "2", "3", "4"].indexOf(event.key);

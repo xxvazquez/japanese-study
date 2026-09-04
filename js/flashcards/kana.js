@@ -422,7 +422,10 @@ window.RaumeStudy.flashcards.kana = (function () {
 
     var typing = document.activeElement === document.getElementById("fcKanaInput");
     if (!session.checked) {
-      if (isSubmitKey && !typing) { event.preventDefault(); submitCheck(); }
+      // Enter always checks (not left to the form's implicit submission, which
+      // some browsers don't fire from a focused field); Space only when the
+      // field isn't focused.
+      if (event.key === "Enter" || (event.key === " " && !typing)) { event.preventDefault(); submitCheck(); }
       return;
     }
     var idx = ["1", "2", "3", "4"].indexOf(event.key);
