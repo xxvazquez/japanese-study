@@ -1659,9 +1659,10 @@ body.starred-mode .expand-bar { display: none !important; }
   padding: 0 11px; font-size: var(--fs-body); color: var(--ink); background: var(--surface);
 }
 .fc-answer-form input:focus-visible { border-color: var(--section); }
-/* Answer feedback is a restrained status line, never a filled panel: a thin
-   left rule + a small label. A wrong answer gets the muted red; a right one
-   gets the muted green -- both quiet, neither shouting. */
+/* Answer feedback: a status line, not a filled panel -- a left rule plus the
+   verdict word carrying the study-feedback colour on the text itself, one
+   size up so it's the most legible thing on the card for a beat. The card
+   also washes once in the matching tone (see the flash keyframes below). */
 .fc-result {
   display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
   margin-bottom: 10px; padding-left: 10px;
@@ -1670,10 +1671,27 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-result.fc-correct { border-left-color: var(--right); }
 .fc-result.fc-incorrect { border-left-color: var(--rose); }
-.fc-result-label { font-weight: 600; }
+.fc-result-label { font-weight: 600; font-size: 16px; }
 .fc-result.fc-correct .fc-result-label { color: var(--right-strong); }
 .fc-result.fc-incorrect .fc-result-label { color: var(--rose-dark); }
 .fc-result .fc-your-answer { color: var(--muted); }
+/* One-shot wash of the whole card in the study-feedback tone when a check
+   lands -- held for a beat, then faded out; gone by the time you rate.
+   (--right-soft / --wrong-soft are too near paper in light mode to register,
+   so mix a stronger-but-still-soft tint.) */
+@keyframes fc-flash-right {
+  0%, 22% { background: color-mix(in srgb, var(--right) 18%, var(--paper)); }
+  100% { background: var(--paper); }
+}
+@keyframes fc-flash-wrong {
+  0%, 22% { background: color-mix(in srgb, var(--wrong) 18%, var(--paper)); }
+  100% { background: var(--paper); }
+}
+.fc-review-card:has(.fc-result.fc-correct) { animation: fc-flash-right .9s ease-out; }
+.fc-review-card:has(.fc-result.fc-incorrect) { animation: fc-flash-wrong .9s ease-out; }
+@media (prefers-reduced-motion: reduce) {
+  .fc-review-card:has(.fc-result) { animation: none; }
+}
 
 /* The correct answer sits in its own clean, neutral area beneath the status
    line -- no colour, just a quiet surface panel. */
@@ -2039,7 +2057,6 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-week-count,
 .fc-manage-filters button.active,
 .fc-prompt-label,
-.fc-result-label,
 .fc-answer-reveal-label,
 .fc-answer-reveal .fc-expected,
 .fc-rating-btn .fc-rating-name,

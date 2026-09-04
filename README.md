@@ -151,6 +151,9 @@ star and, in Manage rows, the hide icon flow in the same place.) The
 
 - A session runs card → check → rate. Every rating is saved immediately, so
   **End session** never loses anything.
+- Checking an answer washes the whole card once in the matching tone (green /
+  rose) and shows the verdict a size up — the loop's pass/fail signal, gone by
+  the time you rate. The wash is skipped under `prefers-reduced-motion`.
 - Fully keyboard-driven: type the answer, **Enter** to check (works straight from
   the answer field), then **1–4** to rate and move on. Space also checks when the
   field isn't focused.
