@@ -114,6 +114,13 @@
      palette and one type scale rather than its own. */
   --accent-dark: var(--accent-strong);
   --surface: #f2f5f7;
+  /* Text-field fill + border, and the two structural line weights that want
+     tuning per theme (see the dark block). In light these are the values the
+     inputs / cards / rows already used. */
+  --field-fill: #f2f5f7;
+  --field-line: var(--line-strong);
+  --card-line: var(--line);
+  --row-line: var(--line);
   --band: var(--paper);
   --row-alt: #f2f5f7;
   --classic-band: var(--paper);
@@ -164,9 +171,9 @@
   --ink: #e6eaee;
   --ink-2: #d3dae1;
   --muted: #9aa6b3;
-  --romaji: #99a5b3;
+  --romaji: #9fabb9;
   --faint: #808c9a;
-  --furigana: #9ba8b7;
+  --furigana: #8e9aa9;   /* a clear step below --romaji again -- still AA on --paper */
 
   --page-bg: #191d23;
   --paper: #23282f;
@@ -206,6 +213,17 @@
   --surface: #2a303a;
 
   --shadow-menu: 0 12px 34px rgba(0, 0, 0, .55);
+
+  /* In light --surface (a recessed grey) does for inputs; in dark it lands
+     *lighter* than --paper, so a text field reads as a raised panel. Give
+     fields their own fill + border, per theme: a well below the ground and a
+     border a clear step up from --line. */
+  --field-fill: #131820;
+  --field-line: #4b5563;
+  /* Stacked card outlines read boxy in dark; soften toward --paper. */
+  --card-line: #2b313a;
+  /* Table row rules had nearly vanished; give them a hair more. */
+  --row-line: #3b434e;
 }
 
 /* Which section's tone is live. */
@@ -543,8 +561,8 @@ body {
   max-width: 560px;
   height: 36px;
   padding: 0 11px;
-  background: var(--paper);
-  border: 1px solid var(--line-strong);
+  background: var(--field-fill);
+  border: 1px solid var(--field-line);
   border-radius: 6px;
 }
 /* Same focus ring as every other control (the global :focus-visible rule) --
@@ -808,8 +826,8 @@ svg.si { stroke-width: 1.6; }
 .icon-picker-head { display: flex; gap: 8px; padding: 12px; border-bottom: 1px solid var(--line); }
 .icon-picker-search {
   flex: 1 1 auto; min-width: 0;
-  appearance: none; border: 1px solid var(--line-strong); border-radius: 6px;
-  background: var(--paper); color: var(--ink);
+  appearance: none; border: 1px solid var(--field-line); border-radius: 6px;
+  background: var(--field-fill); color: var(--ink);
   font: 400 var(--fs-small)/1 var(--font-ui); padding: 7px 10px;
 }
 .icon-picker-close {
@@ -907,8 +925,8 @@ body.icon-picker-open { overflow: hidden; }
 .cz-row-original[hidden] { display: none; }
 .cz-row-name {
   appearance: none; width: 100%;
-  border: 1px solid var(--line-strong); border-radius: 6px;
-  background: var(--paper); color: var(--ink);
+  border: 1px solid var(--field-line); border-radius: 6px;
+  background: var(--field-fill); color: var(--ink);
   font: 400 var(--fs-small)/1.2 var(--font-ui); padding: 6px 9px;
 }
 .cz-row-name:focus { outline: 2px solid var(--section); outline-offset: 1px; }
@@ -1085,7 +1103,7 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
      kanji, so a little more room on top keeps the reading clear of the row's
      upper hairline while the bottom stays tight for density. */
   padding: 9px 14px 6px 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--row-line);
   vertical-align: middle;
   font-size: var(--fs-english);
   line-height: 1.4;
@@ -1466,7 +1484,7 @@ body.starred-mode .expand-bar { display: none !important; }
 @media (min-width: 620px) { .fc-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 .fc-stat-tile {
   position: relative;
-  background: var(--paper); border: 1px solid var(--line); border-radius: 8px;
+  background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px;
   padding: 14px 16px 14px 18px;
 }
 .fc-stat-tile::before {
@@ -1494,7 +1512,7 @@ body.starred-mode .expand-bar { display: none !important; }
   align-items: start;
   margin-bottom: 20px;
 }
-.fc-viz-card { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; }
+.fc-viz-card { background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px; padding: 16px 18px; }
 .fc-viz-card.fc-viz-wide { grid-column: 1 / -1; }
 .fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
 @media (max-width: 560px) {
@@ -1692,8 +1710,8 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-prompt .jpword ruby { ruby-position: over; ruby-align: start; }
 .fc-answer-form { display: flex; gap: 8px; margin-bottom: 14px; }
 .fc-answer-form input {
-  flex: 1 1 auto; min-width: 0; height: 36px; border: 1px solid var(--line); border-radius: 7px;
-  padding: 0 11px; font-size: var(--fs-body); color: var(--ink); background: var(--surface);
+  flex: 1 1 auto; min-width: 0; height: 36px; border: 1px solid var(--field-line); border-radius: 7px;
+  padding: 0 11px; font-size: var(--fs-body); color: var(--ink); background: var(--field-fill);
 }
 .fc-answer-form input:focus-visible { border-color: var(--section); }
 /* Answer feedback: a status line, not a filled panel -- a left rule plus the
@@ -1842,7 +1860,7 @@ body.starred-mode .expand-bar { display: none !important; }
   margin-top: 4px;
   max-width: 760px;
 }
-.fc-entry-card { background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius-panel); padding: 20px 22px; }
+.fc-entry-card { background: var(--paper); border: 1px solid var(--card-line); border-radius: var(--radius-panel); padding: 20px 22px; }
 /* "This device only" is the gently preferred path: a soft teal-tinted
    surface. "Sync across devices" stays neutral white. */
 .fc-entry-grid > .fc-entry-card:first-child {
@@ -1859,9 +1877,10 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
 .fc-auth-field label { font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
 .fc-auth-field input {
-  height: 36px; border: 1px solid var(--line); border-radius: 8px; padding: 0 12px;
-  font-size: var(--fs-body); color: var(--ink); background: var(--surface);
+  height: 36px; border: 1px solid var(--field-line); border-radius: 8px; padding: 0 12px;
+  font-size: var(--fs-body); color: var(--ink); background: var(--field-fill);
 }
+.fc-auth-field input:focus-visible { border-color: var(--section); }
 .fc-auth-error { color: var(--danger); font-size: var(--fs-small); margin-bottom: 10px; }
 .fc-auth-switch { margin-top: 12px; font-size: var(--fs-small); color: var(--muted); }
 .fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; padding: 0; cursor: pointer; }
@@ -1875,7 +1894,7 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-sync-chip[hidden] { display: none; }
 
 /* Settings */
-.fc-settings-section { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
+.fc-settings-section { background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
 .fc-settings-section h3 { margin: 0 0 2px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 600; }
 .fc-settings-section p.fc-note { margin: 0 0 14px; }
 .fc-settings-field { padding: 10px 0; border-top: 1px solid var(--line); }
@@ -1886,9 +1905,9 @@ body.starred-mode .expand-bar { display: none !important; }
    as a white box in dark mode); color-scheme keeps the kept native spinner
    legible against that fill on both themes. */
 .fc-settings-field input[type="number"] {
-  width: 80px; height: 30px; border: 1px solid var(--line); border-radius: 6px;
+  width: 80px; height: 30px; border: 1px solid var(--field-line); border-radius: 6px;
   padding: 0 8px; font-size: var(--fs-small);
-  color: var(--ink); background: var(--surface);
+  color: var(--ink); background: var(--field-fill);
 }
 :root[data-theme="dark"] .fc-settings-field input[type="number"] { color-scheme: dark; }
 .fc-settings-help { margin: 6px 0 0; color: var(--muted); font-size: var(--fs-micro); line-height: 1.5; max-width: 56ch; }

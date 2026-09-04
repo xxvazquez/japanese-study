@@ -399,6 +399,15 @@ Flashcards section tone with today's bar at full strength, and the "Missed
 today" list gets a thin `--wrong` left rule — the one warm note on the surface.
 All of it is scoped to `.page-flashcards`; the reference side stays monochrome.
 
+Dark mode isn't just an inverted palette — a few weights are tuned separately
+where the light logic doesn't carry over. Text fields get their own fill
+(`--field-fill`) and border (`--field-line`): a well below the page ground, so
+an input reads as something you type into rather than a raised panel. Stacked
+card outlines soften toward `--paper` (`--card-line`) so a column of them isn't
+boxy, while table row rules gain a little (`--row-line`) so they don't vanish.
+And `--furigana` drops a clear step below `--romaji` again (it collapses to one
+tone otherwise), still clearing AA over `--paper`.
+
 ---
 
 ## PWA and offline

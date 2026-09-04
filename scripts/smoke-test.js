@@ -105,6 +105,18 @@ async function main() {
     const rule = allCssRules.find(r => r.selectorText === ".fc-review-card .fc-prompt");
     return !!rule && parseInt(rule.style.fontSize, 10) >= 24;
   })());
+  check("text fields draw their fill/border from per-theme tokens (dark stops them looking flat)", (() => {
+    // The tokens are redefined under [data-theme="dark"], and the inputs point
+    // at them instead of hard-coded --paper/--surface/--line.
+    const darkBlock = allCssRules.find(r => r.selectorText === ':root[data-theme="dark"]'
+      && r.style.getPropertyValue("--field-fill").trim() !== ""
+      && r.style.getPropertyValue("--card-line").trim() !== "");
+    const usesToken = sel => {
+      const r = allCssRules.find(x => x.selectorText === sel);
+      return r && /var\(--field-fill\)/.test(r.style.background || r.style.cssText);
+    };
+    return !!darkBlock && usesToken(".search-box") && usesToken(".fc-answer-form input") && usesToken(".fc-auth-field input");
+  })());
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.RaumeStudy.kanaRomaji;
