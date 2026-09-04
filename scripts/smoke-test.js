@@ -612,6 +612,10 @@ async function main() {
   check("it lists every one of the 23 tables", czRows.length === 23);
   check("each row has a name field and a reset control", [...czRows].every(r => r.querySelector(".cz-row-name") && r.querySelector(".cz-row-reset")));
   check("each row's icon button reuses the shared picker hook", [...czRows].every(r => r.querySelector('.section-icon-btn[data-icon-for]')));
+  check("the name field is a bounded cluster with the reset button, not stretched the full row width", (() => {
+    const field = czRows[0].querySelector(".cz-row-field");
+    return window.getComputedStyle(field).flexGrow === "0";
+  })());
   const czInput = document.querySelector('#customizePage .cz-row[data-table-id="1"] .cz-row-name');
   check("a table with no custom name shows its original as the placeholder", czInput.placeholder === "Drinks" && czInput.value === "");
   czInput.value = "My Drinks";
@@ -1065,6 +1069,10 @@ async function main() {
     // its fields carry labels but not their own paragraph of grey micro-text
     const kanaField = document.getElementById("fcKanaRetention").closest(".fc-settings-field");
     return kanaField && !kanaField.querySelector(".fc-settings-help");
+  })());
+  check("a settings field's label sits with its control, not flung to the row's opposite edge", (() => {
+    const row = document.getElementById("fcRetention").closest(".fc-settings-field-row");
+    return window.getComputedStyle(row).justifyContent !== "space-between";
   })());
   const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];
   check("all 4 directions are offered as a setting", dirChecks.length === 4);

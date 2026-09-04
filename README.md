@@ -87,7 +87,9 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   **Customize** page: rename any table (blank = keep the shipped name), and use
   ▲▼ to move a table within its
   category or a category within its section. Custom names, icons, and order
-  then show everywhere the table appears, including Flashcards › Manage.
+  then show everywhere the table appears, including Flashcards › Manage. Each
+  row's icon, name field and reset stay one tight cluster — the name field
+  isn't stretched to the page's full width just because the page has room.
 - Customisations save to `localStorage` immediately. Signed in, they also sync
   (a `table_custom` column on `flashcard_settings`). Signing in merges per
   table — the account wins for tables it already has; guest customisations for
@@ -201,7 +203,8 @@ star and, in Manage rows, the hide icon flow in the same place.) The
   the Kana trainer in their own section (which points back to the vocabulary
   descriptions rather than repeating them), all under one **Save settings**
   button. The two trainers' knobs are independent. Values save locally first,
-  then sync.
+  then sync. Each field's label sits right next to its control, not flung to
+  the row's far edge with the helper paragraph starting under the gap.
 - **Help** — pausing, the Manage status icons (○ ● ◷), and the review keyboard
   shortcuts (Space/Enter to check, 1–4 to rate).
 - **Kana** — a separate hiragana/katakana trainer (below).

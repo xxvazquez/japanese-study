@@ -923,7 +923,11 @@ body.icon-picker-open { overflow: hidden; }
 .cz-move-btn[disabled] { opacity: .28; cursor: default; }
 .cz-group-title .cz-move { flex-direction: row; margin-right: 2px; }
 .cz-row-icon { width: 20px; height: 20px; }
-.cz-row-field { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+/* A fixed-ish basis, not flex:1 -- one of ~25 rows, so a name field stretched
+   to fill the whole 720px page read as an oversized box for a short word. A
+   bounded width close to what a name (40 chars, max) actually needs keeps
+   icon / name / reset one tight cluster instead. */
+.cz-row-field { flex: 0 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .cz-row-original { font-size: var(--fs-micro); color: var(--faint); }
 .cz-row-original[hidden] { display: none; }
 .cz-row-name {
@@ -1930,7 +1934,11 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-settings-section p.fc-note { margin: 0 0 14px; }
 .fc-settings-field { padding: 10px 0; border-top: 1px solid var(--line); }
 .fc-settings-field:first-of-type { border-top: 0; }
-.fc-settings-field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+/* Label and control sit together, not flung to opposite edges of the row --
+   the label names the control right next to it, and the helper paragraph
+   (capped at 56ch) reads as continuing that same left-anchored line rather
+   than starting under a wide, mostly-empty gap. */
+.fc-settings-field-row { display: flex; align-items: center; gap: 12px; }
 .fc-settings-field label { color: var(--ink); font: 500 var(--fs-small)/1.3 var(--font-ui); }
 /* Same fill / ink as every other flashcards input (it had none, so it showed
    as a white box in dark mode); color-scheme keeps the kept native spinner
