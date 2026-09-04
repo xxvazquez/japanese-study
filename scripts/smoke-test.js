@@ -786,6 +786,20 @@ async function main() {
   document.getElementById("fcStudyNow").click();
   check("Study now opens a review card", !!document.querySelector(".fc-review-card"));
   check("the review card has an in-session way out", !!document.getElementById("fcEndSession"));
+  check("the panel centres the card vertically during a session (desktop)", (() => {
+    // A stylesheet rule (not layout, which jsdom can't do): on a wide window the
+    // panel holding a review card / wrap-up becomes a centred flex column with a
+    // min-height. Nested in a min-width media query, so walk into those too.
+    const flat = [];
+    const walk = list => { for (const r of list) { flat.push(r); if (r.cssRules) walk(r.cssRules); } };
+    for (const ss of document.styleSheets) { try { walk(ss.cssRules); } catch (e) { /* cross-origin */ } }
+    const rule = flat.find(r => r.selectorText
+      && r.selectorText.includes(":has(> .fc-review-card)")
+      && r.selectorText.includes(".fc-session-done"));
+    return !!rule && rule.style.justifyContent === "center"
+      && /vh|px/.test(rule.style.minHeight)
+      && rule.parentRule && /min-width/.test(rule.parentRule.conditionText || rule.parentRule.media.mediaText);
+  })());
   const answerInput = document.getElementById("fcAnswerInput");
   check("the answer field is named with its prompt for a screen reader", (() => {
     const al = answerInput.getAttribute("aria-label") || "";

@@ -150,7 +150,8 @@ star and, in Manage rows, the hide icon flow in the same place.) The
 ### Reviewing
 
 - A session runs card → check → rate. Every rating is saved immediately, so
-  **End session** never loses anything.
+  **End session** never loses anything. The card and the wrap-up sit centred in
+  the panel while a session is running, rather than at the top of the viewport.
 - Checking an answer washes the whole card once in the matching tone (green /
   rose) and shows the verdict a size up — the loop's pass/fail signal, gone by
   the time you rate. The wash is skipped under `prefers-reduced-motion`.

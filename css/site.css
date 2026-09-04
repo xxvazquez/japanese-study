@@ -1648,8 +1648,21 @@ body.starred-mode .expand-bar { display: none !important; }
 
 /* Review flow */
 .fc-review-card {
-  max-width: 560px; margin: 0 auto; background: var(--paper); border: 1px solid var(--line);
+  width: 100%; max-width: 560px; margin: 0 auto;
+  background: var(--paper); border: 1px solid var(--line);
   border-radius: 8px; padding: 24px 22px;
+}
+/* On a roomy window a session shows just the card (or the wrap-up) stranded at
+   the top of a tall empty panel. Give the panel a min-height and centre its one
+   child. Desktop only -- on a phone the card already fills the screen, and the
+   min-height only engages when the content is shorter than it anyway (a tall
+   checked card just grows the panel as usual). */
+@media (min-width: 700px) {
+  .fc-tabpanel:not([hidden]):has(> .fc-review-card),
+  .fc-tabpanel:not([hidden]):has(> .fc-session-done) {
+    display: flex; flex-direction: column; justify-content: center;
+    min-height: 60vh;
+  }
 }
 .fc-review-meta { display: flex; justify-content: space-between; align-items: baseline; color: var(--faint); font-size: var(--fs-micro); margin-bottom: 16px; }
 .fc-session-exit { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: var(--faint); cursor: pointer; }
