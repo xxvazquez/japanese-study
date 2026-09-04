@@ -160,6 +160,13 @@ async function main() {
   const catHeads = [...document.querySelectorAll('#vocabulary .cat-heading[data-section="vocabulary"]')];
   check("a sub-heading per Vocabulary category (Food & Ingredients / Kitchen & Dining / Numbers & Counting)", catHeads.length === 3);
   check("sub-headings are visible on the Vocabulary page", catHeads.every(h => !h.classList.contains("page-hidden")));
+  check("the reading column, its category rules and the expand bar share one width cap", (() => {
+    const mw = el => window.getComputedStyle(el).maxWidth;
+    const table = mw(document.querySelector("#vocabulary .table-section"));
+    return table && table !== "none"
+      && mw(catHeads[0]) === table
+      && mw(document.querySelector(".page-vocab .expand-bar")) === table;
+  })());
   const tindexMenu = document.getElementById("tindexMenu");
   check("the table-index dropdown menu starts closed", tindexMenu.hidden === true);
   check("its trigger reports collapsed", document.querySelector(".tindex-trigger").getAttribute("aria-expanded") === "false");
@@ -644,6 +651,8 @@ async function main() {
     const o = parseFloat(window.getComputedStyle(fcBtn).opacity);
     return o > 0 && o < 1;
   })());
+  check("row actions flow inline after the meaning text, not pinned to the column edge",
+    window.getComputedStyle(fcBtn).position === "static" && fcBtn.previousElementSibling.classList.contains("star-btn"));
   drinksSectionFc.querySelector(".manage-rows-toggle").click();
   check("Manage rows makes it permanently visible", window.getComputedStyle(fcBtn).opacity === "1");
   check("its data-vocab-id matches the row's", fcBtn.dataset.vocabId === firstRowFc.dataset.vocabId);

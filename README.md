@@ -44,6 +44,11 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
 - **Furigana** sits over the exact kanji it belongs to and is always shown,
   never behind a hover or toggle. It has an 11px floor so it stays legible when
   the Japanese shrinks on narrow screens.
+- **Table width.** The three text columns don't need the full sheet, so the
+  reading column is capped (`--reading-w`) and left-aligned — the category
+  rules, the tables and the Expand-all control all share that right edge
+  instead of a row running out to a field of white. On a narrower viewport the
+  cap is simply never reached; in print it's dropped so sheets fill the page.
 - **Reading layer.** Hover (or tap, then tap away) a kana in a table to see its
   romaji above it. `js/vocab/kana-romaji.js` is a small standalone converter —
   it handles yōon (きゃ→kya), foreign-sound combos (ファ→fa), the long-vowel
@@ -116,11 +121,11 @@ than one per sheet.
 
 Flashcards sit on top of the vocabulary without changing or copying it. Add a
 whole table at once with **Add to flashcards** (it skips rows you've hidden),
-or use the per-row toggle at the right edge of the Meaning column — ghosted at
-rest so a long table doesn't grow a hard column of icons, full strength on row
-hover or keyboard focus, and lit in the section accent once the word is added.
-The **Flashcards** nav page is where you review, browse, and track a daily
-streak.
+or use the per-row toggle that sits just after each meaning — ghosted at rest
+so a long table doesn't grow a hard column of icons, full strength on row hover
+or keyboard focus, and lit in the section accent once the word is added. (The
+star and, in Manage rows, the hide icon flow in the same place.) The
+**Flashcards** nav page is where you review, browse, and track a daily streak.
 
 ### How cards work
 
