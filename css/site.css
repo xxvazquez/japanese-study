@@ -1694,12 +1694,37 @@ body.starred-mode .expand-bar { display: none !important; }
   padding: 8px 4px; text-align: center; cursor: pointer; color: var(--ink);
   transition: border-color .12s ease, background .12s ease;
 }
-.fc-rating-btn .fc-rating-key { display: block; font-size: var(--fs-micro); color: var(--faint); }
+/* The 1-4 keyboard digit as a small outlined chip, not near-invisible micro
+   text -- it's the one genuinely useful hint on the card. */
+.fc-rating-btn .fc-rating-key {
+  display: inline-block; margin-bottom: 3px; min-width: 15px; padding: 0 3px;
+  border: 1px solid var(--line-strong); border-radius: 3px;
+  font: 500 var(--fs-micro)/1.5 var(--font-ui); color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
 .fc-rating-btn .fc-rating-name { display: block; font: 600 var(--fs-small)/1.3 var(--font-ui); margin: 2px 0; }
 .fc-rating-btn .fc-rating-interval { display: block; font-size: var(--fs-micro); color: var(--muted); }
+/* A quiet tone per rating so the choice is muscle memory, not a read-all-four
+   every card: Again in the wrong tone, Good / Easy in the right tone, Hard
+   left neutral. Border + a hair of tinted surface only -- never a filled
+   panel, matching .fc-result / the stat-tile left rule. */
+.fc-rating-btn[data-rating="again"] {
+  border-color: color-mix(in srgb, var(--wrong) 55%, var(--line));
+  background: color-mix(in srgb, var(--wrong-soft) 60%, var(--paper));
+}
+.fc-rating-btn[data-rating="good"],
+.fc-rating-btn[data-rating="easy"] {
+  border-color: color-mix(in srgb, var(--right) 55%, var(--line));
+  background: color-mix(in srgb, var(--right-soft) 60%, var(--paper));
+}
+.fc-rating-btn[data-rating="again"] .fc-rating-name { color: var(--wrong-strong); }
+.fc-rating-btn[data-rating="good"] .fc-rating-name,
+.fc-rating-btn[data-rating="easy"] .fc-rating-name { color: var(--right-strong); }
 .fc-rating-btn:hover:not([disabled]) { border-color: var(--accent); background: var(--accent-soft); }
 .fc-rating-btn[disabled] { opacity: .45; cursor: not-allowed; }
 .fc-rating-btn[data-rating="again"]:hover:not([disabled]) { border-color: var(--wrong); background: var(--wrong-soft); }
+.fc-rating-btn[data-rating="good"]:hover:not([disabled]),
+.fc-rating-btn[data-rating="easy"]:hover:not([disabled]) { border-color: var(--right); background: var(--right-soft); }
 /* Wrong answer: Good / Easy recede (but stay usable -- full opacity on hover). */
 .fc-rating-row-missed .fc-rating-btn[data-rating="good"],
 .fc-rating-row-missed .fc-rating-btn[data-rating="easy"] { opacity: .45; }

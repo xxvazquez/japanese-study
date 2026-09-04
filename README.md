@@ -154,8 +154,11 @@ star and, in Manage rows, the hide icon flow in the same place.) The
 - Fully keyboard-driven: type the answer, **Enter** to check (works straight from
   the answer field), then **1–4** to rate and move on. Space also checks when the
   field isn't focused.
-- After a wrong or blank answer, Good/Easy are dimmed (still one click away) so
-  the honest rating reads first.
+- The four rating buttons are tone-coded — **Again** in the wrong tone, **Good**
+  and **Easy** in the right tone, **Hard** neutral — so the choice is muscle
+  memory, not a read-all-four every card. Each carries its **1–4** key as a
+  small chip. After a wrong or blank answer, Good/Easy are dimmed (still one
+  click away) so the honest rating reads first.
 - Romaji checking ignores long vowels — you can't type macrons — so `kōhī`,
   `koohii`, and `kouhii` all match.
 - Finishing shows a wrap-up (reviewed, correct, streak), with **Keep going** if

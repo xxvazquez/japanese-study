@@ -782,6 +782,14 @@ async function main() {
   // to the form's implicit submission (which some browsers won't fire here).
   document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
   check("pressing Enter in the answer field checks and reveals the four rating buttons", document.querySelectorAll(".fc-rating-btn").length === 4);
+  check("every rating button carries the data-rating the tone-coding CSS keys off", (() => {
+    const got = [...document.querySelectorAll('.fc-rating-btn')].map(b => b.dataset.rating);
+    return JSON.stringify(got) === JSON.stringify(["again", "hard", "good", "easy"]);
+  })());
+  check("the 1-4 key hint is a real chip, not near-invisible micro text", (() => {
+    const k = document.querySelector('.fc-rating-btn .fc-rating-key');
+    return parseFloat(window.getComputedStyle(k).borderTopWidth) > 0;
+  })());
   document.querySelector('.fc-rating-btn[data-rating="again"]').click();
   await flush();
   document.getElementById("fcEndSession").click();
