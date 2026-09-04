@@ -93,7 +93,7 @@ window.RaumeStudy.flashcards.views = (function () {
       '</ul></div>' +
       '<div class="fc-settings-section"><h3>Dashboard</h3>' +
       '<ul class="fc-help-list">' +
-      '<li><span class="fc-legend-term">Today</span> — cards reviewed today against your daily target (New cards per day, under Settings → Daily Session).</li>' +
+      '<li><span class="fc-legend-term">Today</span> — cards reviewed today against your daily target (New cards per day, under Settings → Daily session).</li>' +
       '<li><span class="fc-legend-term">Next review</span> — when the next scheduled card is due, taken straight from the FSRS schedule.</li>' +
       '<li><span class="fc-legend-term">Missed today</span> — words you missed in today\'s reviews, most-missed first. Click one to practice it right away.</li>' +
       '<li><span class="fc-legend-term">Words to Review</span> — words you get wrong repeatedly over time, shown as a normal vocabulary table you can sort and print.</li>' +
@@ -102,7 +102,7 @@ window.RaumeStudy.flashcards.views = (function () {
       '<p class="fc-note">On the vocabulary tables, the <span class="fc-legend-term">Show polite</span> toggle switches verb columns between the plain / dictionary form and the polite <span lang="ja">〜ます</span> form. One form is shown at a time. Words with no distinct polite form are left unchanged.</p>' +
       '</div>' +
       '<div class="fc-settings-section"><h3>Study directions</h3>' +
-      '<p class="fc-note">Settings → Study Directions turns any of the four review directions on or off. Turning one off never deletes its cards or progress — it just leaves that direction out of review until you turn it back on.</p>' +
+      '<p class="fc-note">Settings → Study directions turns any of the four review directions on or off. Turning one off never deletes its cards or progress — it just leaves that direction out of review until you turn it back on.</p>' +
       '</div>' +
       '<div class="fc-settings-section"><h3>Kana trainer</h3>' +
       '<p class="fc-note">The <span class="fc-legend-term">Kana</span> tab is a separate hiragana / katakana reading trainer, not built on the vocabulary. Choose the groups you want — gojūon, dakuten, handakuten, yōon (small-ya combinations), and sokuon (the doubling <span lang="ja">っ</span>, in short example words), per script — plus the directions: <em>kana → romaji</em> (type the reading) and <em>romaji → kana</em> (type the glyph — you\'ll want a kana keyboard). It uses the same review card, keyboard shortcuts, and FSRS scheduling as the vocabulary sessions. Progress is saved on this device.</p>' +
@@ -369,12 +369,12 @@ window.RaumeStudy.flashcards.views = (function () {
     var s = getCache().settings;
     var k = getKanaFsrs();
     panel.innerHTML =
-      '<div class="fc-settings-section"><h3>Study Directions</h3><p class="fc-note">Which of the 4 directions "Study now" pulls cards from — turning one off never deletes its cards or progress, it is just left out of review until you turn it back on.</p>' +
+      '<div class="fc-settings-section"><h3>Study directions</h3><p class="fc-note">Which of the 4 directions "Study now" pulls cards from — turning one off never deletes its cards or progress, it is just left out of review until you turn it back on.</p>' +
       '<div class="fc-direction-checks">' + DIRECTIONS.map(function (d) {
         return '<label class="fc-direction-check"><input type="checkbox" data-direction="' + d + '" class="fc-dir-checkbox" ' + (s.enabled_directions[d] !== false ? "checked" : "") + ">" + esc(DIRECTION_LABEL[d]) + "</label>";
       }).join("") + "</div>" +
       '<div class="fc-auth-error" id="fcDirError" hidden>At least one direction has to stay on.</div></div>' +
-      '<div class="fc-settings-section"><h3>FSRS Scheduling</h3><p class="fc-note">Tunable knobs FSRS-6 itself supports — the trained algorithm and its weights never change.</p>' +
+      '<div class="fc-settings-section"><h3>FSRS scheduling</h3><p class="fc-note">Tunable knobs FSRS-6 itself supports — the trained algorithm and its weights never change.</p>' +
       settingsField("Desired retention (%)", '<input type="number" id="fcRetention" min="70" max="99" value="' + Math.round(s.fsrs_request_retention * 100) + '">',
         "The recall probability FSRS-6 aims for when each card comes due. Higher means shorter, more frequent reviews and stronger recall; lower means longer gaps but more forgetting in between. 90% is FSRS's own recommended default.") +
       settingsField("Maximum interval (days)", '<input type="number" id="fcMaxInterval" min="30" max="36500" value="' + s.fsrs_maximum_interval + '">',
@@ -382,19 +382,15 @@ window.RaumeStudy.flashcards.views = (function () {
       settingsField("Fuzz scheduled intervals", '<input type="checkbox" id="fcFuzz" ' + (s.fsrs_enable_fuzz ? "checked" : "") + ">",
         "Adds a small random wobble to each computed interval, so a batch of cards added on the same day don't all come due on exactly the same day too.") +
       "</div>" +
-      '<div class="fc-settings-section"><h3>Daily Session</h3><p class="fc-note">Not an FSRS setting — just how many brand-new cards a review session introduces per day.</p>' +
+      '<div class="fc-settings-section"><h3>Daily session</h3><p class="fc-note">Not an FSRS setting — just how many brand-new cards a review session introduces per day.</p>' +
       settingsField("New cards per day", '<input type="number" id="fcNewPerDay" min="0" max="200" value="' + s.queue_new_cards_per_day + '">',
         "A cap on how many never-studied cards \"Study now\" introduces in one day, on top of anything already due for review. Doesn't affect scheduling, only pacing.") +
       "</div>" +
-      '<div class="fc-settings-section"><h3>Kana trainer scheduling</h3><p class="fc-note">The same knobs for the Kana tab’s hiragana / katakana cards, kept separate from the vocabulary cards above so the two can differ.</p>' +
-      settingsField("Desired retention (%)", '<input type="number" id="fcKanaRetention" min="70" max="99" value="' + Math.round(k.fsrs_request_retention * 100) + '">',
-        "The recall probability the kana scheduler aims for. 90% is FSRS's default.") +
-      settingsField("Maximum interval (days)", '<input type="number" id="fcKanaMaxInterval" min="30" max="36500" value="' + k.fsrs_maximum_interval + '">',
-        "The longest gap the kana scheduler will ever use. 36500 effectively means no ceiling.") +
-      settingsField("Fuzz scheduled intervals", '<input type="checkbox" id="fcKanaFuzz" ' + (k.fsrs_enable_fuzz ? "checked" : "") + ">",
-        "A small random wobble so kana added on the same day don't all come due together.") +
-      settingsField("New kana per day", '<input type="number" id="fcKanaNewPerDay" min="0" max="200" value="' + k.new_per_day + '">',
-        "How many never-seen kana × direction cards a Kana session introduces per day.") +
+      '<div class="fc-settings-section"><h3>Kana trainer scheduling</h3><p class="fc-note">The same four knobs as the vocabulary blocks above — see there for what each does — kept on their own so the Kana tab can run a different schedule.</p>' +
+      settingsField("Desired retention (%)", '<input type="number" id="fcKanaRetention" min="70" max="99" value="' + Math.round(k.fsrs_request_retention * 100) + '">') +
+      settingsField("Maximum interval (days)", '<input type="number" id="fcKanaMaxInterval" min="30" max="36500" value="' + k.fsrs_maximum_interval + '">') +
+      settingsField("Fuzz scheduled intervals", '<input type="checkbox" id="fcKanaFuzz" ' + (k.fsrs_enable_fuzz ? "checked" : "") + ">") +
+      settingsField("New kana per day", '<input type="number" id="fcKanaNewPerDay" min="0" max="200" value="' + k.new_per_day + '">') +
       "</div>" +
       '<div class="fc-cta-row fc-cta-row-spaced fc-settings-save">' +
       '<button type="button" class="fc-btn fc-btn-primary" id="fcSaveSettings">Save settings</button>' +

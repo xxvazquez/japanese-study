@@ -139,7 +139,7 @@ star and, in Manage rows, the hide icon flow in the same place.) The
 - Each vocab entry becomes up to four cards: **JP→EN, JP→Romaji, Romaji→EN,
   EN→Romaji**. Never Japanese-to-type. Rows whose romaji is still kana get
   JP→EN only.
-- **Study Directions** (in Settings) chooses which of the four a session draws
+- **Study directions** (in Settings) chooses which of the four a session draws
   from. Turning one off just leaves it out of review — it never touches those
   cards or their history.
 - A session is one shuffled pool: every card that's due (plus learning steps
@@ -185,17 +185,19 @@ star and, in Manage rows, the hide icon flow in the same place.) The
   and estimated retention — "Not enough reviews yet" until ≥ 5 cards are
   reviewed), a New → Learning →
   Review progress bar, a reviews-this-week chart (a plain "no reviews yet this
-  week" line until you've studied), a "missed today" shortlist, and a **Words
-  to Review** table for words missed more than once. Until there's any review
+  week" line until you've studied), a "Missed today" shortlist, and a **Words
+  to review** table for words missed more than once. Until there's any review
   history the last two fold into a single "Words to review" line rather than
   two near-empty cards.
 - **Manage** — every table by category, filterable to All / My flashcards /
   Archived. One button per table: **Add table**, then **Pause table** once it's
   fully added. Expand a table to add or pause individual words.
-- **Settings** — Study Directions, the FSRS knobs (retention, max interval,
+- **Settings** — Study directions, the FSRS knobs (retention, max interval,
   fuzz) and new-cards-per-day for the vocabulary cards, then the same four for
-  the Kana trainer in their own section, all under one **Save settings** button.
-  The two trainers' knobs are independent. Values save locally first, then sync.
+  the Kana trainer in their own section (which points back to the vocabulary
+  descriptions rather than repeating them), all under one **Save settings**
+  button. The two trainers' knobs are independent. Values save locally first,
+  then sync.
 - **Help** — pausing, the Manage status icons (○ ● ◷), and the review keyboard
   shortcuts (Space/Enter to check, 1–4 to rate).
 - **Kana** — a separate hiragana/katakana trainer (below).
@@ -360,6 +362,13 @@ interactive elements (nav underline, category rules, active tabs, focus, sort
 accents) — never on rows or large surfaces. `--section` is switched by
 `body[data-active-*]`: `--sec-vocabulary` (blue), `--sec-grammar` (indigo),
 `--sec-travel` (blue-green), `--sec-flashcards` (slate).
+
+One label, one style: a category name reads the same Title-Case-in-the-section-
+tone wherever it appears (a vocab heading, the *Jump to a table* list, Flashcards
+› Manage, the Customize page), and card titles are sentence case throughout
+Settings and Help. Help and Settings are prose, so they're held to a readable
+measure (680px) rather than running the full sheet the way the data-dense
+Dashboard and Manage tabs do.
 
 Motion is light throughout — short opacity/transform transitions, chevron
 rotations, one card wash on a checked answer — and a single

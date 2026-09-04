@@ -448,8 +448,7 @@ body {
 .tindex-cat-name {
   font-size: 11px;
   font-weight: 500;
-  letter-spacing: .05em;
-  text-transform: uppercase;
+  letter-spacing: .01em;
 }
 .tindex-menu a {
   display: flex;
@@ -891,12 +890,15 @@ body.icon-picker-open { overflow: hidden; }
 .cz-tips li { margin: 2px 0; }
 .cz-tips strong { color: var(--ink); font-weight: 600; }
 .cz-group { margin-top: 26px; }
+/* Category label -- one treatment everywhere it appears (vocab headings, the
+   Jump-to-a-table list, Manage): Title Case in the section tone, not an
+   ALL-CAPS eyebrow here and a heading there. */
 .cz-group-title {
   display: flex; align-items: center; gap: 8px;
   margin: 0 0 8px; padding-bottom: 6px;
   border-bottom: 1px solid var(--line);
-  font-size: var(--fs-small); font-weight: 600;
-  text-transform: uppercase; letter-spacing: .05em; color: var(--muted);
+  font-size: var(--fs-small); font-weight: 500;
+  letter-spacing: .01em; color: var(--section);
 }
 .cz-group-count { font-weight: 400; color: var(--faint); }
 .cz-reset-order {
@@ -1474,6 +1476,10 @@ body.starred-mode .expand-bar { display: none !important; }
    all the time was exactly the "why does this look so heavy" problem. */
 .fc-tab.active { color: var(--section-strong); font-weight: 600; border-bottom-color: var(--section); }
 .fc-tabpanel[hidden] { display: none; }
+/* Help and Settings are prose, not a data surface -- hold them to a readable
+   measure (same as the masthead Help page) instead of ~130-char lines across
+   the full sheet. Dashboard and Manage keep the full width. */
+#fcPanelHelp, #fcPanelSettings { max-width: 680px; }
 
 /* Dashboard stat tiles -- same card language as .overview-group, plus a
    left rule in the Flashcards section tone (a colour hint, not a loud fill)

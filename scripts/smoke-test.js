@@ -105,6 +105,13 @@ async function main() {
     const rule = allCssRules.find(r => r.selectorText === ".fc-review-card .fc-prompt");
     return !!rule && parseInt(rule.style.fontSize, 10) >= 24;
   })());
+  check("category labels aren't ALL-CAPS in some places and Title Case in others", (() => {
+    // the two that used to be uppercase eyebrows now match the headings
+    return [".tindex-cat-name", ".cz-group-title"].every(sel => {
+      const r = allCssRules.find(x => x.selectorText === sel);
+      return r && r.style.textTransform !== "uppercase";
+    });
+  })());
   check("text fields draw their fill/border from per-theme tokens (dark stops them looking flat)", (() => {
     // The tokens are redefined under [data-theme="dark"], and the inputs point
     // at them instead of hard-coded --paper/--surface/--line.
@@ -1021,6 +1028,21 @@ async function main() {
 
   console.log("Flashcards: Settings tab");
   document.querySelector('.fc-tab[data-tab="settings"]').click();
+  check("Settings card titles are sentence case, like the Help tab's", (() => {
+    const titles = [...document.querySelectorAll("#fcPanelSettings .fc-settings-section h3")].map(h => h.textContent.trim());
+    // no title has a Title-Cased second word (acronyms like FSRS are fine)
+    return titles.length >= 3 && titles.every(t => !/ [A-Z][a-z]/.test(t));
+  })());
+  check("Help and Settings hold a readable measure, not the full sheet", (() => {
+    const rule = allCssRules.find(r => r.selectorText
+      && /#fcPanelHelp/.test(r.selectorText) && /#fcPanelSettings/.test(r.selectorText));
+    return !!rule && parseInt(rule.style.maxWidth, 10) > 0 && parseInt(rule.style.maxWidth, 10) <= 720;
+  })());
+  check("the Kana scheduling block doesn't repeat the vocab knobs' helper text", (() => {
+    // its fields carry labels but not their own paragraph of grey micro-text
+    const kanaField = document.getElementById("fcKanaRetention").closest(".fc-settings-field");
+    return kanaField && !kanaField.querySelector(".fc-settings-help");
+  })());
   const dirChecks = [...document.querySelectorAll(".fc-dir-checkbox")];
   check("all 4 directions are offered as a setting", dirChecks.length === 4);
   check("all 4 are enabled by default", dirChecks.every(cb => cb.checked));

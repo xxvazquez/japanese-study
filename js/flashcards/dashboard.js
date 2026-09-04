@@ -256,12 +256,12 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     if (!reviewInsights) { host.innerHTML = '<p class="fc-note">Loading…</p>'; return; }
     var rows = reviewInsights.wordsToReview.map(function (m) { return getRawVocabRow(m.vocabId); }).filter(Boolean);
     if (!rows.length || !window.RaumeStudy.vocab.buildVocabSection) {
-      host.innerHTML = '<div class="fc-viz-card"><h3 class="fc-viz-title">Words to Review</h3>' +
+      host.innerHTML = '<div class="fc-viz-card"><h3 class="fc-viz-title">Words to review</h3>' +
         '<p class="fc-note">Nothing stands out yet — words you miss more than once collect here so you can drill and print them.</p></div>';
       return;
     }
     host.innerHTML = window.RaumeStudy.vocab.buildVocabSection({
-      id: "wtr", title: "Words to Review", rows: rows, presort: false,
+      id: "wtr", title: "Words to review", rows: rows, presort: false,
       controls: { print: true }
     });
     window.RaumeStudy.flashcards.refreshRowToggleButtons();
