@@ -372,7 +372,9 @@ Each section carries one muted cool tone, used only on structural and
 interactive elements (nav underline, category rules, active tabs, focus, sort
 accents) — never on rows or large surfaces. `--section` is switched by
 `body[data-active-*]`: `--sec-vocabulary` (blue), `--sec-grammar` (indigo),
-`--sec-travel` (blue-green), `--sec-flashcards` (slate).
+`--sec-travel` (blue-green), `--sec-flashcards` (slate) — spread roughly 30°
+apart around the cool half of the wheel so the four actually read as distinct
+identities moving between sections, not near-duplicates.
 
 One label, one style: a category name reads the same Title-Case-in-the-section-
 tone wherever it appears (a vocab heading, the *Jump to a table* list, Flashcards

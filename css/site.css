@@ -65,11 +65,15 @@
      nav underline, category headings + their rules, active filters/tabs,
      focus, sort + chevron accents -- never a row or a large surface.
      `--section*` is switched by the body[data-active-*] rules below;
-     `--section-ink` (page titles) is derived from it on `body`. */
-  --sec-vocabulary: #4a6788;   --sec-vocabulary-soft: #e4e9f2;   --sec-vocabulary-strong: #3b5470;
-  --sec-grammar:    #5c5c88;   --sec-grammar-soft:    #e8e7f2;   --sec-grammar-strong:    #48486c;
+     `--section-ink` (page titles) is derived from it on `body`. Hues are
+     spread ~30° apart across the cool half of the wheel (blue-green through
+     indigo) -- tight enough together before that Vocabulary and Flashcards
+     were 5° apart and read as one colour; each variant keeps its original
+     saturation/lightness, so contrast against --paper is unaffected. */
+  --sec-vocabulary: #4a7388;   --sec-vocabulary-soft: #e4ecf2;   --sec-vocabulary-strong: #3b5f70;
+  --sec-grammar:    #6b5c88;   --sec-grammar-soft:    #ece7f2;   --sec-grammar-strong:    #54486c;
   --sec-travel:     #47706a;   --sec-travel-soft:     #e2ede9;   --sec-travel-strong:     #385a54;
-  --sec-flashcards: #566173;   --sec-flashcards-soft: #e7eaef;   --sec-flashcards-strong: #444e5d;
+  --sec-flashcards: #565873;   --sec-flashcards-soft: #e7e8ef;   --sec-flashcards-strong: #44475d;
   --section: var(--sec-vocabulary);
   --section-soft: var(--sec-vocabulary-soft);
   --section-strong: var(--sec-vocabulary-strong);
@@ -186,10 +190,10 @@
   --accent-strong: #a8c1db;
   --accent-soft: #2b3542;
 
-  --sec-vocabulary: #86a4c6;   --sec-vocabulary-soft: #29323f;   --sec-vocabulary-strong: #b0c5dd;
-  --sec-grammar:    #a1a1d0;   --sec-grammar-soft:    #322f42;   --sec-grammar-strong:    #c0c0e2;
+  --sec-vocabulary: #86b1c6;   --sec-vocabulary-soft: #29363f;   --sec-vocabulary-strong: #b0cedd;
+  --sec-grammar:    #b1a1d0;   --sec-grammar-soft:    #382f42;   --sec-grammar-strong:    #cbc0e2;
   --sec-travel:     #82b6a9;   --sec-travel-soft:     #24352f;   --sec-travel-strong:     #a6d2c6;
-  --sec-flashcards: #9ba9bd;   --sec-flashcards-soft: #2b313a;   --sec-flashcards-strong: #bac6d6;
+  --sec-flashcards: #9b9fbd;   --sec-flashcards-soft: #2b2d3a;   --sec-flashcards-strong: #babed6;
   --section: var(--sec-vocabulary);
   --section-soft: var(--sec-vocabulary-soft);
   --section-strong: var(--sec-vocabulary-strong);

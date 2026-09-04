@@ -84,6 +84,30 @@ async function main() {
     for (const ss of document.styleSheets) { try { walk(ss.cssRules); } catch (e) { /* cross-origin */ } }
     return flat;
   })();
+  check("the four section accents are spread far enough apart in hue to read as distinct identities, light and dark", (() => {
+    const hexToHue = (hex) => {
+      const h = hex.trim().replace("#", "");
+      const [r, g, b] = [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) / 255);
+      const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+      if (d === 0) return 0;
+      let hue = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      return (hue * 60 + 360) % 360;
+    };
+    const sections = ["vocabulary", "grammar", "travel", "flashcards"];
+    // The regression this guards: Vocabulary and Flashcards once sat 5° apart.
+    const wellSpread = (rule) => {
+      if (!rule) return false;
+      const hues = sections.map(s => hexToHue(rule.style.getPropertyValue("--sec-" + s)));
+      for (let i = 0; i < hues.length; i++) for (let j = i + 1; j < hues.length; j++) {
+        const d = Math.abs(hues[i] - hues[j]);
+        if (Math.min(d, 360 - d) < 20) return false;
+      }
+      return true;
+    };
+    const lightRoot = allCssRules.find(r => r.selectorText === ":root");
+    const darkRoot = allCssRules.find(r => r.selectorText === ':root[data-theme="dark"]');
+    return wellSpread(lightRoot) && wellSpread(darkRoot);
+  })());
   check("a prefers-reduced-motion block neutralises animation + transitions", (() => {
     const media = allCssRules.find(r => r.media && /prefers-reduced-motion:\s*reduce/.test(r.media.mediaText));
     if (!media) return false;
