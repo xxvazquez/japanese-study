@@ -776,12 +776,23 @@ async function main() {
   check("Study now opens a review card", !!document.querySelector(".fc-review-card"));
   check("the review card has an in-session way out", !!document.getElementById("fcEndSession"));
   const answerInput = document.getElementById("fcAnswerInput");
+  check("the answer field is named with its prompt for a screen reader", (() => {
+    const al = answerInput.getAttribute("aria-label") || "";
+    const promptText = (document.querySelector(".fc-prompt") || {}).textContent || "x";
+    return /^(Type the English meaning|Type the romaji reading): /.test(al) && al.indexOf(promptText.trim()) !== -1;
+  })());
   answerInput.value = "definitely-not-right";
   answerInput.focus();
   // Enter from the focused field must check -- it's wired explicitly, not left
   // to the form's implicit submission (which some browsers won't fire here).
   document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
   check("pressing Enter in the answer field checks and reveals the four rating buttons", document.querySelectorAll(".fc-rating-btn").length === 4);
+  check("the checked result is focusable and announces the outcome plus the answer", (() => {
+    const res = document.querySelector(".fc-result");
+    const al = res && res.getAttribute("aria-label") || "";
+    return !!res && res.getAttribute("tabindex") === "-1"
+      && /^(Correct|Not quite)\./.test(al) && /Answer: .+\.$/.test(al);
+  })());
   check("the verdict label is bumped above body size so it reads for a beat", (() => {
     const label = document.querySelector(".fc-result-label");
     return !!label && /^(Correct|Not quite)$/.test(label.textContent)
@@ -800,6 +811,10 @@ async function main() {
   document.getElementById("fcEndSession").click();
   const doneText = (document.querySelector(".fc-session-done") || {}).textContent || "";
   check("ending mid-session shows a wrap-up, not a blank panel", /reviewed/.test(doneText));
+  check("the wrap-up heading takes focus so it isn't lost to the body", (() => {
+    const t = document.querySelector(".fc-session-done-title");
+    return !!t && t.getAttribute("tabindex") === "-1";
+  })());
   check("the wrap-up counts the card just reviewed", /1 reviewed/.test(doneText) && /correct/.test(doneText));
   document.getElementById("fcBackToDashboard").click();
   check("Back to Dashboard leaves the session for the dashboard", !document.querySelector(".fc-session-done") && !!document.querySelector(".fc-stats-grid"));
@@ -860,6 +875,8 @@ async function main() {
   check("Study now opens a kana review card", !!document.querySelector("#fcPanelKana .fc-review-card .fc-prompt-kana"));
   const kanaGlyph = document.querySelector("#fcPanelKana .fc-prompt-kana").textContent;
   const kanaInput = document.getElementById("fcKanaInput");
+  check("the kana answer field is named with its prompt for a screen reader",
+    (kanaInput.getAttribute("aria-label") || "").indexOf(kanaGlyph) !== -1);
   kanaInput.value = window.RaumeStudy.kanaRomaji.toRomaji(kanaGlyph);
   kanaInput.focus();
   document.dispatchEvent(new window.KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
@@ -867,6 +884,10 @@ async function main() {
     const p = document.getElementById("fcPanelKana");
     return !!p.querySelector(".fc-result.fc-correct") && p.querySelectorAll(".fc-rating-btn").length === 4
       && [...p.querySelectorAll(".fc-rating-interval")].every(e => e.textContent.length > 0);
+  })());
+  check("the checked kana result is focusable and announces the outcome", (() => {
+    const res = document.querySelector("#fcPanelKana .fc-result");
+    return !!res && res.getAttribute("tabindex") === "-1" && /^(Correct|Not quite)\./.test(res.getAttribute("aria-label") || "");
   })());
   document.querySelector('#fcPanelKana .fc-rating-btn[data-rating="good"]').click();
   check("rating advances to the next card", /2 \/ /.test(document.querySelector("#fcPanelKana .fc-review-meta span").textContent));

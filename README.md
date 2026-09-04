@@ -157,6 +157,11 @@ star and, in Manage rows, the hide icon flow in the same place.) The
 - Fully keyboard-driven: type the answer, **Enter** to check (works straight from
   the answer field), then **1–4** to rate and move on. Space also checks when the
   field isn't focused.
+- Works with a screen reader: the answer field is named with its prompt, and
+  checking moves focus to the result — which announces the outcome, what you
+  typed, and the correct answer — so the pass/fail signal isn't carried by the
+  colour wash alone and focus never drops to the page body between cards. The
+  wrap-up heading takes focus the same way.
 - The four rating buttons are tone-coded — **Again** in the wrong tone, **Good**
   and **Easy** in the right tone, **Hard** neutral — so the choice is muscle
   memory, not a read-all-four every card. Each carries its **1–4** key as a
@@ -205,6 +210,8 @@ direction is its own FSRS-6 card.
   doesn't count.
 - Both directions are typed and checked the same way, and both count toward the
   wrap-up accuracy. Both are on by default; the picker keeps at least one on.
+- Same review card as the vocab sessions, including the screen-reader behaviour
+  (prompt-named answer field, focus and spoken outcome on check).
 - Scheduling uses its own FSRS knobs (retention, max interval, fuzz, new-per-day)
   set in the Settings tab — separate from the vocabulary cards, so kana can run a
   tighter or looser schedule than words.

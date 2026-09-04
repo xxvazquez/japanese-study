@@ -477,12 +477,12 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     var reviewed = session.reviewedCount;
     var html = '<div class="fc-session-done">';
     if (!reviewed) {
-      html += '<p class="fc-session-done-title">Nothing to review right now</p>';
+      html += '<p class="fc-session-done-title" tabindex="-1">Nothing to review right now</p>';
     } else {
       var correct = session.correctCount || 0;
       var pct = Math.round((correct / reviewed) * 100);
       var streak = getCache().settings.current_streak || 0;
-      html += '<p class="fc-session-done-title">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
+      html += '<p class="fc-session-done-title" tabindex="-1">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
         '<p class="fc-session-done-stats">' + reviewed + " reviewed · " + correct + " correct (" + pct + "%)</p>" +
         (streak ? '<p class="fc-session-done-streak">Day streak: ' + streak + "</p>" : "");
     }
@@ -492,6 +492,10 @@ window.RaumeStudy.flashcards.dashboard = (function () {
       '<button type="button" class="fc-btn' + (moreReady ? "" : " fc-btn-primary") + '" id="fcBackToDashboard">Back to Dashboard</button>' +
       "</div></div>";
     panel.innerHTML = html;
+    // Same innerHTML-drops-focus problem as the review card: move focus to the
+    // wrap-up heading so the outcome is read and a keyboard user stays in the panel.
+    var doneTitle = panel.querySelector(".fc-session-done-title");
+    if (doneTitle) doneTitle.focus();
     document.getElementById("fcBackToDashboard").addEventListener("click", function () { session = null; rerender(); });
     var more = document.getElementById("fcStudyMore");
     if (more) more.addEventListener("click", function () { startSession(); });
@@ -519,7 +523,12 @@ window.RaumeStudy.flashcards.dashboard = (function () {
       "</form>";
 
     if (session.checked) {
-      html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
+      // tabindex so focus can land here after a check -- the panel is rebuilt
+      // by innerHTML every check, which otherwise drops focus to <body> and
+      // leaves a screen-reader user with no word of whether they were right.
+      // The spoken summary (outcome + what you typed + the answer) is set as
+      // aria-label below, once the node exists.
+      html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '" tabindex="-1">' +
         '<span class="fc-result-label">' + (session.correct ? "Correct" : "Not quite") + "</span>" +
         (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
         "</div>" +
@@ -539,7 +548,23 @@ window.RaumeStudy.flashcards.dashboard = (function () {
     var endBtn = document.getElementById("fcEndSession");
     if (endBtn) endBtn.addEventListener("click", endSession);
     var input = document.getElementById("fcAnswerInput");
-    if (input && !session.checked) input.focus();
+    if (input && !session.checked) {
+      // Name the field with the prompt it belongs to, so a screen-reader user
+      // who is dropped onto it between cards knows what they're answering
+      // without leaving the field to hunt for the (visual-only) prompt label.
+      input.setAttribute("aria-label", askLabelFor(card.direction) + ": " + (prompt.text || entry.jpPlain));
+      input.focus();
+    }
+    if (session.checked) {
+      var resultEl = panel.querySelector(".fc-result");
+      if (resultEl) {
+        resultEl.setAttribute("aria-label",
+          (session.correct ? "Correct." : "Not quite.") +
+          (session.correct ? "" : " You typed " + (session.userAnswer && session.userAnswer.trim() ? session.userAnswer : "nothing") + ".") +
+          " Answer: " + expectedDisplayFor(entry, card.direction) + ".");
+        resultEl.focus();
+      }
+    }
     var form = document.getElementById("fcAnswerForm");
     if (form) form.addEventListener("submit", function (event) {
       event.preventDefault();

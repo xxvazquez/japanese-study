@@ -362,7 +362,11 @@ window.RaumeStudy.flashcards.kana = (function () {
       "</form>";
 
     if (session.checked) {
-      html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '">' +
+      // tabindex so focus can land here after a check -- innerHTML rebuilds the
+      // panel every check, otherwise dropping a screen-reader user to <body>
+      // with no word on whether they were right. Spoken summary set as
+      // aria-label below, once the node exists.
+      html += '<div class="fc-result ' + (session.correct ? "fc-correct" : "fc-incorrect") + '" tabindex="-1">' +
         '<span class="fc-result-label">' + (session.correct ? "Correct" : "Not quite") + "</span>" +
         (session.correct ? "" : '<span class="fc-your-answer">You typed: ' + esc(session.userAnswer || "(nothing)") + "</span>") +
         "</div>" +
@@ -379,7 +383,22 @@ window.RaumeStudy.flashcards.kana = (function () {
     var end = document.getElementById("fcKanaEnd");
     if (end) end.addEventListener("click", endSession);
     var input = document.getElementById("fcKanaInput");
-    if (input && !session.checked) input.focus();
+    if (input && !session.checked) {
+      // Name the field with its prompt, so a screen-reader user dropped onto it
+      // between cards knows what to type without hunting for the visual label.
+      input.setAttribute("aria-label", (r2k ? "Type the kana for" : "Type the romaji reading for") + " " + (r2k ? item.romaji : item.kana));
+      input.focus();
+    }
+    if (session.checked) {
+      var resultEl = panel.querySelector(".fc-result");
+      if (resultEl) {
+        resultEl.setAttribute("aria-label",
+          (session.correct ? "Correct." : "Not quite.") +
+          (session.correct ? "" : " You typed " + (session.userAnswer && session.userAnswer.trim() ? session.userAnswer : "nothing") + ".") +
+          " Answer: " + (r2k ? item.kana : item.romaji) + ".");
+        resultEl.focus();
+      }
+    }
     var form = document.getElementById("fcKanaForm");
     if (form) form.addEventListener("submit", function (e) { e.preventDefault(); submitCheck(); });
     panel.querySelectorAll(".fc-rating-btn").forEach(function (btn) {
@@ -391,11 +410,11 @@ window.RaumeStudy.flashcards.kana = (function () {
     var reviewed = session.reviewedCount, correct = session.correctCount;
     var html = '<div class="fc-session-done">';
     if (!reviewed) {
-      html += '<p class="fc-session-done-title">Nothing to review right now</p>';
+      html += '<p class="fc-session-done-title" tabindex="-1">Nothing to review right now</p>';
     } else {
       var stats = reviewed + " reviewed · " + correct + " / " + reviewed +
         " correct (" + Math.round((correct / reviewed) * 100) + "%)";
-      html += '<p class="fc-session-done-title">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
+      html += '<p class="fc-session-done-title" tabindex="-1">' + (session.done ? "Session ended" : "Session complete") + "</p>" +
         '<p class="fc-session-done-stats">' + stats + "</p>";
     }
     var moreReady = buildQueue(new Date()).some(function (u) { return !session.seen[cardKey(u.item, u.dir)]; });
@@ -404,6 +423,10 @@ window.RaumeStudy.flashcards.kana = (function () {
       '<button type="button" class="fc-btn' + (moreReady ? "" : " fc-btn-primary") + '" id="fcKanaBack">Back to groups</button>' +
       "</div></div>";
     panel.innerHTML = html;
+    // Same innerHTML-drops-focus problem as the review card: move focus to the
+    // wrap-up heading so the outcome is read and a keyboard user stays in the panel.
+    var doneTitle = panel.querySelector(".fc-session-done-title");
+    if (doneTitle) doneTitle.focus();
     document.getElementById("fcKanaBack").addEventListener("click", function () { session = null; rerender(); });
     var more = document.getElementById("fcKanaMore");
     if (more) more.addEventListener("click", startSession);
