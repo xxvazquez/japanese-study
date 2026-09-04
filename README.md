@@ -191,7 +191,11 @@ star and, in Manage rows, the hide icon flow in the same place.) The
   two near-empty cards.
 - **Manage** — every table by category, filterable to All / My flashcards /
   Archived. One button per table: **Add table**, then **Pause table** once it's
-  fully added. Expand a table to add or pause individual words.
+  fully added. Expand a table to add or pause individual words. "Add table" is
+  ghosted at rest — it's the common case down a long, mostly-untouched list —
+  while a fully-added table's count picks up the section accent, so the one
+  thing this tab exists to show (what's already in your deck) is what actually
+  catches the eye.
 - **Settings** — Study directions, the FSRS knobs (retention, max interval,
   fuzz) and new-cards-per-day for the vocabulary cards, then the same four for
   the Kana trainer in their own section (which points back to the vocabulary

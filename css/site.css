@@ -1658,8 +1658,27 @@ body.starred-mode .expand-bar { display: none !important; }
   color: var(--ink); font: 400 var(--fs-nav-sub)/1.3 var(--font-ui);
 }
 .fc-manage-table-progress { flex: 0 0 auto; color: var(--muted); font-size: var(--fs-micro); white-space: nowrap; font-variant-numeric: tabular-nums; }
+/* Fully added registers in the section accent -- against a long ladder of
+   otherwise-identical "N / M added" counts, this is the one that should
+   actually catch the eye. */
+.fc-manage-progress-done { color: var(--section-strong); font-weight: 500; }
 .fc-manage-table-actions { grid-area: actions; display: flex; gap: 6px; white-space: nowrap; }
 .fc-btn-tableaction { gap: 6px; }
+/* "Add table" is the common case down a long, mostly-untouched list --
+   ghosted at rest (icon + text, no box) so that ladder recedes and the
+   accented added-count above carries the scan weight instead; Pause /
+   Restore keep the ordinary bordered .fc-btn, being the rarer, more
+   deliberate actions. Full treatment returns on hover/focus. */
+.fc-btn-tableaction[data-table-action="add-table"] {
+  border-color: transparent;
+  background: transparent;
+  color: var(--faint);
+}
+.fc-btn-tableaction[data-table-action="add-table"]:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+}
 .fc-btn-ic { display: none; }
 .fc-btn-ic svg { display: block; }
 /* The actions live in their own grid column and never wrap. When the row is

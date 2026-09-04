@@ -217,11 +217,15 @@ window.RaumeStudy.flashcards.views = (function () {
           var tc = window.RaumeStudy.tableCustom;
           var iconHtml = (tc && tc.iconOf(tableId) && vocabNs.tableIconGlyph)
             ? '<span class="fc-manage-table-icon">' + vocabNs.tableIconGlyph(tableId) + "</span>" : "";
+          // A fully-added table is the one thing this list exists to surface at
+          // a glance -- flagged so the count can pick up the section accent
+          // instead of reading identically to an untouched table's "0 / N".
+          var tableDone = table.ids.length > 0 && addedCount === table.ids.length;
           html += '<div class="fc-manage-table' + (expanded ? "" : " fc-manage-table-collapsed") + '">' +
             '<div class="fc-manage-table-head">' +
             '<button type="button" class="fc-manage-table-toggle" data-table-id="' + tableId + '" aria-expanded="' + expanded + '" aria-label="' + (expanded ? "Collapse" : "Expand") + " " + esc(displayTitle) + '">' + CHEVRON_ICON + "</button>" +
             '<span class="fc-manage-table-label">' + iconHtml + '<span class="fc-manage-table-title">' + esc(displayTitle) + '</span>' +
-            '<span class="fc-manage-table-progress">' + addedCount + " / " + table.ids.length + " added</span></span>";
+            '<span class="fc-manage-table-progress' + (tableDone ? " fc-manage-progress-done" : "") + '">' + addedCount + " / " + table.ids.length + " added</span></span>";
           // Table-level actions per filter. "all" shows only the actions that
           // actually apply -- "Add table" until it's fully added, "Pause table"
           // once something is -- so a fresh deck isn't 23 rows each with a

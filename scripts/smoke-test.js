@@ -797,6 +797,29 @@ async function main() {
     return b && b.querySelector('.fc-btn-tx') && b.querySelector('.fc-btn-ic svg') && b.getAttribute('aria-label') === 'Add table';
   })());
   check("a multi-table category offers 'Add all'", !!document.querySelector('#fcPanelManage [data-cat-action="add-cat"]'));
+
+  // Fully-added vs. untouched should be structurally distinguishable, not just
+  // by colour (jsdom can't resolve the var()-based border anyway -- checked in
+  // the browser instead). Add a whole table, assert the count picks up the
+  // done flag and the button swaps to Pause, then pause it straight back so
+  // the counts the rest of this section expects aren't disturbed.
+  console.log("Manage: a fully-added table's count picks up the accent");
+  const doneTableId = firstManageTable.querySelector(".fc-manage-table-toggle").dataset.tableId;
+  firstManageTable.querySelector('[data-table-action="add-table"]').click();
+  await flush();
+  const doneTable = document.querySelector('.fc-manage-table-toggle[data-table-id="' + doneTableId + '"]').closest(".fc-manage-table");
+  check("its progress count is flagged done once every word in it is added",
+    doneTable.querySelector(".fc-manage-table-progress").classList.contains("fc-manage-progress-done"));
+  check("'Pause table' replaces 'Add table' once a table is fully added",
+    !!doneTable.querySelector('[data-table-action="remove-table"]') && !doneTable.querySelector('[data-table-action="add-table"]'));
+  check("a still-untouched table's count and button are unaffected", (() => {
+    const untouched = [...document.querySelectorAll("#fcPanelManage .fc-manage-table")].find(t => t !== doneTable);
+    return !!untouched && !untouched.querySelector(".fc-manage-table-progress").classList.contains("fc-manage-progress-done")
+      && !!untouched.querySelector('[data-table-action="add-table"]');
+  })());
+  doneTable.querySelector('[data-table-action="remove-table"]').click();
+  await flush();
+
   firstManageTable.querySelector(".fc-manage-table-toggle").click(); // sync render -- re-query fresh, this reference is now stale
   check("clicking the toggle expands just that table", !document.querySelector("#fcPanelManage .fc-manage-table").classList.contains("fc-manage-table-collapsed"));
   const firstAddBtn = document.querySelector('#fcPanelManage [data-action="add"]');
