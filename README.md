@@ -50,7 +50,9 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   mark ー, and the sokuon っ/ッ. The romaji is drawn with CSS `::after`, so it
   never enters the DOM text and search and sort stay clean.
 - **Show polite.** Switches the verb tables between plain/dictionary form and
-  polite 〜ます. It only appears while the Verbs table is expanded.
+  polite 〜ます. It only appears while the Verbs table is expanded — however that
+  table was opened, including landing on it straight from a `#table-N` bookmark or
+  the table directory.
 - **Sorting.** Every column is sortable (↓ A–Z / low→high, ↑ the reverse).
   Tables start sorted A–Z by English.
 

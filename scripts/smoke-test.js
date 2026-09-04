@@ -238,6 +238,10 @@ async function main() {
     const s = document.querySelector('.table-section[data-table="' + advId + '"]');
     return !s.classList.contains("page-hidden") && !s.classList.contains("collapsed") && document.body.dataset.activeSection === "grammar";
   })());
+  const verbsRouteId = [...document.querySelectorAll('.table-section[data-section="grammar"]')].find(s => s.querySelector('.section-title-text').textContent === "Verbs").dataset.table;
+  window.location.hash = "#table-" + verbsRouteId;
+  window.dispatchEvent(new window.Event("popstate"));
+  check("routing straight to the Verbs table reveals \"Show polite\"", document.getElementById("politeToggle").hidden === false);
   window.location.hash = "";
   window.dispatchEvent(new window.Event("popstate"));
   check("an empty hash routes back to Vocabulary", document.body.dataset.activeSection === "vocabulary");

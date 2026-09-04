@@ -227,6 +227,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     if (document.body.dataset.activeSection !== section.dataset.section) showSection(section.dataset.section, { fromRoute: true });
     expandSection(section);
     collapseSiblingSections(section);
+    updatePoliteVisibility(); // opening the Verbs table from a route makes "Show polite" apply
     noteSectionLayout(section.dataset.section);
     section.scrollIntoView({ block: 'start' });
     // Mark this table current in the directory right away -- when it's already
