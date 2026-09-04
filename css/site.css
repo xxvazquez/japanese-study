@@ -1343,14 +1343,15 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
 
 /* Row "add to flashcards" toggle. Unlike the hide button (rare housekeeping,
    stays behind Manage rows) this is the flashcards feature's primary entry
-   point, so it's always reachable: revealed on row hover / keyboard focus on
-   pointer devices, and always shown -- faint until the word is added -- on
-   touch, where there is no hover to reveal it. A little right padding on the
-   column is reserved permanently so the icon never sits on the text. */
+   point, so it's always visible -- ghosted at rest so a long table doesn't
+   grow a hard column of icons, lifting to full strength on row hover /
+   keyboard focus, and lit in the section accent once the word is added. A
+   little right padding on the column is reserved permanently so the icon
+   never sits on the text. */
 .vocab tbody td:last-child { padding-right: 22px; }
 .fc-toggle-btn {
   display: flex;
-  opacity: 0;
+  opacity: .3;
   position: absolute;
   right: 26px;
   top: 50%;

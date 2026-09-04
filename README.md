@@ -116,8 +116,11 @@ than one per sheet.
 
 Flashcards sit on top of the vocabulary without changing or copying it. Add a
 whole table at once with **Add to flashcards** (it skips rows you've hidden),
-or use the toggle at the right edge of any row. The **Flashcards** nav page is
-where you review, browse, and track a daily streak.
+or use the per-row toggle at the right edge of the Meaning column — ghosted at
+rest so a long table doesn't grow a hard column of icons, full strength on row
+hover or keyboard focus, and lit in the section accent once the word is added.
+The **Flashcards** nav page is where you review, browse, and track a daily
+streak.
 
 ### How cards work
 

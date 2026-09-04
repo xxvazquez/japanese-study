@@ -636,10 +636,14 @@ async function main() {
   const fcBtn = firstRowFc.querySelector(".fc-toggle-btn");
   check("the flashcard toggle exists on every row", !!fcBtn);
   // Unlike the eye icon it isn't display:none -- it's laid out on every row
-  // (so touch users and keyboard users can reach it) but transparent until
-  // the row is hovered/focused, so the reading table stays quiet.
+  // (so touch and keyboard users can reach it) and kept faintly visible at
+  // rest so the feature is discoverable, lifting to full strength on
+  // hover/focus so the reading table still stays quiet.
   check("the toggle is present in layout, not display:none", window.getComputedStyle(fcBtn).display !== "none");
-  check("but it's transparent until the row is hovered or focused", window.getComputedStyle(fcBtn).opacity === "0");
+  check("it's ghosted at rest (discoverable, not loud) and lifts on hover/focus", (() => {
+    const o = parseFloat(window.getComputedStyle(fcBtn).opacity);
+    return o > 0 && o < 1;
+  })());
   drinksSectionFc.querySelector(".manage-rows-toggle").click();
   check("Manage rows makes it permanently visible", window.getComputedStyle(fcBtn).opacity === "1");
   check("its data-vocab-id matches the row's", fcBtn.dataset.vocabId === firstRowFc.dataset.vocabId);
