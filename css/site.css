@@ -143,7 +143,7 @@
   /* One type scale for the whole page. Restrained sizes, weight 400 the
      default everywhere, 500 only for a genuinely active/selected state. */
   --fs-body: 14.5px;
-  --fs-page-title: 24px;
+  --fs-page-title: 22px; /* the one page title in the app -- Flashcards; the reference side has none by design */
   --fs-section-title: 19px;
   --fs-nav: 14px;
   --fs-nav-sub: 13px;
@@ -153,6 +153,7 @@
   --fs-english: 13.5px;
   --fs-small: 13px;
   --fs-micro: 11.5px;
+  --fs-subhead: 15px; /* card / section sub-headings inside Flashcards */
 
   /* One sans family everywhere -- wordmark, titles, navigation, tables,
      controls. No serif. Japanese keeps its own CJK stack (td.jp / .furigana). */
@@ -1371,7 +1372,7 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   body.print-only .table-section.print-target .sort-button { display: none !important; }
 }
 
-/* --- Flashcards page title (matches .page-title) -------------- */
+/* --- Flashcards page title ------------------------------------- */
 .page-flashcards h2 {
   margin: 0 0 4px;
   font-size: var(--fs-page-title);
@@ -1463,18 +1464,19 @@ body.starred-mode .expand-bar { display: none !important; }
 
 .fc-lede { margin: 0 0 20px; color: var(--muted); font-size: var(--fs-nav-sub); line-height: 1.5; max-width: 60ch; }
 
-.fc-tabs { display: flex; gap: 20px; margin-bottom: 22px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.fc-tabs { display: flex; gap: 16px; margin-bottom: 18px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .fc-tab {
   appearance: none; border: 0; background: transparent;
-  padding: 8px 2px;
-  color: var(--muted); font: 500 var(--fs-nav-sub)/1.3 var(--font-ui);
+  padding: 7px 2px;
+  color: var(--muted); font: 400 var(--fs-nav-sub)/1.3 var(--font-ui);
   cursor: pointer; border-bottom: 2px solid transparent;
 }
 .fc-tab:hover { color: var(--ink); }
-/* Bold marks *which one is selected* -- same convention as the header's own
-   All/Japanese/Romaji/English control (.view-mode). Every tab being bold
-   all the time was exactly the "why does this look so heavy" problem. */
-.fc-tab.active { color: var(--section-strong); font-weight: 600; border-bottom-color: var(--section); }
+/* Which tab is selected reads from colour + the underline, the same
+   convention .view-mode's active state uses (fill/colour, not weight) --
+   not from bold, which every tab being bold all the time made "why does
+   this look so heavy". */
+.fc-tab.active { color: var(--section-strong); font-weight: 500; border-bottom-color: var(--section); }
 .fc-tabpanel[hidden] { display: none; }
 /* Help and Settings are prose, not a data surface -- hold them to a readable
    measure (same as the masthead Help page) instead of ~130-char lines across
@@ -1491,14 +1493,14 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-stat-tile {
   position: relative;
   background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px;
-  padding: 14px 16px 14px 18px;
+  padding: 12px 14px 12px 16px;
 }
 .fc-stat-tile::before {
   content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px;
   background: var(--section);
 }
-.fc-stat-value { display: block; font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1.2; }
-.fc-stat-label { display: block; margin-top: 3px; color: var(--muted); font-size: var(--fs-small); }
+.fc-stat-value { display: block; font-size: var(--fs-section-title); font-weight: 500; color: var(--ink); line-height: 1.2; }
+.fc-stat-label { display: block; margin-top: 3px; color: var(--muted); font-size: var(--fs-micro); }
 /* "Not enough reviews yet" etc. -- a real sentence, not a headline number. */
 .fc-stat-tile-pending .fc-stat-value { font-size: var(--fs-small); font-weight: 400; color: var(--muted); line-height: 1.35; }
 /* The streak tile reads as an achievement from its label and number -- it
@@ -1520,7 +1522,7 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-viz-card { background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px; padding: 16px 18px; }
 .fc-viz-card.fc-viz-wide { grid-column: 1 / -1; }
-.fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
+.fc-viz-title { margin: 0 0 14px; color: var(--ink); font-size: var(--fs-subhead); font-weight: 500; }
 @media (max-width: 560px) {
   .fc-viz-grid { grid-template-columns: 1fr; }
 }
@@ -1545,7 +1547,7 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-week-none { margin: 0 0 10px; }
 .fc-week-chart { display: flex; align-items: flex-end; gap: 6px; height: 84px; }
 .fc-week-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; height: 100%; }
-.fc-week-count { display: block; min-height: 1.4em; font: 600 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
+.fc-week-count { display: block; min-height: 1.4em; font: 500 var(--fs-micro)/1.4 var(--font-ui); color: var(--ink); }
 .fc-week-barsvg { display: block; width: 100%; flex: 1 1 auto; min-height: 0; }
 /* Past days in a muted tint of the Flashcards section tone; today at full
    strength so the current day reads first. A no-review day stays a flat
@@ -1568,9 +1570,9 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-retention-note { margin: 2px 0 16px; max-width: none; }
 .fc-btn {
   appearance: none; border: 1px solid var(--line); background: var(--paper); color: var(--muted);
-  font: 600 var(--fs-small)/1 var(--font-ui);
+  font: 400 var(--fs-small)/1 var(--font-ui);
   display: inline-flex; align-items: center; justify-content: center;
-  min-height: 30px; padding: 5px 13px; border-radius: var(--radius-control); cursor: pointer; white-space: nowrap;
+  min-height: 28px; padding: 5px 12px; border-radius: var(--radius-control); cursor: pointer; white-space: nowrap;
 }
 .fc-btn:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
 .fc-btn[disabled] { opacity: .5; cursor: not-allowed; }
@@ -1591,7 +1593,7 @@ body.starred-mode .expand-bar { display: none !important; }
   font: 400 var(--fs-small)/1 var(--font-ui); padding: 5px 10px; border-radius: 6px; cursor: pointer;
 }
 .fc-manage-filters button:hover { color: var(--accent-dark); }
-.fc-manage-filters button.active { background: var(--section-soft); color: var(--section-strong); font-weight: 600; }
+.fc-manage-filters button.active { background: var(--section-soft); color: var(--section-strong); font-weight: 500; }
 /* Category group -- a chapter line, not a card. Matches the vocabulary
    pages' .cat-heading: the name in the section colour over a thin rule the
    same colour, count aligned right, a small disclosure caret at the end. */
@@ -1607,7 +1609,7 @@ body.starred-mode .expand-bar { display: none !important; }
   border-bottom: 1px solid color-mix(in srgb, var(--section) 55%, var(--line-strong));
 }
 .fc-manage-group-title::-webkit-details-marker { display: none; }
-.fc-manage-group-title .cat-name { font-size: 15px; font-weight: 500; color: var(--section); letter-spacing: .005em; }
+.fc-manage-group-title .cat-name { font-size: var(--fs-subhead); font-weight: 500; color: var(--section); letter-spacing: .005em; }
 /* name · count · caret read as one cluster on the left, not name on one edge
    and count+caret flung to the other. */
 .fc-manage-group-title .cat-count { align-self: center; color: var(--faint); font-size: 11.5px; font-weight: 400; }
@@ -1711,8 +1713,8 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-review-meta { display: flex; justify-content: space-between; align-items: baseline; color: var(--faint); font-size: var(--fs-micro); margin-bottom: 16px; }
 .fc-session-exit { appearance: none; border: 0; background: transparent; padding: 0; font: inherit; color: var(--faint); cursor: pointer; }
 .fc-session-exit:hover { color: var(--wrong); text-decoration: underline; }
-.fc-prompt-label { color: var(--muted); font-size: var(--fs-micro); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
-.fc-prompt { font-size: 21px; line-height: 1.4; margin-bottom: 18px; color: var(--ink); }
+.fc-prompt-label { color: var(--muted); font-size: var(--fs-micro); font-weight: 500; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 10px; }
+.fc-prompt { font-size: 19px; line-height: 1.4; margin-bottom: 18px; color: var(--ink); }
 .fc-prompt .jpword ruby { ruby-position: over; ruby-align: start; }
 .fc-answer-form { display: flex; gap: 8px; margin-bottom: 14px; }
 .fc-answer-form input {
@@ -1732,6 +1734,10 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-result.fc-correct { border-left-color: var(--right); }
 .fc-result.fc-incorrect { border-left-color: var(--rose); }
+/* The one deliberate exception to "never 600/700" elsewhere in Flashcards --
+   the pass/fail verdict is the single most important word in the review
+   loop and gets a beat of real weight, same allowance as --wrong/--right
+   being the only saturated colours on the reference side. */
 .fc-result-label { font-weight: 600; font-size: 16px; }
 .fc-result.fc-correct .fc-result-label { color: var(--right-strong); }
 .fc-result.fc-incorrect .fc-result-label { color: var(--rose-dark); }
@@ -1760,10 +1766,10 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-answer-reveal-label {
   flex: 0 0 auto;
-  font-size: var(--fs-micro); font-weight: 600;
+  font-size: var(--fs-micro); font-weight: 500;
   text-transform: uppercase; letter-spacing: .04em; color: var(--faint);
 }
-.fc-answer-reveal .fc-expected { color: var(--ink); font-weight: 600; font-size: var(--fs-nav-sub); }
+.fc-answer-reveal .fc-expected { color: var(--ink); font-weight: 500; font-size: var(--fs-nav-sub); }
 .fc-rating-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
 .fc-rating-btn {
   appearance: none; border: 1px solid var(--line); background: var(--paper); border-radius: 7px;
@@ -1778,7 +1784,7 @@ body.starred-mode .expand-bar { display: none !important; }
   font: 500 var(--fs-micro)/1.5 var(--font-ui); color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
-.fc-rating-btn .fc-rating-name { display: block; font: 600 var(--fs-small)/1.3 var(--font-ui); margin: 2px 0; }
+.fc-rating-btn .fc-rating-name { display: block; font: 500 var(--fs-small)/1.3 var(--font-ui); margin: 2px 0; }
 .fc-rating-btn .fc-rating-interval { display: block; font-size: var(--fs-micro); color: var(--muted); }
 /* A quiet tone per rating so the choice is muscle memory, not a read-all-four
    every card: Again in the wrong tone, Good / Easy in the right tone, Hard
@@ -1807,7 +1813,7 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-rating-row-missed .fc-rating-btn[data-rating="good"]:hover,
 .fc-rating-row-missed .fc-rating-btn[data-rating="easy"]:hover { opacity: 1; }
 .fc-session-done { text-align: center; padding: 40px 16px; color: var(--muted); }
-.fc-session-done-title { margin: 0 0 8px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 600; }
+.fc-session-done-title { margin: 0 0 8px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 500; }
 .fc-session-done-stats { margin: 0 0 4px; font-size: var(--fs-nav-sub); color: var(--muted); }
 .fc-session-done-streak { margin: 0 0 8px; font-size: var(--fs-small); color: var(--faint); }
 .fc-session-done .fc-cta-row { justify-content: center; margin-top: 18px; }
@@ -1839,7 +1845,7 @@ body.starred-mode .expand-bar { display: none !important; }
   border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 12px;
   display: flex; flex-direction: column; gap: 8px; min-width: 180px;
 }
-.fc-kana-fieldset legend { padding: 0 4px; font: 600 var(--fs-small)/1 var(--font-ui); color: var(--muted); }
+.fc-kana-fieldset legend { padding: 0 4px; font: 500 var(--fs-small)/1 var(--font-ui); color: var(--muted); }
 .fc-kana-group { display: flex; align-items: center; gap: 8px; font-size: var(--fs-nav-sub); color: var(--ink); cursor: pointer; }
 .fc-kana-group-n { color: var(--faint); font-variant-numeric: tabular-nums; font-size: var(--fs-micro); }
 .fc-kana-summary { margin: 12px 0 16px; font-size: var(--fs-small); color: var(--muted); }
@@ -1847,7 +1853,7 @@ body.starred-mode .expand-bar { display: none !important; }
 /* Dashboard before anything is added -- a single next step, not a wall of
    zeroes. */
 .fc-dash-empty { text-align: center; padding: 32px 16px 20px; }
-.fc-dash-empty h3 { margin: 0 0 10px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 600; }
+.fc-dash-empty h3 { margin: 0 0 10px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 500; }
 .fc-dash-empty p { margin: 0 auto 20px; max-width: 46ch; color: var(--muted); font-size: var(--fs-nav-sub); line-height: 1.55; }
 .fc-dash-empty .fc-cta-row { justify-content: center; }
 
@@ -1873,7 +1879,7 @@ body.starred-mode .expand-bar { display: none !important; }
   background: var(--accent-soft);
   border-color: var(--line-strong);
 }
-.fc-entry-card h3 { margin: 0 0 6px; color: var(--ink); font-size: var(--fs-section-title); font-weight: 600; }
+.fc-entry-card h3 { margin: 0 0 6px; color: var(--ink); font-size: var(--fs-subhead); font-weight: 500; }
 .fc-entry-card .fc-note { margin: 0 0 16px; font-size: var(--fs-nav-sub); color: var(--muted); }
 .fc-entry-card .fc-btn { width: 100%; min-height: 34px; padding: 7px 18px; font-size: var(--fs-small); }
 .fc-entry-card .fc-auth { max-width: none; margin: 0; }
@@ -1881,7 +1887,7 @@ body.starred-mode .expand-bar { display: none !important; }
 /* Sign-in gate */
 .fc-auth { max-width: 380px; margin: 40px auto 0; }
 .fc-auth-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-.fc-auth-field label { font-size: var(--fs-small); font-weight: 600; color: var(--muted); }
+.fc-auth-field label { font-size: var(--fs-small); font-weight: 500; color: var(--muted); }
 .fc-auth-field input {
   height: 36px; border: 1px solid var(--field-line); border-radius: 8px; padding: 0 12px;
   font-size: var(--fs-body); color: var(--ink); background: var(--field-fill);
@@ -1889,9 +1895,9 @@ body.starred-mode .expand-bar { display: none !important; }
 .fc-auth-field input:focus-visible { border-color: var(--section); }
 .fc-auth-error { color: var(--danger); font-size: var(--fs-small); margin-bottom: 10px; }
 .fc-auth-switch { margin-top: 12px; font-size: var(--fs-small); color: var(--muted); }
-.fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; padding: 0; cursor: pointer; }
+.fc-auth-switch button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 500; padding: 0; cursor: pointer; }
 .fc-signed-in-as { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; color: var(--muted); font-size: var(--fs-small); }
-.fc-signed-in-as button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 600; padding: 0; cursor: pointer; }
+.fc-signed-in-as button { appearance: none; border: 0; background: transparent; color: var(--accent-dark); font: inherit; font-weight: 500; padding: 0; cursor: pointer; }
 .fc-sync-chip {
   display: inline-block; margin: -6px 0 18px; padding: 3px 10px;
   border: 1px solid var(--line); border-radius: 999px;
@@ -1901,12 +1907,12 @@ body.starred-mode .expand-bar { display: none !important; }
 
 /* Settings */
 .fc-settings-section { background: var(--paper); border: 1px solid var(--card-line); border-radius: 8px; padding: 16px 18px; margin-bottom: 16px; }
-.fc-settings-section h3 { margin: 0 0 2px; font-size: var(--fs-section-title); color: var(--ink); font-weight: 600; }
+.fc-settings-section h3 { margin: 0 0 2px; font-size: var(--fs-subhead); color: var(--ink); font-weight: 500; }
 .fc-settings-section p.fc-note { margin: 0 0 14px; }
 .fc-settings-field { padding: 10px 0; border-top: 1px solid var(--line); }
 .fc-settings-field:first-of-type { border-top: 0; }
 .fc-settings-field-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.fc-settings-field label { color: var(--ink); font: 600 var(--fs-small)/1.3 var(--font-ui); }
+.fc-settings-field label { color: var(--ink); font: 500 var(--fs-small)/1.3 var(--font-ui); }
 /* Same fill / ink as every other flashcards input (it had none, so it showed
    as a white box in dark mode); color-scheme keeps the kept native spinner
    legible against that fill on both themes. */
@@ -1956,7 +1962,7 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 /* One Save for the whole tab, with an inline acknowledgement. */
 .fc-settings-save { align-items: center; }
-.fc-settings-saved { color: var(--accent-strong); font-size: var(--fs-small); font-weight: 600; }
+.fc-settings-saved { color: var(--accent-strong); font-size: var(--fs-small); font-weight: 500; }
 
 /* ---------------------------------------------------------------------
    Flashcards additions: Help tab, Manage status dots, and the Dashboard's
@@ -1982,7 +1988,6 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-help-list.fc-help-status li::before { display: none; }
 .fc-help-list.fc-help-status li { padding-left: 0; display: flex; align-items: center; gap: 10px; }
-.fc-legend-term { color: var(--accent-dark); }
 .fc-help-list kbd {
   display: inline-block;
   min-width: 1.4em;
@@ -1992,7 +1997,7 @@ body.starred-mode .expand-bar { display: none !important; }
   border-radius: 5px;
   background: var(--paper);
   color: var(--ink);
-  font: 600 var(--fs-micro)/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font: 500 var(--fs-micro)/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   text-align: center;
 }
 
@@ -2012,7 +2017,7 @@ body.starred-mode .expand-bar { display: none !important; }
    actionable study state, not an error (rose is reserved for real mistakes). */
 .fc-status-none { color: var(--faint); }
 .fc-status-active { color: var(--accent); }
-.fc-status-due { color: var(--accent-dark); font-weight: 600; }
+.fc-status-due { color: var(--accent-dark); font-weight: 500; }
 .fc-status-archived { color: var(--faint); }
 
 /* Top row: Next review + Today's progress, side by side on wide screens and
@@ -2030,9 +2035,9 @@ body.starred-mode .expand-bar { display: none !important; }
   padding: 13px 16px;
 }
 .fc-today-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 9px; }
-.fc-today-label { color: var(--ink); font-weight: 700; font-size: var(--fs-nav-sub); }
+.fc-today-label { color: var(--ink); font-weight: 500; font-size: var(--fs-nav-sub); }
 .fc-today-count { color: var(--muted); font-size: var(--fs-small); }
-.fc-today-pct { margin-left: auto; color: var(--ink); font-weight: 700; font-size: var(--fs-small); }
+.fc-today-pct { margin-left: auto; color: var(--ink); font-weight: 500; font-size: var(--fs-small); }
 .fc-progress { border-radius: 999px; overflow: hidden; background: var(--surface); }
 .fc-progress-svg { display: block; width: 100%; height: 6px; }
 .fc-progress-track { fill: var(--surface); }
@@ -2051,7 +2056,7 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-next-review-due { border-left-color: var(--accent); background: var(--accent-soft); }
 .fc-next-review-clear { border-left-color: var(--line-strong); background: var(--surface); }
-.fc-next-review-title { font-weight: 700; font-size: var(--fs-nav-sub); }
+.fc-next-review-title { font-weight: 500; font-size: var(--fs-nav-sub); }
 .fc-next-review-due .fc-next-review-title { color: var(--accent-dark); }
 .fc-next-review-clear .fc-next-review-title { color: var(--ink); }
 .fc-next-review-sub { color: var(--muted); font-size: var(--fs-small); }
@@ -2132,7 +2137,7 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 #fcWordsToReview .section-head::before { display: none; }
 #fcWordsToReview .section-title-icon { display: none; }
-#fcWordsToReview .section-title-text { font-size: var(--fs-section-title); font-weight: 600; }
+#fcWordsToReview .section-title-text { font-size: var(--fs-subhead); font-weight: 500; }
 #fcWordsToReview .section-toggle-icon { width: 20px; height: 20px; }
 
 /* Printing the Words to Review table from the Dashboard: strip the Flashcards
@@ -2147,52 +2152,3 @@ body.starred-mode .expand-bar { display: none !important; }
   body.print-only #fcWordsToReview > *:not(.print-target) { display: none !important; }
   body.print-only #fcWordsToReview { margin: 0 !important; }
 }
-
-/* ---------------------------------------------------------------------
-   Redesign type pass: hold the Flashcards feature to the same quiet
-   scale as the reference -- weight 400 the default, 500 only for a
-   genuinely active/selected state, never 600/700. These repeat the
-   selectors above at equal specificity so the later rule wins.
-   --------------------------------------------------------------------- */
-.fc-tab { font-weight: 400; }
-.fc-tab.active,
-.fc-stat-value,
-.fc-viz-title,
-.fc-week-count,
-.fc-manage-filters button.active,
-.fc-prompt-label,
-.fc-answer-reveal-label,
-.fc-answer-reveal .fc-expected,
-.fc-rating-btn .fc-rating-name,
-.fc-entry-card h3,
-.fc-auth-field label,
-.fc-auth-switch button,
-.fc-signed-in-as button,
-.fc-settings-section h3,
-.fc-settings-field label,
-.fc-help-list kbd,
-.fc-status-due,
-.fc-today-label,
-.fc-today-pct,
-.fc-next-review-title { font-weight: 500; }
-.fc-btn { font-weight: 400; }
-#fcWordsToReview .section-title-text { font-weight: 400; font-size: 16px; }
-
-/* Redesign size pass for Flashcards: trim the oversized headings, tabs,
-   tiles and buttons so the feature sits on the same restrained scale as
-   the reference. Functionality and layout are untouched. */
-.page-flashcards h2 { font-size: 22px; }
-.fc-lede { font-size: 13px; }
-.fc-tab { font-size: 13px; padding: 7px 2px; }
-.fc-stat-value { font-size: 19px; }
-.fc-stat-label { font-size: 12px; }
-.fc-viz-title { font-size: 15px; }
-.fc-entry-card h3,
-.fc-settings-section h3 { font-size: 15px; }
-.fc-today-label,
-.fc-next-review-title { font-size: 13px; }
-.fc-prompt { font-size: 19px; }
-.fc-btn { font-size: 12.5px; min-height: 28px; padding: 5px 12px; }
-.fc-tabs { gap: 16px; margin-bottom: 18px; }
-.fc-stat-tile { padding: 12px 14px 12px 16px; }
-.fc-signed-in-as, .fc-sync-chip { font-size: 12.5px; }

@@ -355,7 +355,11 @@ The wordmark **raume** sits at the left of the header, opposite a small
 [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), the one place
 a second typeface is used; everything else is [Inter](https://rsms.me/inter/).
 Both are self-hosted (SIL OFL), no external font runtime. Hierarchy comes from
-size, spacing, position, and colour — not bold weight or high contrast.
+size, spacing, position, and colour — not bold weight or high contrast, on the
+Flashcards side too (weight 400 by default, 500 for a genuinely active or
+labelled state, one type scale shared with the reference side via the same
+`--fs-*` tokens). The single exception is the review card's pass/fail verdict,
+which gets a beat of real weight — see Reviewing above.
 
 Each section carries one muted cool tone, used only on structural and
 interactive elements (nav underline, category rules, active tabs, focus, sort
