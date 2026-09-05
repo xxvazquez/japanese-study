@@ -210,8 +210,8 @@ the word is added. (The star and hide-row icons share that same cluster.) The
   button. The two trainers' knobs are independent. Values save locally first,
   then sync. Each field's label sits right next to its control, not flung to
   the row's far edge with the helper paragraph starting under the gap.
-- **Help** — pausing, the Manage status icons (○ ● ◷), and the review keyboard
-  shortcuts (Space/Enter to check, 1–4 to rate).
+- **Help** — pausing, the Manage status icons (○ ● ◷ ◌), and the review
+  keyboard shortcuts (Space/Enter to check, 1–4 to rate).
 - **Kana** — a separate hiragana/katakana trainer (below).
 
 ### Kana trainer

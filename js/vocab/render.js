@@ -108,9 +108,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     return 'vocabulary';
   }
   var SECTION_ORDER = ['vocabulary', 'grammar', 'travel'];
-  var SECTION_LABEL = { vocabulary: 'Vocabulary', grammar: 'Grammar', travel: 'Travel' };
   vocab.sectionOf = sectionOf;
-  vocab.sectionLabel = function (name) { return SECTION_LABEL[name] || name; };
   function rowHideButton() {
     return '<button type="button" class="row-hide-btn" aria-label="Hide this row" title="Hide this row">' + EYE_ICON + '</button>';
   }

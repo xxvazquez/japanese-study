@@ -80,6 +80,7 @@ window.RaumeStudy.flashcards.views = (function () {
       '<li><span class="fc-status fc-status-none">' + STATUS_META.none.glyph + '</span> Not added</li>' +
       '<li><span class="fc-status fc-status-active">' + STATUS_META.active.glyph + '</span> In flashcards</li>' +
       '<li><span class="fc-status fc-status-due">' + STATUS_META.due.glyph + '</span> Due for review now</li>' +
+      '<li><span class="fc-status fc-status-archived">' + STATUS_META.archived.glyph + '</span> Paused</li>' +
       '</ul></div>' +
       '<div class="fc-settings-section"><h3>Review sessions</h3>' +
       '<ul class="fc-help-list">' +

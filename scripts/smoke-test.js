@@ -1207,6 +1207,21 @@ async function main() {
   document.getElementById("fcSaveSettings").click(); // restore defaults for later checks
   await flush();
 
+  console.log("Flashcards: Help tab");
+  document.querySelector('.fc-tab[data-tab="help"]').click();
+  check("the Manage status legend documents all four states, including Paused", (() => {
+    const items = [...document.querySelectorAll("#fcPanelHelp .fc-help-status li")].map(li => li.textContent.trim());
+    return items.length === 4 && items.some(t => t.includes("Not added")) && items.some(t => t.includes("In flashcards"))
+      && items.some(t => t.includes("Due for review")) && items.some(t => t.includes("Paused"));
+  })());
+  check("Words to Review's icon-choosing button is hidden -- it's a synthetic table, nothing to persist an icon against", (() => {
+    // Regression: this used to target a class (.section-title-icon) that never
+    // existed anywhere in the rendered markup, so the rule was a silent no-op
+    // and the button rendered live. Check the fixed selector is what's there.
+    const rule = allCssRules.find(r => r.selectorText === "#fcWordsToReview .section-icon-btn");
+    return !!rule && rule.style.display === "none";
+  })());
+
   const goAccountBtn = document.getElementById("fcGoAccount");
   check("guest mode offers a way to switch to syncing", !!goAccountBtn);
   goAccountBtn.click();

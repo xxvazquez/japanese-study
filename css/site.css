@@ -1497,9 +1497,9 @@ body.starred-mode .expand-bar { display: none !important; }
    two-up cards, not prose). */
 #fcPanelDashboard { max-width: 900px; }
 
-/* Dashboard stat tiles -- same card language as .overview-group, plus a
-   left rule in the Flashcards section tone (a colour hint, not a loud fill)
-   so the row reads as one grouped set rather than four identical grey boxes. */
+/* Dashboard stat tiles -- flat bordered cards, plus a left rule in the
+   Flashcards section tone (a colour hint, not a loud fill) so the row reads
+   as one grouped set rather than four identical grey boxes. */
 /* 2x2 on narrow screens (four tiles, so it stays even -- no orphan on its
    own row), one row of four once there's width for it -- on the shared 12-col
    grid below, so the tile seams line up with the panels above and below. */
@@ -2209,7 +2209,12 @@ body.starred-mode .expand-bar { display: none !important; }
   border-bottom: 1px solid var(--line);
 }
 #fcWordsToReview .section-head::before { display: none; }
-#fcWordsToReview .section-title-icon { display: none; }
+/* Was targeting a class that's never existed (.section-title-icon), so the
+   icon-choosing button -- meant to be stripped along with the header strip
+   and category chip, per the comment above -- was rendering live: a
+   "Choose an icon" control on a synthetic table with nothing to persist it
+   against. */
+#fcWordsToReview .section-icon-btn { display: none; }
 #fcWordsToReview .section-title-text { font-size: var(--fs-subhead); font-weight: 500; }
 #fcWordsToReview .section-toggle-icon { width: 20px; height: 20px; }
 
