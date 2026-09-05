@@ -58,6 +58,14 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   polite 〜ます. It only appears while the Verbs table is expanded — however that
   table was opened, including landing on it straight from a `#table-N` bookmark or
   the *Jump to a table* list.
+- **Pronunciation.** A small speaker icon next to the Japanese plays it aloud,
+  via the browser's own Web Speech API (`RaumeStudy.shared.speech`,
+  `js/shared.js`) — no audio files, nothing to download, and it covers every
+  row (a verb-pair row gets one button per form). It speaks the reading, not
+  the kanji, and only appears once the browser confirms it actually has a
+  Japanese voice installed, so a device with none never shows a button that
+  would silently do nothing. The same control sits on a flashcard's Japanese
+  prompt (see *Reviewing* below).
 - **Sorting.** Every column is sortable (↓ A–Z / low→high, ↑ the reverse).
   Tables start sorted A–Z by English.
 - **Named for assistive tech.** Each `<table>` is `aria-labelledby` its visible
@@ -182,6 +190,8 @@ the word is added. (The star and hide-row icons share that same cluster.) The
   `koohii`, and `kouhii` all match.
 - Finishing shows a wrap-up (reviewed, correct, streak), with **Keep going** if
   more cards are ready.
+- A Japanese prompt (jp-en / jp-ro) carries the same speaker button as the
+  vocabulary tables — see *Pronunciation* above.
 
 ### The tabs
 

@@ -66,6 +66,15 @@ async function main() {
   const totalRows = document.querySelectorAll(".vocab tbody tr").length;
   check("renders 508 vocabulary rows", totalRows === 508);
   check("every Japanese cell is marked lang=\"ja\"", [...document.querySelectorAll("td.jp")].every(td => td.getAttribute("lang") === "ja"));
+  check("every Japanese cell has one speaker button per form, keyed to the kana reading (not the kanji)", [...document.querySelectorAll("td.jp")].every(td => {
+    const forms = td.querySelectorAll(".verb-form").length || 1;
+    const btns = [...td.querySelectorAll(".jp-speak-btn")];
+    // The regression this guards: a few rows store a kana headword in the
+    // "kanji" field with an empty reading (no true furigana needed, e.g.
+    // v0066 パン) -- jpReadingOf has to fall back to that field too, or the
+    // button silently never renders for exactly those rows.
+    return btns.length === forms && btns.every(b => b.dataset.jpSpeak && !/[一-龯]/.test(b.dataset.jpSpeak));
+  }));
   check("section toggle is a real <button> (native keyboard activation)", document.querySelector(".section-toggle").tagName === "BUTTON");
   check("controls are siblings of the toggle, not nested inside it", !document.querySelector(".section-toggle .print-one"));
   check("every table section carries its category", [...sections].every(s => s.dataset.category));
@@ -129,6 +138,27 @@ async function main() {
     const rule = allCssRules.find(r => r.selectorText === ".fc-review-card .fc-prompt");
     return !!rule && parseInt(rule.style.fontSize, 10) >= 24;
   })());
+  check("speaker buttons stay hidden until a Japanese voice is confirmed available", (() => {
+    const base = allCssRules.find(r => r.selectorText === ".jp-speak-btn");
+    const revealed = allCssRules.find(r => r.selectorText === "body.ja-voice-ready .jp-speak-btn");
+    return !!base && base.style.display === "none" && !!revealed && revealed.style.display === "inline-flex";
+  })());
+  check("speaker buttons are dropped from print, like the other row-action icons", (() => {
+    const rule = allCssRules.find(r => r.selectorText
+      && r.selectorText.split(",").map(s => s.trim()).includes(".jp-speak-btn")
+      && r.parentRule && /print/.test((r.parentRule.media || r.parentRule.conditionText || {}).mediaText || r.parentRule.conditionText || ""));
+    return !!rule && rule.style.display === "none";
+  })());
+  check("clicking a table row's speaker button calls speech.speak with that button's reading", (() => {
+    const speech = window.RaumeStudy.shared.speech;
+    const original = speech.speak;
+    let got;
+    speech.speak = (text) => { got = text; };
+    const btn = document.querySelector(".jp-speak-btn");
+    btn.click();
+    speech.speak = original;
+    return !!btn && got === btn.dataset.jpSpeak;
+  })());
   check("category labels aren't ALL-CAPS in some places and Title Case in others", (() => {
     // the two that used to be uppercase eyebrows now match the headings
     return [".tindex-cat-name", ".cz-group-title"].every(sel => {
@@ -157,6 +187,64 @@ async function main() {
     const allDistinct = (arr) => new Set(arr).size === arr.length;
     return allSet(nameColors) && allDistinct(nameColors) && allSet(borderColors) && allDistinct(borderColors);
   })());
+
+  console.log("Speech: pronunciation playback (Web Speech API)");
+  {
+    const speech = window.RaumeStudy.shared.speech;
+    check("speech helpers are exposed", !!speech && typeof speech.speak === "function" && typeof speech.onJapaneseVoiceReady === "function");
+    check("hasJapaneseVoice reads window.speechSynthesis live, not a cached snapshot from load", (() => {
+      const original = window.speechSynthesis;
+      window.speechSynthesis = { getVoices: () => [] };
+      const before = speech.hasJapaneseVoice();
+      window.speechSynthesis = { getVoices: () => [{ lang: "ja-JP", name: "Test JA" }] };
+      const after = speech.hasJapaneseVoice();
+      window.speechSynthesis = original;
+      return before === false && after === true;
+    })());
+    check("onJapaneseVoiceReady fires immediately once a Japanese voice is already present", (() => {
+      const original = window.speechSynthesis;
+      window.speechSynthesis = { getVoices: () => [{ lang: "en-US" }, { lang: "ja-JP" }] };
+      let fired = false;
+      speech.onJapaneseVoiceReady(() => { fired = true; });
+      window.speechSynthesis = original;
+      return fired === true;
+    })());
+    check("speak() cancels any previous utterance and speaks the text in ja-JP using a Japanese voice", (() => {
+      const originalSynth = window.speechSynthesis;
+      const originalUtterance = window.SpeechSynthesisUtterance;
+      let cancelled = false, spoken = null;
+      const jaVoice = { lang: "ja-JP", name: "Test JA" };
+      window.speechSynthesis = {
+        getVoices: () => [{ lang: "en-US" }, jaVoice],
+        cancel: () => { cancelled = true; },
+        speak: (u) => { spoken = u; }
+      };
+      window.SpeechSynthesisUtterance = function (text) { this.text = text; };
+      speech.speak("チャーシュー");
+      window.speechSynthesis = originalSynth;
+      window.SpeechSynthesisUtterance = originalUtterance;
+      return cancelled === true && !!spoken && spoken.text === "チャーシュー" && spoken.lang === "ja-JP" && spoken.voice === jaVoice;
+    })());
+    check("speak() is a no-op (never throws) with no speechSynthesis, no text, or no Utterance constructor", (() => {
+      const originalSynth = window.speechSynthesis;
+      const originalUtterance = window.SpeechSynthesisUtterance;
+      try {
+        delete window.speechSynthesis;
+        speech.speak("こんにちは");
+        window.speechSynthesis = { cancel() {}, speak() {}, getVoices: () => [{ lang: "ja-JP" }] };
+        delete window.SpeechSynthesisUtterance;
+        speech.speak("こんにちは");
+        window.SpeechSynthesisUtterance = function (text) { this.text = text; };
+        speech.speak("");
+        return true;
+      } catch (e) {
+        return false;
+      } finally {
+        window.speechSynthesis = originalSynth;
+        window.SpeechSynthesisUtterance = originalUtterance;
+      }
+    })());
+  }
 
   console.log("Kana -> romaji reading layer (hiragana + katakana)");
   const kr = window.RaumeStudy.kanaRomaji;
@@ -1264,6 +1352,17 @@ async function main() {
   check("the Numbers table now carries real romaji (not kana), so the row is romaji-usable", !!numberEntry && numberEntry.romajiUsable === true);
   check("...so all four directions are offered for it", JSON.stringify(fc.directionsForEntry(numberEntry)) === JSON.stringify(["jp-en", "jp-ro", "ro-en", "en-ro"]));
   check("a normal entry offers all four directions", JSON.stringify(fc.directionsForEntry(beerEntry)) === JSON.stringify(["jp-en", "jp-ro", "ro-en", "en-ro"]));
+  check("the jp-en/jp-ro prompt for a word entry carries a speaker button keyed to its reading", (() => {
+    const prompt = fc.promptFor(beerEntry, "jp-en");
+    return prompt.lang === "ja" && /class="jp-speak-btn" data-jp-speak="[^"]+"/.test(prompt.html);
+  })());
+  const verbPairEntry = Object.values(vocabIndex).find(e => (e.romajiDisplay || "").includes(" / "));
+  check("a verb-pair entry's prompt carries one speaker button per form (plain and polite)", (() => {
+    if (!verbPairEntry) return false;
+    const html = fc.promptFor(verbPairEntry, "jp-en").html;
+    const matches = [...html.matchAll(/class="jp-speak-btn" data-jp-speak="([^"]+)"/g)].map(m => m[1]);
+    return matches.length === 2 && matches[0] !== matches[1] && matches.every(Boolean);
+  })());
 
   console.log(failures === 0 ? "\nSmoke test passed." : "\n" + failures + " smoke test check(s) failed.");
   process.exit(failures === 0 ? 0 : 1);

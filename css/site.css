@@ -1151,6 +1151,37 @@ table { width: 100%; border-collapse: separate; border-spacing: 0; table-layout:
 body.show-polite .verb-form-plain { display: none; }
 body.show-polite .verb-form-polite { display: block; }
 
+/* Speaker button: reads the word aloud via the Web Speech API
+   (RaumeStudy.shared.speech, js/shared.js). Hidden until that module confirms
+   the browser actually has a Japanese voice installed -- showing it
+   unconditionally would be a control that silently does nothing, or speaks
+   in the wrong voice, on a device with no ja voice. In table rows it's
+   ghosted like the row-action icons (quiet in a dense list, full strength on
+   hover/focus); on the review card, where it's the only word on screen, it
+   sits at a steadier resting opacity instead. */
+.jp-speak-btn { display: none; }
+body.ja-voice-ready .jp-speak-btn {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-left: 4px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 2px;
+  color: var(--faint);
+  opacity: .3;
+  cursor: pointer;
+  transition: opacity .12s ease;
+}
+.vocab tbody tr:hover .jp-speak-btn,
+.vocab tbody tr:focus-within .jp-speak-btn,
+.jp-speak-btn:focus-visible { opacity: 1; }
+.jp-speak-btn:hover { color: var(--accent-dark); }
+.fc-review-card .jp-speak-btn { opacity: .55; }
+@media (hover: none) {
+  body.ja-voice-ready .jp-speak-btn { opacity: .5; }
+}
+
 /* Furigana: always visible, never behind hover/click/a setting. A clear
    tier down (~0.58em, lighter), with an 11px floor -- small kana need the
    extra pixels to stay readable, especially the ones a learner is here to
@@ -1352,7 +1383,7 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   .vocab td.jp { padding-top: 9px !important; }
   /* Drop the row actions in print -- but keep a set star, marking the row
      it belongs to. */
-  .sort-button, .row-hide-btn, .fc-toggle-btn, .star-btn:not(.starred) { display: none !important; }
+  .sort-button, .row-hide-btn, .fc-toggle-btn, .jp-speak-btn, .star-btn:not(.starred) { display: none !important; }
   .star-btn.starred { opacity: 1; }
   .view-mode { display: none !important; }
 

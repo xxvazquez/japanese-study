@@ -550,6 +550,9 @@ window.RaumeStudy.flashcards.dashboard = (function () {
 
     var endBtn = document.getElementById("fcEndSession");
     if (endBtn) endBtn.addEventListener("click", endSession);
+    panel.querySelectorAll(".jp-speak-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () { window.RaumeStudy.shared.speech.speak(btn.dataset.jpSpeak); });
+    });
     var input = document.getElementById("fcAnswerInput");
     if (input && !session.checked) {
       // Name the field with the prompt it belongs to, so a screen-reader user

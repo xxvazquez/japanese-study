@@ -307,6 +307,6 @@ window.RaumeStudy.flashcards = window.RaumeStudy.flashcards || {};
   S.__testHooks = {
     normalizeAnswer: vidx.normalizeAnswer, checkAnswer: vidx.checkAnswer,
     getVocabIndex: vidx.getVocabIndex, directionsForEntry: vidx.directionsForEntry,
-    isRomajiUsable: vidx.isRomajiUsable
+    isRomajiUsable: vidx.isRomajiUsable, promptFor: vidx.promptFor
   };
 })();

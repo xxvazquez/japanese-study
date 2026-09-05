@@ -625,6 +625,9 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
         event.stopPropagation();
         closeSectionMenus();
         printScope(el.dataset.scope);
+      } else if ((el = t.closest('.jp-speak-btn'))) {
+        event.stopPropagation();
+        window.RaumeStudy.shared.speech.speak(el.dataset.jpSpeak);
       } else if ((el = t.closest('.row-hide-btn'))) {
         event.stopPropagation();
         const section = el.closest('.table-section');

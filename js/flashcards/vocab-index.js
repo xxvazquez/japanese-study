@@ -58,6 +58,8 @@ window.RaumeStudy.flashcards.vocabIndex = (function () {
         if (!row.id) return;
         var entry = { vocabId: row.id, category: table.category || "", tableTitle: table.title, tableId: table.id };
         var jpHtmlFn = window.RaumeStudy.vocab.jpSegmentsHtml || function () { return ""; };
+        var jpReadingFn = window.RaumeStudy.vocab.jpReadingOf || function () { return ""; };
+        var speakBtnFn = window.RaumeStudy.vocab.speakButtonHtml || function () { return ""; };
         if (row.type === "verb-pair") {
           entry.jpHtml = row.forms.map(function (f) {
             return '<div class="verb-form"><span class="jpword">' + jpHtmlFn(f.jp) + "</span></div>";
@@ -67,6 +69,14 @@ window.RaumeStudy.flashcards.vocabIndex = (function () {
             return '<span class="jpword">' + jpHtmlFn(f.jp) + "</span>";
           }).join('<span class="fc-jp-slash"> / </span>');
           entry.jpPlain = row.forms.map(function (f) { return jpPlainOf(f.jp); }).join(" / ");
+          // Only the review card's prompt gets a speaker button (the Manage
+          // list and "Missed today" tile above reuse jpHtml/jpInlineHtml as
+          // plain display) -- each form tagged verb-form-plain/-polite so the
+          // same body.show-polite toggle that picks which form is visible
+          // also picks which button is.
+          entry.jpPromptHtml = row.forms.map(function (f, fi) {
+            return '<div class="verb-form ' + (fi === 0 ? "verb-form-plain" : "verb-form-polite") + '"><span class="jpword">' + jpHtmlFn(f.jp) + "</span>" + speakBtnFn(jpReadingFn(f.jp)) + "</div>";
+          }).join("");
           entry.romajiDisplay = row.forms.map(function (f) { return f.romaji; }).join(" / ");
           entry.romajiUsable = row.forms.every(function (f) { return isRomajiUsable(f.romaji); });
           entry.romajiAnswers = entry.romajiUsable
@@ -76,6 +86,7 @@ window.RaumeStudy.flashcards.vocabIndex = (function () {
           entry.jpHtml = '<span class="jpword">' + jpHtmlFn(row.jp) + "</span>";
           entry.jpInlineHtml = entry.jpHtml;
           entry.jpPlain = jpPlainOf(row.jp);
+          entry.jpPromptHtml = entry.jpHtml + speakBtnFn(jpReadingFn(row.jp));
           entry.romajiDisplay = row.romaji;
           entry.romajiUsable = isRomajiUsable(row.romaji);
           entry.romajiAnswers = entry.romajiUsable ? [normalizeAnswer(row.romaji, true)] : [];
@@ -96,7 +107,7 @@ window.RaumeStudy.flashcards.vocabIndex = (function () {
   }
 
   function promptFor(entry, direction) {
-    if (direction === "jp-en" || direction === "jp-ro") return { html: entry.jpHtml, lang: "ja" };
+    if (direction === "jp-en" || direction === "jp-ro") return { html: entry.jpPromptHtml, lang: "ja" };
     if (direction === "ro-en") return { text: entry.romajiDisplay };
     return { text: entry.englishDisplay }; // en-ro
   }
