@@ -572,13 +572,10 @@ async function main() {
   const headerLabels = [...countersSection.querySelectorAll("thead th")].map(th => th.textContent.replace(/[↕↓↑]/g, "").trim());
   check("columns are Japanese → Romaji → English", JSON.stringify(headerLabels) === JSON.stringify(["Japanese", "Romaji", "English"]));
 
-  console.log("Manage rows");
+  console.log("Hiding a row");
   const drinksSectionManage = document.querySelector('.table-section[data-table="1"]');
   const firstEyeBtn = drinksSectionManage.querySelector(".row-hide-btn");
-  check("the eye toggle is hidden until manage mode is on", window.getComputedStyle(firstEyeBtn).display === "none");
-  drinksSectionManage.querySelector(".manage-rows-toggle").click();
-  check("turning on manage mode marks the section", drinksSectionManage.classList.contains("managing-rows"));
-  check("the toggle label flips to Done", drinksSectionManage.querySelector(".manage-rows-toggle").textContent === "Done");
+  check("the eye icon is there on every row by default -- no mode to turn on first", window.getComputedStyle(firstEyeBtn).display !== "none");
   const firstRow = drinksSectionManage.querySelector("tbody tr");
   firstRow.querySelector(".row-hide-btn").click();
   check("clicking the eye hides that row", firstRow.classList.contains("row-hidden"));
@@ -753,29 +750,48 @@ async function main() {
   check("Vocabulary still returns to the reference (unaffected by the Flashcards page)", document.getElementById("vocabPage").hidden === false);
 
   console.log("Flashcards: per-row add toggle");
-  // Table 2 (not table 1) -- table 1's own "Manage rows" state was already
-  // toggled on earlier in this file and left that way, which would make the
-  // manage-mode check below a false positive.
   const drinksSectionFc = document.querySelector('.table-section[data-table="2"]');
   const firstRowFc = drinksSectionFc.querySelector("tbody tr");
   check("every rendered row carries its permanent vocab id", /^v\d{4,}$/.test(firstRowFc.dataset.vocabId));
   const fcBtn = firstRowFc.querySelector(".fc-toggle-btn");
   check("the flashcard toggle exists on every row", !!fcBtn);
-  // Unlike the eye icon it isn't display:none -- it's laid out on every row
-  // (so touch and keyboard users can reach it) and kept faintly visible at
-  // rest so the feature is discoverable, lifting to full strength on
-  // hover/focus so the reading table still stays quiet.
+  // Unlike the old gated eye icon this was never display:none -- it's laid
+  // out on every row (so touch and keyboard users can reach it) and kept
+  // faintly visible at rest so the feature is discoverable, lifting to full
+  // strength on hover/focus so the reading table still stays quiet.
   check("the toggle is present in layout, not display:none", window.getComputedStyle(fcBtn).display !== "none");
   check("it's ghosted at rest (discoverable, not loud) and lifts on hover/focus", (() => {
     const o = parseFloat(window.getComputedStyle(fcBtn).opacity);
     return o > 0 && o < 1;
   })());
-  check("row actions flow inline after the meaning text, not pinned to the column edge",
-    window.getComputedStyle(fcBtn).position === "static" && fcBtn.previousElementSibling.classList.contains("star-btn"));
-  drinksSectionFc.querySelector(".manage-rows-toggle").click();
-  check("Manage rows makes it permanently visible", window.getComputedStyle(fcBtn).opacity === "1");
+  check("star, add-to-flashcards and hide sit together in one action cluster, in that order",
+    (() => {
+      const cluster = fcBtn.closest(".row-actions");
+      return !!cluster && cluster.parentElement.classList.contains("meaning-cell")
+        && fcBtn.previousElementSibling.classList.contains("star-btn")
+        && fcBtn.nextElementSibling.classList.contains("row-hide-btn");
+    })());
+  check("that cluster is pinned to the wrapper's right edge, not flowing after the text " +
+    "(the flex row lives on a <div> inside the <td>, not the <td> itself -- table-layout:fixed " +
+    "stops honouring a cell's own column-width once its display is overridden to flex)",
+    (() => {
+      const cell = firstRowFc.querySelector("td:last-child");
+      const wrap = cell.querySelector(".meaning-cell");
+      const cellCs = window.getComputedStyle(cell);
+      const wrapCs = window.getComputedStyle(wrap);
+      const clusterCs = window.getComputedStyle(cell.querySelector(".row-actions"));
+      return cellCs.display === "table-cell" && wrap.parentElement === cell
+        && wrapCs.display === "flex" && clusterCs.flexShrink === "0";
+    })());
+  check("hover/focus within the row is styled to lift the toggle to full opacity", (() => {
+    // jsdom doesn't recompute style for a live :focus-within/:hover change, so
+    // check the rule itself rather than a getComputedStyle probe after .focus().
+    const rule = allCssRules.find(r => r.selectorText
+      && r.selectorText.includes(".vocab tbody tr:focus-within .fc-toggle-btn")
+      && r.selectorText.includes(".vocab tbody tr:hover .fc-toggle-btn"));
+    return !!rule && rule.style.opacity === "1";
+  })());
   check("its data-vocab-id matches the row's", fcBtn.dataset.vocabId === firstRowFc.dataset.vocabId);
-  drinksSectionFc.querySelector(".manage-rows-toggle").click(); // leave manage mode off for later checks
 
   console.log("Flashcards: add a whole table at once");
   const fcMenuBtn = drinksSectionFc.querySelector(".section-menu-btn");
@@ -785,7 +801,7 @@ async function main() {
   check("clicking the menu button opens it", drinksSectionFc.querySelector(".section-menu-list").hidden === false && fcMenuBtn.getAttribute("aria-expanded") === "true");
   const addTableBtn = drinksSectionFc.querySelector(".section-menu-list .fc-add-table-btn");
   check("the menu holds an \"Add to flashcards\" action for this table", !!addTableBtn && addTableBtn.dataset.table === "2");
-  check("the menu also holds \"Manage rows\"", !!drinksSectionFc.querySelector(".section-menu-list .manage-rows-toggle"));
+  check("no \"Manage rows\" mode left to find -- the eye icon is just always there", !document.querySelector(".manage-rows-toggle"));
   document.body.click();
   check("clicking elsewhere dismisses the menu", drinksSectionFc.querySelector(".section-menu-list").hidden === true);
   check("no element relies on an inline style=\"\" attribute, even after rendering the new controls", document.querySelectorAll("[style]").length === 0);

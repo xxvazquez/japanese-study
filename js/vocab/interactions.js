@@ -625,11 +625,6 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
         event.stopPropagation();
         closeSectionMenus();
         printScope(el.dataset.scope);
-      } else if ((el = t.closest('.manage-rows-toggle'))) {
-        event.stopPropagation();
-        const managing = el.closest('.table-section').classList.toggle('managing-rows');
-        el.textContent = managing ? 'Done' : 'Manage rows';
-        closeSectionMenus();
       } else if ((el = t.closest('.row-hide-btn'))) {
         event.stopPropagation();
         const section = el.closest('.table-section');

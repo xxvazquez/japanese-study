@@ -136,13 +136,23 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     return '<button type="button" class="star-btn' + (on ? ' starred' : '') + '" data-vocab-id="' + esc(vocabId) +
       '" aria-pressed="' + (on ? 'true' : 'false') + '" aria-label="' + (on ? 'Unstar' : 'Star') + ' this word" title="Star this word">' + STAR_ICON + '</button>';
   }
+  // Wrapped in its own cluster so it can sit as a fixed-width flex item
+  // pinned to the Meaning cell's right edge (see css/site.css), instead of
+  // flowing inline after the text at a position that drifts with its length.
   function rowActions(vocabId) {
-    return starToggleButton(vocabId) + flashcardToggleButton(vocabId) + rowHideButton();
+    return '<span class="row-actions">' + starToggleButton(vocabId) + flashcardToggleButton(vocabId) + rowHideButton() + '</span>';
+  }
+  // The flex row lives on a <div> wrapper, not the <td> itself -- table-layout:
+  // fixed's column-width percentages stop being respected on a cell whose own
+  // display is overridden to flex (the browser no longer sizes it as a table
+  // cell), so the <td> stays a plain cell and only its content wrapper flexes.
+  function meaningCell(english, vocabId) {
+    return '<td><div class="meaning-cell"><span class="meaning-text">' + esc(english) + '</span>' + rowActions(vocabId) + '</div></td>';
   }
   function wordRow(row) {
     var openTag = '<tr data-vocab-id="' + esc(row.id || '') + '"' + (row.irregular ? ' class="irregular-row">' : '>');
     return openTag + jpCell(row) +
-      '<td>' + esc(row.romaji) + '</td><td>' + esc(row.english) + rowActions(row.id) + '</td></tr>';
+      '<td>' + esc(row.romaji) + '</td>' + meaningCell(row.english, row.id) + '</tr>';
   }
   // forms[0] is the plain/dictionary form, forms[1] the polite (-masu) form --
   // tag each so CSS can tint the two consistently (plain vs polite) down both
@@ -151,7 +161,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
   function verbPairRow(row) {
     var jp = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '"><span class="jpword">' + jpSegments(f.jp, true) + '</span></div>'; }).join('');
     var romaji = row.forms.map(function (f, fi) { return '<div class="verb-form ' + (VERB_FORM_CLASS[fi] || '') + '">' + esc(f.romaji) + '</div>'; }).join('');
-    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td><td>' + esc(row.english) + rowActions(row.id) + '</td></tr>';
+    return '<tr data-vocab-id="' + esc(row.id || '') + '"><td class="jp" lang="ja">' + jp + '</td><td>' + romaji + '</td>' + meaningCell(row.english, row.id) + '</tr>';
   }
   // isDefault marks the column the table renders sorted by (English) -- it
   // starts active and showing ↓ (A-Z); the others start neutral (↕).
@@ -182,7 +192,6 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     // standalone icon is hidden.
     var menuItems = [];
     if (controls.addTable) menuItems.push('<button type="button" class="fc-add-table-btn" role="menuitem" data-table="' + o.id + '" title="Add every row in this table to your flashcards">Add to flashcards</button>');
-    if (controls.manageRows) menuItems.push('<button type="button" class="manage-rows-toggle" role="menuitem">Manage rows</button>');
     // Only fold print into the menu when the menu already exists for other
     // reasons -- a table whose only control is print keeps just the icon.
     if (controls.print && menuItems.length) menuItems.push('<button type="button" class="print-one print-menu-item" role="menuitem" aria-label="Print this table">Print</button>');
@@ -217,7 +226,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
     return sectionMarkup({
       id: t.id, title: t.title, category: t.category, section: sectionOf(t.category), tableClass: t.tableClass,
       rowsHtml: rowsHtmlFor(sortedRows),
-      controls: { addTable: true, manageRows: true, print: true },
+      controls: { addTable: true, print: true },
       sectionClass: 'page-hidden', collapsed: true, defaultSort: true
     });
   }

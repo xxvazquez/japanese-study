@@ -142,7 +142,7 @@ window.RaumeStudy.flashcards.views = (function () {
     return '<span class="fc-status fc-status-' + s + '" title="' + esc(m.label) + '" aria-label="' + esc(m.label) + '">' + m.glyph + '</span>';
   }
 
-  // Rows currently hidden via "Manage rows" on the vocabulary page are read
+  // Rows currently hidden via the vocabulary page's own eye icon are read
   // straight from that page's own DOM (it's always fully rendered, just
   // hidden/shown by class -- see js/vocab/interactions.js) so a bulk table-add
   // here matches the same one on the vocabulary page exactly, regardless of
@@ -307,7 +307,7 @@ window.RaumeStudy.flashcards.views = (function () {
   }
   // Table-level bulk add/remove -- the default way to build a deck, per
   // table, rather than one word at a time. Add skips rows already hidden on
-  // the vocabulary page (Manage rows' eye icon); Remove archives every
+  // the vocabulary page (its own eye icon); Remove archives every
   // currently-active card from that table (never hard-deletes anything).
   async function runTableAction(action, tableId, btn) {
     var index = getVocabIndex();
@@ -511,8 +511,8 @@ window.RaumeStudy.flashcards.views = (function () {
 
   // "Add table to flashcards" -- the common case (add everything at once)
   // instead of requiring one click per word. Skips rows currently hidden in
-  // that table (Manage rows' eye icon) -- if you've already hidden a row
-  // because you know it, a bulk add shouldn't pull it back into flashcards.
+  // that table (the vocabulary page's own eye icon) -- if you've already
+  // hidden a row because you know it, a bulk add shouldn't pull it back in.
   document.addEventListener("click", async function (event) {
     var btn = event.target.closest && event.target.closest(".fc-add-table-btn");
     if (!btn || btn.disabled) return;

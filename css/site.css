@@ -1024,7 +1024,6 @@ body.icon-picker-open { overflow: hidden; }
 }
 .section-menu-list[hidden] { display: none; }
 .table-section.menu-open { overflow: visible; }
-.section-menu-list .manage-rows-toggle,
 .section-menu-list .fc-add-table-btn,
 .section-menu-list .print-menu-item,
 .section-menu-list .print-scope {
@@ -1041,12 +1040,9 @@ body.icon-picker-open { overflow: hidden; }
   cursor: pointer;
   white-space: nowrap;
 }
-.section-menu-list .manage-rows-toggle:hover,
 .section-menu-list .fc-add-table-btn:hover,
 .section-menu-list .print-menu-item:hover,
 .section-menu-list .print-scope:hover { background: var(--accent-soft); color: var(--accent-strong); }
-.table-section.managing-rows .section-menu-list .manage-rows-toggle { color: var(--accent-strong); font-weight: 500; }
-.table-section.managing-rows .section-menu-btn { border-color: var(--accent); color: var(--accent-strong); }
 .section-menu-list .fc-add-table-btn[disabled] { opacity: .5; cursor: default; }
 .section-menu-list .print-menu-item { display: none; }
 @media (max-width: 700px) {
@@ -1075,17 +1071,9 @@ body.icon-picker-open { overflow: hidden; }
 }
 .show-all-rows:hover { text-decoration: underline; }
 
-.row-hide-btn {
-  display: none;
-  appearance: none;
-  border: 0;
-  background: transparent;
-  padding: 2px;
-  color: var(--faint) !important;
-  cursor: pointer;
-}
+/* .row-hide-btn's own layout/visibility lives with the other two row-action
+   icons below -- it's always one of the three now, not a separate mode. */
 .row-hide-btn:hover { color: var(--section-strong) !important; }
-.table-section.managing-rows .row-hide-btn { display: inline-flex; }
 .vocab tbody tr.row-hidden { display: none; }
 .table-section.collapsed .vocab { display: none; }
 
@@ -1362,10 +1350,10 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
      the Japanese cell's furigana (css/site.css:1116), so the reading crowds
      the row's top border. Give just that cell its breathing room back. */
   .vocab td.jp { padding-top: 9px !important; }
-  /* Drop the row actions in print -- and the space the hidden ones reserve on
-     screen -- but keep a set star inline next to the word it marks. */
+  /* Drop the row actions in print -- but keep a set star, marking the row
+     it belongs to. */
   .sort-button, .row-hide-btn, .fc-toggle-btn, .star-btn:not(.starred) { display: none !important; }
-  .star-btn.starred { opacity: 1; margin-left: 6px; }
+  .star-btn.starred { opacity: 1; }
   .view-mode { display: none !important; }
 
   body.print-only .table-section:not(.print-target) { display: none !important; }
@@ -1406,20 +1394,28 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   --danger-soft: #fbe9e7;
 }
 
-/* Row-action icons (star, add-to-flashcards, and -- in Manage rows -- hide)
-   flow inline right after the meaning text instead of being pinned to the
-   far edge of the column, where a short definition left them stranded in
-   white. Space is reserved at rest (they toggle with opacity, not display)
-   so the column doesn't reflow as you move down it.
+/* Row-action icons (star, add-to-flashcards, hide) sit in their own cluster
+   pinned to the Meaning cell's right edge -- not flowing inline after the
+   text, so a short definition doesn't put them anywhere different from a
+   long one. The flex row lives on .meaning-cell, a <div> wrapper -- NOT the
+   <td> itself, which needs to stay display:table-cell or table-layout:fixed
+   stops honouring its column-width percentage. table-layout is fixed, so
+   the cell's own width never changes row to row, and the cluster lands in
+   the same spot every time.
    - add-to-flashcards: the flashcards feature's main per-word entry point,
      so it's kept faintly visible at rest, full strength on hover / focus,
      and lit in the section accent once the word is added.
    - star: hidden until you hover a row or star the word -- at rest you only
-     ever see stars on words you picked. */
+     ever see stars on words you picked.
+   - hide: a quiet housekeeping action, ghosted at rest like add-to-flashcards. */
 .vocab tbody td:last-child { padding-right: 10px; }
+.meaning-cell { display: flex; align-items: flex-start; gap: 4px; }
+.meaning-text { flex: 1 1 auto; min-width: 0; }
+.row-actions { flex: 0 0 auto; display: flex; align-items: center; white-space: nowrap; }
 .fc-toggle-btn,
 .star-btn,
 .row-hide-btn {
+  display: inline-flex;
   vertical-align: middle;
   margin-left: 5px;
   appearance: none;
@@ -1429,16 +1425,18 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
   cursor: pointer;
   transition: opacity .12s ease;
 }
-.fc-toggle-btn,
-.star-btn { display: inline-flex; }
 .star-btn { margin-left: 8px; color: var(--faint); opacity: 0; }
-.fc-toggle-btn { color: var(--faint) !important; opacity: .3; }
+.fc-toggle-btn,
+.row-hide-btn { color: var(--faint) !important; opacity: .3; }
 .vocab tbody tr:hover .fc-toggle-btn,
 .vocab tbody tr:focus-within .fc-toggle-btn,
 .fc-toggle-btn:focus-visible,
 .fc-toggle-btn[aria-pressed="true"] { opacity: 1; }
 .fc-toggle-btn:hover { color: var(--accent-dark) !important; }
 .fc-toggle-btn[aria-pressed="true"] { color: var(--accent) !important; }
+.vocab tbody tr:hover .row-hide-btn,
+.vocab tbody tr:focus-within .row-hide-btn,
+.row-hide-btn:focus-visible { opacity: 1; }
 .vocab tbody tr:hover .star-btn,
 .vocab tbody tr:focus-within .star-btn,
 .star-btn:focus-visible,
@@ -1447,14 +1445,12 @@ body.selftest-mode .vocab tbody td:nth-child(3) .fc-toggle-btn { color: var(--fa
 .star-btn.starred { color: var(--accent); }
 .star-btn.starred svg { fill: currentColor; stroke: currentColor; }
 @media (hover: none) {
-  .fc-toggle-btn { opacity: .5; }               /* ghosted -- present, not loud */
+  .fc-toggle-btn,
+  .row-hide-btn { opacity: .5; }               /* ghosted -- present, not loud */
   .fc-toggle-btn[aria-pressed="true"] { opacity: 1; }
   .star-btn { opacity: .5; }
   .star-btn.starred { opacity: 1; }
 }
-/* Manage rows: show all three at full strength while that mode is on. */
-.table-section.managing-rows .fc-toggle-btn,
-.table-section.managing-rows .star-btn { opacity: 1; }
 
 /* The collected "Starred" view: the toolbar toggle swaps the vocabulary
    list (and its directory / expand bar) for one synthetic table built the
@@ -1464,14 +1460,12 @@ body.starred-mode #tableIndex,
 body.starred-mode .expand-bar { display: none !important; }
 .starred-empty { color: var(--muted); font-size: var(--fs-nav-sub); padding: 4px 0 0; }
 
-/* Manage mode overlays two action icons on the English column; on narrow
-   screens give that column extra room (borrowed from romaji) so its text
-   never gets crushed into a sliver behind the icons. */
+/* Three action icons sit on the English column now, always -- on narrow
+   screens give that column a bit more room (borrowed from romaji) so its
+   text never gets crushed into a sliver behind them. */
 @media (max-width: 700px) {
-  .table-section.managing-rows .vocab th:nth-child(2),
-  .table-section.managing-rows .vocab td:nth-child(2) { width: 19%; }
-  .table-section.managing-rows .vocab th:nth-child(3),
-  .table-section.managing-rows .vocab td:nth-child(3) { width: 39%; }
+  .vocab th:nth-child(2), .vocab td:nth-child(2) { width: 19%; }
+  .vocab th:nth-child(3), .vocab td:nth-child(3) { width: 39%; }
 }
 
 .fc-lede { margin: 0 0 20px; color: var(--muted); font-size: var(--fs-nav-sub); line-height: 1.5; max-width: 60ch; }

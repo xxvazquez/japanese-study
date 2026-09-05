@@ -74,8 +74,9 @@ category — Food & Ingredients, Kitchen & Dining, Numbers & Counting.
   anything is starred, a **Starred** button in the toolbar swaps the list for a
   synthetic table of just those words, which sorts and prints like any other.
   It's a filter, not a page: switching section or searching clears it.
-- **Manage rows.** Hide individual rows you've memorised, per table, with a
-  one-click "Show all" to bring them back.
+- **Hide a row.** The eye icon in the row's action cluster hides it — a
+  quiet, per-table "I know this" — with a one-click "Show all" to bring
+  everything back. No mode to turn on first; it's just always there.
 
 ### Customising tables
 
@@ -127,10 +128,11 @@ than one per sheet.
 
 Flashcards sit on top of the vocabulary without changing or copying it. Add a
 whole table at once with **Add to flashcards** (it skips rows you've hidden),
-or use the per-row toggle that sits just after each meaning — ghosted at rest
-so a long table doesn't grow a hard column of icons, full strength on row hover
-or keyboard focus, and lit in the section accent once the word is added. (The
-star and, in Manage rows, the hide icon flow in the same place.) The
+or use the per-row toggle in the icon cluster pinned to the end of every
+meaning — the same spot on every row regardless of how long the text is,
+ghosted at rest so a long table doesn't grow a hard column of colour, full
+strength on row hover or keyboard focus, and lit in the section accent once
+the word is added. (The star and hide-row icons share that same cluster.) The
 **Flashcards** nav page is where you review, browse, and track a daily streak.
 
 ### How cards work
