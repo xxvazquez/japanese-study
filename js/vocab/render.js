@@ -84,9 +84,7 @@ window.RaumeStudy.vocab = window.RaumeStudy.vocab || {};
   // text otherwise (already kana/katakana). Kept separate from jpPlainOf
   // (js/flashcards/vocab-index.js), which keeps the kanji: speech synthesis
   // reads kanji unreliably (an ambiguous character can be mis-read), so the
-  // spoken form always uses the reading instead. A few rows carry a kana
-  // headword in the "kanji" field with an empty reading (no true furigana
-  // needed) -- seg.kanji covers those too.
+  // spoken form always uses the reading instead.
   function jpReadingOf(segments) {
     return segments.map(function (seg) { return seg.reading || seg.kanji || seg.text; }).join('');
   }
