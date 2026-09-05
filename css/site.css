@@ -98,6 +98,14 @@
   --right-soft: #e7efeb;
   --right-strong: #3c6151;
 
+  /* The rating row's Hard button only -- a fourth, genuinely distinct hue
+     (an intensity-spectrum take on the same four buttons read wrong: Again
+     stronger than Hard implied Hard barely mattered). Muted amber, same
+     desaturated family as --wrong/--right so it doesn't read as a warning. */
+  --fc-hard: #a48246;
+  --fc-hard-soft: #f5ece0;
+  --fc-hard-strong: #866b39;
+
   /* Flashcards dashboard only -- a small categorical lift for a data surface
      the quiet-everywhere rule made hard to scan. Card-state ramp: one slate
      hue, three steps validated for lightness separation and AA, since
@@ -207,6 +215,10 @@
   --right: #83b3a0;
   --right-soft: #263530;
   --right-strong: #a4ccbc;
+
+  --fc-hard: #ddbe88;
+  --fc-hard-soft: #3a3224;
+  --fc-hard-strong: #e6cfa8;
 
   --fc-state-new: #4a6591;
   --fc-state-learning: #7592bd;
@@ -1849,42 +1861,41 @@ body.starred-mode .expand-bar { display: none !important; }
 }
 .fc-rating-btn .fc-rating-name { display: block; font: 500 var(--fs-small)/1.3 var(--font-ui); margin: 2px 0; }
 .fc-rating-btn .fc-rating-interval { display: block; font-size: var(--fs-micro); color: var(--muted); }
-/* All four ratings tone-coded now, not just Again/Good/Easy vs. a neutral
-   Hard -- so the choice is muscle memory, not a read-all-four every card.
-   One wrong-to-right spectrum matching FSRS's own 1-4 ordering, stepped by
-   intensity rather than four unrelated hues (the app allows itself exactly
-   two saturated tones, --wrong and --right, everywhere else): Again is
-   --wrong at full strength, Hard a lighter tint of the same family: still
-   a miss, just a lesser one. Good is --right at the same base strength
-   Again/Hard sit at; Easy steps up to --right-strong: a stronger pass, not
-   a different color. Border + a hair of tinted surface only -- never a
+/* All four ratings tone-coded, each its own hue rather than a wrong-to-right
+   intensity spectrum -- a stepped spectrum shipped once (Again at full
+   --wrong, Hard a lighter tint) and read wrong: it made Hard look like it
+   barely mattered next to Again. Four distinct hues instead, all at the same
+   strength, so the choice is muscle memory, not a read-all-four every card:
+   Again in --wrong, Hard in the amber --fc-hard (the one new hue this needs),
+   Good in --right, Easy in --accent -- reusing the site's existing tones
+   everywhere but Hard. Border + a hair of tinted surface only -- never a
    filled panel, matching .fc-result / the stat-tile left rule. */
 .fc-rating-btn[data-rating="again"] {
   border-color: color-mix(in srgb, var(--wrong) 55%, var(--line));
   background: color-mix(in srgb, var(--wrong-soft) 60%, var(--paper));
 }
 .fc-rating-btn[data-rating="hard"] {
-  border-color: color-mix(in srgb, var(--wrong) 22%, var(--line));
-  background: color-mix(in srgb, var(--wrong-soft) 28%, var(--paper));
+  border-color: color-mix(in srgb, var(--fc-hard) 55%, var(--line));
+  background: color-mix(in srgb, var(--fc-hard-soft) 60%, var(--paper));
 }
 .fc-rating-btn[data-rating="good"] {
   border-color: color-mix(in srgb, var(--right) 55%, var(--line));
   background: color-mix(in srgb, var(--right-soft) 60%, var(--paper));
 }
 .fc-rating-btn[data-rating="easy"] {
-  border-color: color-mix(in srgb, var(--right-strong) 62%, var(--line));
-  background: color-mix(in srgb, var(--right-soft) 85%, var(--paper));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--line));
+  background: color-mix(in srgb, var(--accent-soft) 85%, var(--paper));
 }
 .fc-rating-btn[data-rating="again"] .fc-rating-name { color: var(--wrong-strong); }
-.fc-rating-btn[data-rating="hard"] .fc-rating-name { color: var(--wrong); }
+.fc-rating-btn[data-rating="hard"] .fc-rating-name { color: var(--fc-hard-strong); }
 .fc-rating-btn[data-rating="good"] .fc-rating-name { color: var(--right); }
-.fc-rating-btn[data-rating="easy"] .fc-rating-name { color: var(--right-strong); }
+.fc-rating-btn[data-rating="easy"] .fc-rating-name { color: var(--accent-strong); }
 .fc-rating-btn:hover:not([disabled]) { border-color: var(--accent); background: var(--accent-soft); }
 .fc-rating-btn[disabled] { opacity: .45; cursor: not-allowed; }
-.fc-rating-btn[data-rating="again"]:hover:not([disabled]),
-.fc-rating-btn[data-rating="hard"]:hover:not([disabled]) { border-color: var(--wrong); background: var(--wrong-soft); }
-.fc-rating-btn[data-rating="good"]:hover:not([disabled]),
-.fc-rating-btn[data-rating="easy"]:hover:not([disabled]) { border-color: var(--right); background: var(--right-soft); }
+.fc-rating-btn[data-rating="again"]:hover:not([disabled]) { border-color: var(--wrong); background: var(--wrong-soft); }
+.fc-rating-btn[data-rating="hard"]:hover:not([disabled]) { border-color: var(--fc-hard); background: var(--fc-hard-soft); }
+.fc-rating-btn[data-rating="good"]:hover:not([disabled]) { border-color: var(--right); background: var(--right-soft); }
+.fc-rating-btn[data-rating="easy"]:hover:not([disabled]) { border-color: var(--accent); background: var(--accent-soft); }
 /* Wrong answer: Good / Easy recede (but stay usable -- full opacity on hover). */
 .fc-rating-row-missed .fc-rating-btn[data-rating="good"],
 .fc-rating-row-missed .fc-rating-btn[data-rating="easy"] { opacity: .45; }

@@ -179,13 +179,14 @@ the word is added. (The star and hide-row icons share that same cluster.) The
   typed, and the correct answer — so the pass/fail signal isn't carried by the
   colour wash alone and focus never drops to the page body between cards. The
   wrap-up heading takes focus the same way.
-- The four rating buttons are tone-coded, all four now distinct — one
-  wrong→right spectrum stepped by intensity rather than four unrelated
-  colours: **Again** in the wrong tone, **Hard** a lighter tint of it; **Good**
-  in the right tone, **Easy** a stronger step of it — so the choice is muscle
-  memory, not a read-all-four every card. Each carries its **1–4** key as a
-  small chip. After a wrong or blank answer, Good/Easy are dimmed (still one
-  click away) so the honest rating reads first.
+- The four rating buttons are tone-coded, each its own hue rather than a
+  wrong→right intensity spectrum (a stepped version shipped once and read as
+  Hard barely mattering next to Again): **Again** in the wrong tone, **Hard**
+  in a muted amber, **Good** in the right tone, **Easy** in the accent —
+  so the choice is muscle memory, not a read-all-four every card. Each
+  carries its **1–4** key as a small chip. After a wrong or blank answer,
+  Good/Easy are dimmed (still one click away) so the honest rating reads
+  first.
 - Romaji checking ignores long vowels — you can't type macrons — so `kōhī`,
   `koohii`, and `kouhii` all match.
 - Finishing shows a wrap-up (reviewed, correct, streak), with **Keep going** if
@@ -446,6 +447,10 @@ stat tiles (day-streak included) and reviews-this-week bars pick up the
 Flashcards section tone with today's bar at full strength, and the "Missed
 today" list gets a thin `--wrong` left rule — the one warm note on the surface.
 All of it is scoped to `.page-flashcards`; the reference side stays monochrome.
+The review card's rating row is the one other exception: it needs a fourth
+hue (Again/Good/Easy reuse `--wrong` / `--right` / `--accent`, but Hard gets
+its own muted amber, `--fc-hard`) rather than the site's usual two saturated
+tones.
 
 Dark mode isn't just an inverted palette — a few weights are tuned separately
 where the light logic doesn't carry over. Text fields get their own fill
